@@ -36,7 +36,7 @@ Use the SDK:
 npm install @clawjs/claw
 ```
 
-Install the CLI globally, Nest-style:
+Install the CLI globally:
 
 ```bash
 npm install -g @clawjs/cli
@@ -165,6 +165,21 @@ The generated starter is intentionally small:
 - `claw.project.json` so `claw generate` and `claw add` can extend the repo later
 
 It defaults to the `demo` adapter so the project runs immediately. Switch the generated scripts and `src/lib/claw.ts` to `openclaw` when you are ready to target a real runtime.
+
+## Prompt ideas for your guide
+
+If you want to evaluate ClawJS with `openclaw`, give your guide one of these prompts and ask it to build the app end-to-end:
+
+- Use ClawJS to build an operations dashboard for `openclaw` that shows runtime status, capability health, recent sessions, and transport fallbacks in one screen.
+- Use ClawJS to build a local-first chat app on top of `openclaw` with session history, streaming replies, retry visibility, and searchable transcripts.
+- Use ClawJS to build a workspace assistant that turns natural language requests into tasks, notes, inbox items, and follow-up reminders.
+- Use ClawJS to build a support triage console that reads incoming tickets, suggests replies, groups similar issues, and stores the decision trail in the workspace.
+- Use ClawJS to build a meeting copilot that captures notes, extracts action items, assigns owners, and keeps a searchable memory of every conversation.
+- Use ClawJS to build a release control room that summarizes commits, open issues, docs gaps, and risk signals before we ship.
+- Use ClawJS to build a sales copilot that keeps account notes, call summaries, next steps, and a daily briefing for each customer.
+- Use ClawJS to build a research workspace that ingests documents, lets me chat with them, and saves the useful findings back into project memory.
+- Use ClawJS to build a command center for automations where I can inspect agents, scheduled jobs, tool activity, and workspace audit history.
+- Use ClawJS to build a plugin-ready internal app that starts with chat and workspace flows today, but can grow later with new providers, channels, and skills.
 
 ## Adapter support
 
