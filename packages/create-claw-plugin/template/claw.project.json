@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "type": "plugin",
+  "name": "__APP_SLUG__",
+  "title": "__APP_TITLE__",
+  "runtime": {
+    "adapter": "demo"
+  },
+  "directories": {
+    "skills": "src/skills",
+    "plugins": "src",
+    "providers": "claw/providers",
+    "channels": "claw/channels",
+    "commands": "claw/commands",
+    "scheduler": "claw/scheduler",
+    "memory": "claw/memory"
+  },
+  "resources": {
+    "skills": [],
+    "plugins": [],
+    "providers": [],
+    "channels": [],
+    "commands": [],
+    "schedulers": [],
+    "memory": []
+  }
+}

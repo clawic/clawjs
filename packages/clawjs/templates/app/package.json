@@ -1,0 +1,27 @@
+{
+  "name": "__APP_NAME__",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "claw:init": "claw --runtime demo workspace init --workspace . --app-id __APP_SLUG__ --workspace-id __APP_SLUG__ --agent-id __APP_SLUG__",
+    "claw:status": "claw --runtime demo runtime status --workspace . --json"
+  },
+  "dependencies": {
+    "@clawjs/claw": "^0.1.0",
+    "next": "^15.3.3",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@clawjs/cli": "^0.1.0",
+    "@tailwindcss/postcss": "^4.1.7",
+    "@types/node": "^22.14.1",
+    "@types/react": "^19.1.2",
+    "@types/react-dom": "^19.1.2",
+    "tailwindcss": "^4.1.7",
+    "typescript": "^5.8.3"
+  }
+}

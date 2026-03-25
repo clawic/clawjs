@@ -1,0 +1,30 @@
+{
+  "id": "__APP_SLUG__",
+  "name": "__APP_TITLE__",
+  "version": "0.1.0",
+  "description": "Distributed plugin scaffold for __APP_TITLE__.",
+  "entrypoint": "./dist/index.js",
+  "compatibility": {
+    "runtimeAdapters": ["openclaw", "demo"],
+    "requiresWorkspace": false,
+    "supportLevel": "experimental"
+  },
+  "hooks": [
+    "beforeSessionStart",
+    "afterAssistantReply"
+  ],
+  "skills": [
+    {
+      "id": "__APP_SLUG__-triage",
+      "entrypoint": "./dist/skills/triage.js"
+    }
+  ],
+  "config": {
+    "schema": "./dist/config.js",
+    "example": "./examples/config.json"
+  },
+  "verification": {
+    "command": "npm run plugin:check",
+    "exampleConfig": "./examples/config.json"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "type": "skill",
+  "name": "__APP_SLUG__",
+  "title": "__APP_TITLE__",
+  "runtime": {
+    "adapter": "demo"
+  },
+  "directories": {
+    "skills": "src"
+  },
+  "resources": {
+    "skills": [],
+    "plugins": [],
+    "providers": [],
+    "channels": [],
+    "commands": [],
+    "schedulers": [],
+    "memory": []
+  }
+}

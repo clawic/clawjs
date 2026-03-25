@@ -1,0 +1,22 @@
+{
+  "name": "__APP_NAME__",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/server.js",
+    "claw:init": "claw --runtime demo workspace init --workspace . --app-id __APP_SLUG__ --workspace-id __APP_SLUG__ --agent-id __APP_SLUG__",
+    "claw:status": "claw --runtime demo runtime status --workspace . --json"
+  },
+  "dependencies": {
+    "@clawjs/claw": "^0.1.0"
+  },
+  "devDependencies": {
+    "@clawjs/cli": "^0.1.0",
+    "@types/node": "^22.14.1",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3"
+  }
+}

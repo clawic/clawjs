@@ -1,0 +1,46 @@
+{
+  "name": "create-claw-app",
+  "version": "0.1.0",
+  "description": "Create a Next.js app prewired for Claw.",
+  "type": "module",
+  "license": "MIT",
+  "author": {
+    "name": "Iván González Dávila",
+    "url": "https://github.com/ivangdavila"
+  },
+  "homepage": "https://github.com/clawic/clawjs",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/clawic/clawjs.git"
+  },
+  "bugs": {
+    "url": "https://github.com/clawic/clawjs/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "create-claw-app": "bin/create-claw-app.mjs"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "bin",
+    "dist",
+    "template",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts --out-dir dist --clean --target node20"
+  }
+}

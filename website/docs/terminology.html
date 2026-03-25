@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Terminology — ClawJS</title>
+  <meta name="description" content="Canonical terminology for runtime adapters, workspaces, agents, providers, models, and gateways in ClawJS." />
+  <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+  <nav class="nav">
+    <div class="nav__inner">
+      <a href="/" class="nav__logo"><img src="/logo.png" alt="ClawJS" />ClawJS</a>
+      <button class="nav__toggle" aria-label="Toggle menu" onclick="document.querySelector('.nav__links').classList.toggle('open')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+      </button>
+      <ul class="nav__links">
+        <li><a href="/docs/">Docs</a></li>
+        <li><a href="/docs/getting-started.html">Get Started</a></li>
+        <li><a href="/docs/api.html">API</a></li>
+        <li><a href="https://github.com/clawic/clawjs" class="nav__github" target="_blank" rel="noopener"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>GitHub</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="docs-layout">
+    <aside class="docs-sidebar"></aside>
+    <main class="docs-content">
+      <div class="docs-breadcrumb">
+        <a href="/">Home</a> / <a href="/docs/">Docs</a> / <span>Terminology</span>
+      </div>
+
+      <h1>Terminology</h1>
+
+      <p>This page is the canonical naming reference for ClawJS. Use these terms consistently across code, docs, examples, and product copy.</p>
+
+      <h2>Canonical terms</h2>
+
+      <h3>Runtime adapter</h3>
+      <p>A runtime adapter is the integration boundary between ClawJS and a concrete runtime such as <code>openclaw</code>, <code>zeroclaw</code>, or <code>picoclaw</code>. It owns capability probing, install/setup/repair flows, workspace contracts, auth, models, and conversation transport behavior.</p>
+
+      <h3>Workspace</h3>
+      <p>A workspace is the isolated operational directory managed by ClawJS. It combines the stable <code>.clawjs/</code> layer with the runtime-facing files declared by the selected runtime adapter.</p>
+
+      <h3>Agent</h3>
+      <p>An agent is the identity and operational behavior that runs inside a workspace. An adapter may expose one agent or many agents; ClawJS still uses <code>agent</code> as the product term in both cases.</p>
+
+      <h3>Agent profile</h3>
+      <p>An agent profile is a named variant or configuration of the same agent. Use it when identity stays the same but defaults, behavior, credentials, or operating mode vary.</p>
+
+      <h3>Provider and model</h3>
+      <p>A provider is the external inference or service vendor. A model is the specific model identifier selected through that provider or through an adapter-backed model surface. They are related but they are not synonyms.</p>
+
+      <h3>Gateway</h3>
+      <p>A gateway is a mediation layer between clients, agents, and providers. Use <code>gateway</code> only for network or transport mediation concerns such as routing, policy, retries, and shared provider boundaries.</p>
+
+      <h2>Concept hierarchy</h2>
+
+      <ol>
+        <li>A <code>runtime adapter</code> defines capabilities and runtime behavior.</li>
+        <li>A <code>workspace</code> is initialized against that adapter.</li>
+        <li>An <code>agent</code> operates within that workspace.</li>
+        <li>An <code>agent profile</code> can vary that agent's configuration.</li>
+        <li><code>provider</code> and <code>model</code> selection sit in the inference layer exposed by the adapter.</li>
+        <li>A <code>gateway</code> may sit in front of runtimes or agents, but it is a separate concept.</li>
+      </ol>
+
+      <h2>Do not use as synonyms</h2>
+
+      <ul>
+        <li><code>gateway</code> and <code>runtime adapter</code></li>
+        <li><code>workspace</code> and <code>agent</code></li>
+        <li><code>provider</code> and <code>model</code></li>
+      </ul>
+
+      <h2>Scaffold defaults</h2>
+
+      <p>Some examples and starters set <code>workspaceId</code> and <code>agentId</code> to the same value for convenience. That is a scaffold default, not a product rule.</p>
+
+      <div class="docs-nav-footer">
+        <a href="/docs/getting-started.html">Previous<span>&larr; First Steps</span></a>
+        <a href="/docs/runtime.html">Next<span>Runtime &rarr;</span></a>
+      </div>
+    </main>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+  <script type="module" src="/src/docs-nav.js"></script>
+</body>
+</html>

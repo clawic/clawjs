@@ -1,0 +1,17 @@
+{
+  "name": "__APP_NAME__",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "claw:init": "claw --runtime demo workspace init --workspace . --app-id __APP_SLUG__ --workspace-id __APP_SLUG__ --agent-id __APP_SLUG__",
+    "claw:doctor": "claw --runtime demo doctor --workspace . --json",
+    "claw:info": "claw info --project . --json"
+  },
+  "dependencies": {
+    "@clawjs/claw": "^0.1.0"
+  },
+  "devDependencies": {
+    "@clawjs/cli": "^0.1.0"
+  }
+}

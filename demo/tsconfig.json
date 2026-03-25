@@ -1,0 +1,89 @@
+{
+  "compilerOptions": {
+    "target": "ES2017",
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "react-jsx",
+    "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ]
+    }
+  },
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts",
+    "**/*.mts",
+    ".next-e2e-whatsapp/types/**/*.ts",
+    ".next-e2e-whatsapp/dev/types/**/*.ts",
+    ".next-e2e-profile/types/**/*.ts",
+    ".next-e2e-profile/dev/types/**/*.ts",
+    ".next-e2e-bootstrap/types/**/*.ts",
+    ".next-e2e-bootstrap/dev/types/**/*.ts",
+    ".next-e2e-chat-layout/types/**/*.ts",
+    ".next-e2e-chat-layout/dev/types/**/*.ts",
+    ".next-e2e-calendar/types/**/*.ts",
+    ".next-e2e-calendar/dev/types/**/*.ts",
+    ".next-e2e-local-settings/types/**/*.ts",
+    ".next-e2e-local-settings/dev/types/**/*.ts",
+    ".next-e2e-email/types/**/*.ts",
+    ".next-e2e-email/dev/types/**/*.ts",
+    ".next-e2e-settings-header/types/**/*.ts",
+    ".next-e2e-settings-header/dev/types/**/*.ts",
+    ".next-e2e-topic-starters/types/**/*.ts",
+    ".next-e2e-topic-starters/dev/types/**/*.ts",
+    ".next-e2e-layout-debug/types/**/*.ts",
+    ".next-e2e-layout-debug/dev/types/**/*.ts",
+    ".next-e2e-layout-dom/types/**/*.ts",
+    ".next-e2e-layout-dom/dev/types/**/*.ts",
+    ".next-e2e-bootstrap-debug/types/**/*.ts",
+    ".next-e2e-bootstrap-debug/dev/types/**/*.ts",
+    ".next-e2e-bootstrap-apis/types/**/*.ts",
+    ".next-e2e-bootstrap-apis/dev/types/**/*.ts",
+    ".next-e2e-bootstrap-browser/types/**/*.ts",
+    ".next-e2e-bootstrap-browser/dev/types/**/*.ts",
+    ".next-e2e-topic-starters-debug/types/**/*.ts",
+    ".next-e2e-topic-starters-debug/dev/types/**/*.ts",
+    ".next-e2e-reset-workspace/types/**/*.ts",
+    ".next-e2e-reset-workspace/dev/types/**/*.ts",
+    ".next-e2e-onboarding-openclaw/types/**/*.ts",
+    ".next-e2e-onboarding-openclaw/dev/types/**/*.ts",
+    ".next-e2e-debug/types/**/*.ts",
+    ".next-e2e-debug/dev/types/**/*.ts",
+    ".next-e2e-debug2/types/**/*.ts",
+    ".next-e2e-debug2/dev/types/**/*.ts",
+    ".next-e2e-audio-playback/types/**/*.ts",
+    ".next-e2e-audio-playback/dev/types/**/*.ts",
+    ".tmp/e2e/demo/.next/types/**/*.ts",
+    ".tmp/e2e/demo/.next/dev/types/**/*.ts",
+    ".next-e2e/types/**/*.ts",
+    ".next-e2e/dev/types/**/*.ts",
+    ".next-mock/types/**/*.ts",
+    ".next-mock/dev/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}

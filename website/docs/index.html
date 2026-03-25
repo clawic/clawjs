@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Introduction — ClawJS</title>
+  <meta name="description" content="ClawJS is a multi-runtime Node.js SDK and CLI for Claw-style runtimes." />
+  <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+  <nav class="nav">
+    <div class="nav__inner">
+      <a href="/" class="nav__logo"><img src="/logo.png" alt="ClawJS" />ClawJS</a>
+      <button class="nav__toggle" aria-label="Toggle menu" onclick="document.querySelector('.nav__links').classList.toggle('open')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+      </button>
+      <ul class="nav__links">
+        <li><a href="/docs/">Docs</a></li>
+        <li><a href="/docs/getting-started.html">Get Started</a></li>
+        <li><a href="/docs/api.html">API</a></li>
+        <li><a href="https://github.com/clawic/clawjs" class="nav__github" target="_blank" rel="noopener"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>GitHub</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="docs-layout">
+    <aside class="docs-sidebar"></aside>
+    <main class="docs-content">
+      <div class="docs-breadcrumb">
+        <a href="/">Home</a> / <span>Documentation</span>
+      </div>
+
+      <h1>Introduction</h1>
+
+      <p>ClawJS is an open-source <strong>Node.js SDK and CLI</strong> for building local applications on top of multiple runtimes through one runtime-adapter contract.</p>
+
+      <div class="callout">
+        <p><strong>Support note:</strong> adapter maturity differs. Check the support matrix before picking a runtime for production use.</p>
+      </div>
+
+      <h2>Why ClawJS?</h2>
+
+      <p>ClawJS gives you one place to solve the hard parts that show up across runtimes:</p>
+
+      <ul>
+        <li>runtime detection, install, repair, and compat tracking</li>
+        <li>workspace initialization with adapter-specific file layouts</li>
+        <li>auth, provider catalogs, and model catalogs</li>
+        <li>normalized streaming and transport fallback</li>
+        <li>state snapshots for scheduler, memory, skills, and channels</li>
+      </ul>
+
+      <h2>Architecture</h2>
+
+      <table>
+        <thead><tr><th>Package</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><code>@clawjs/core</code></td>
+            <td>Shared types, schemas, capability maps, manifests, and snapshot shapes.</td>
+          </tr>
+          <tr>
+            <td><code>@clawjs/claw</code></td>
+            <td>Runtime adapters, workspace management, conversations, auth, compat, doctor, and state persistence.</td>
+          </tr>
+          <tr>
+            <td><code>@clawjs/node</code></td>
+            <td>Compatibility wrapper that reexports the primary SDK surface for existing integrations.</td>
+          </tr>
+          <tr>
+            <td><code>@clawjs/cli</code></td>
+            <td>The official CLI package with the <code>claw</code> and <code>clawjs</code> binaries for adapter-aware runtime, workspace, auth, models, sessions, memory, skills, scheduler, and channels commands.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>Core Concepts</h2>
+
+      <p>See <a href="/docs/terminology.html">Terminology</a> for the canonical naming used across ClawJS docs, code, and starter PRDs.</p>
+
+      <h3>Runtime adapters</h3>
+
+      <p>A runtime adapter is the boundary between ClawJS and a concrete runtime. It owns probing, locations, workspace contracts, auth, models, conversations, doctor/compat, and optional subsystems.</p>
+
+      <h3>Workspaces and agents</h3>
+
+      <p>A workspace is the isolated operational context. An agent is the identity operating inside that workspace. Some scaffolds use the same value for <code>workspaceId</code> and <code>agentId</code> as a convenience default, but those concepts stay separate.</p>
+
+      <h3>Capability maps</h3>
+
+      <p>Every runtime status includes a typed <code>capabilityMap</code>. Capabilities are not implicit. They are marked as supported, degraded, or unsupported with a concrete strategy such as <code>cli</code>, <code>gateway</code>, <code>config</code>, <code>native</code>, or <code>bridge</code>.</p>
+
+      <h3>Stable `.clawjs/` layer</h3>
+
+      <p>ClawJS keeps a stable internal layer under <code>.clawjs/</code> even when runtimes disagree on file names or directory structure. Adapter-specific files are managed alongside that stable layer, not mixed into it.</p>
+
+      <h2>What next</h2>
+
+      <ul>
+        <li><a href="/docs/getting-started.html">First Steps</a> for a multi-runtime setup flow.</li>
+        <li><a href="/docs/terminology.html">Terminology</a> for the canonical product vocabulary.</li>
+        <li><a href="#" data-demo-link>Live Demo</a> for a full local-first assistant built with ClawJS.</li>
+        <li><a href="/docs/runtime.html">Runtime</a> for the adapter contract and capability model.</li>
+        <li><a href="/docs/api.html">API Reference</a> for the public namespaces.</li>
+      </ul>
+
+      <div class="docs-nav-footer">
+        <div></div>
+        <a href="/docs/getting-started.html">Next<span>First Steps &rarr;</span></a>
+      </div>
+    </main>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+  <script type="module" src="/src/docs-nav.js"></script>
+</body>
+</html>

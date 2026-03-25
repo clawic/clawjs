@@ -1,0 +1,13 @@
+# Default reviewers for repository-wide changes.
+* @clawic
+
+# Core release and package surfaces.
+/package.json @clawic
+/package-lock.json @clawic
+/pnpm-lock.yaml @clawic
+/CHANGELOG.md @clawic
+/RELEASING.md @clawic
+/packages/ @clawic
+/website/ @clawic
+/docs/ @clawic
+/tests/ @clawic

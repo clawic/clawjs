@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "type": "agent",
+  "name": "__APP_SLUG__",
+  "title": "__APP_TITLE__",
+  "runtime": {
+    "adapter": "demo"
+  },
+  "workspace": {
+    "appId": "__APP_SLUG__",
+    "workspaceId": "__APP_SLUG__",
+    "agentId": "__APP_SLUG__"
+  },
+  "directories": {
+    "skills": "claw/skills",
+    "plugins": "claw/plugins",
+    "providers": "claw/providers",
+    "channels": "claw/channels",
+    "commands": "claw/commands",
+    "scheduler": "claw/scheduler",
+    "memory": "claw/memory"
+  },
+  "resources": {
+    "skills": [],
+    "plugins": [],
+    "providers": [],
+    "channels": [],
+    "commands": [],
+    "schedulers": [],
+    "memory": []
+  }
+}

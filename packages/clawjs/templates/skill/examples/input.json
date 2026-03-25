@@ -1,0 +1,5 @@
+{
+  "subject": "Customer cannot reset password",
+  "context": "The user reports that the reset email does not arrive after two attempts. They are blocked from finishing onboarding before tomorrow morning.",
+  "requester": "support@__APP_SLUG__.example"
+}

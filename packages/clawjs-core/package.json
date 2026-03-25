@@ -1,0 +1,44 @@
+{
+  "name": "@clawjs/core",
+  "version": "0.1.1",
+  "description": "Core contracts and schemas for Claw.",
+  "type": "module",
+  "license": "MIT",
+  "author": {
+    "name": "Iván González Dávila",
+    "url": "https://github.com/ivangdavila"
+  },
+  "homepage": "https://github.com/clawic/clawjs",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/clawic/clawjs.git"
+  },
+  "bugs": {
+    "url": "https://github.com/clawic/clawjs/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts --out-dir dist --clean --target node20"
+  },
+  "dependencies": {
+    "zod": "^3.24.1"
+  }
+}

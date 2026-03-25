@@ -1,0 +1,25 @@
+{
+  "id": "clawjs-context",
+  "name": "ClawJS Context",
+  "description": "Experimental context engine for ClawJS on OpenClaw.",
+  "version": "0.1.0",
+  "kind": "context-engine",
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "systemPromptAddition": { "type": "string" },
+      "emitMetrics": { "type": "boolean" }
+    }
+  },
+  "uiHints": {
+    "systemPromptAddition": {
+      "label": "System Prompt Addition",
+      "advanced": true
+    },
+    "emitMetrics": {
+      "label": "Emit Metrics",
+      "advanced": true
+    }
+  }
+}

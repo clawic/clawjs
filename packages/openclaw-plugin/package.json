@@ -1,0 +1,42 @@
+{
+  "name": "@clawjs/openclaw-plugin",
+  "version": "0.1.0",
+  "description": "OpenClaw bridge plugin for ClawJS.",
+  "type": "module",
+  "license": "MIT",
+  "author": {
+    "name": "Iván González Dávila",
+    "url": "https://github.com/ivangdavila"
+  },
+  "homepage": "https://github.com/clawic/clawjs",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/clawic/clawjs.git"
+  },
+  "bugs": {
+    "url": "https://github.com/clawic/clawjs/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "main": "./src/index.js",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "openclaw": {
+    "extensions": [
+      "./src/index.js"
+    ]
+  },
+  "files": [
+    "src",
+    "openclaw.plugin.json",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "node -e \"process.stdout.write('openclaw-plugin build: source package\\n')\""
+  }
+}

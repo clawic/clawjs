@@ -1,0 +1,49 @@
+{
+  "name": "eslint-config-claw",
+  "version": "0.1.0",
+  "description": "Shared ESLint flat config for Claw projects.",
+  "type": "module",
+  "license": "MIT",
+  "author": {
+    "name": "Iván González Dávila",
+    "url": "https://github.com/ivangdavila"
+  },
+  "homepage": "https://github.com/clawic/clawjs",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/clawic/clawjs.git"
+  },
+  "bugs": {
+    "url": "https://github.com/clawic/clawjs/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts --out-dir dist --clean --target node20"
+  },
+  "dependencies": {
+    "@eslint/js": "^9.23.0",
+    "globals": "^15.15.0",
+    "typescript-eslint": "^8.28.0"
+  },
+  "peerDependencies": {
+    "eslint": "^9.0.0"
+  }
+}

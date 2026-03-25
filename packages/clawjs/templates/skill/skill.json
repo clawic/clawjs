@@ -1,0 +1,15 @@
+{
+  "id": "__APP_SLUG__",
+  "name": "__APP_TITLE__",
+  "version": "0.1.0",
+  "description": "Reusable skill scaffold for __APP_TITLE__.",
+  "entrypoint": "./dist/index.js",
+  "contract": {
+    "input": "src/contract.ts#__APP_PASCAL__Input",
+    "output": "src/contract.ts#__APP_PASCAL__Output"
+  },
+  "verification": {
+    "command": "npm run skill:check",
+    "exampleInput": "./examples/input.json"
+  }
+}

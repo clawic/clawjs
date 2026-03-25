@@ -1,0 +1,30 @@
+{
+  "name": "__APP_NAME__",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "examples",
+    "plugin.json",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "tsx src/verify.ts",
+    "plugin:example": "tsx src/harness.ts example",
+    "plugin:check": "tsx src/harness.ts check"
+  },
+  "devDependencies": {
+    "@types/node": "^22.14.1",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3"
+  }
+}

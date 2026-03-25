@@ -1,0 +1,5 @@
+node_modules
+.clawjs
+dist
+coverage
+.DS_Store

@@ -1,0 +1,7 @@
+{
+  "provider": "jira",
+  "projectKey": "SUP",
+  "baseUrl": "https://issues.__APP_SLUG__.example",
+  "enableAutoTriage": true,
+  "defaultLabels": ["support", "customer"]
+}

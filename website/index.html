@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ClawJS — Build AI Agent Apps with Any Runtime</title>
+  <meta name="description" content="The open-source Node.js SDK and CLI for building AI agent applications across multiple runtime adapters." />
+  <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <meta property="og:title" content="ClawJS — Build AI Agent Apps with Any Runtime" />
+  <meta property="og:description" content="The open-source Node.js SDK for building AI agent applications across multiple runtime adapters." />
+  <meta property="og:image" content="/logo.png" />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+  <nav class="nav">
+    <div class="nav__inner">
+      <a href="/" class="nav__logo">
+        <img src="/logo.png" alt="ClawJS logo" />
+        ClawJS
+      </a>
+      <button class="nav__toggle" aria-label="Toggle menu" onclick="document.querySelector('.nav__links').classList.toggle('open')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 12h18M3 6h18M3 18h18"/>
+        </svg>
+      </button>
+      <ul class="nav__links">
+        <li><a href="/docs/">Docs</a></li>
+        <li><a href="/docs/getting-started.html">Get Started</a></li>
+        <li><a href="/docs/api.html">API</a></li>
+        <li>
+          <a href="https://github.com/clawic/clawjs" class="nav__github" target="_blank" rel="noopener">
+            <svg viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+            GitHub
+          </a>
+        </li>
+      </ul>
+    </div>
+  </nav>
+
+  <section class="hero">
+    <div class="container">
+      <div class="hero__badge">
+        <span class="hero__badge__dot"></span>
+        v0.1.0 — Open Source
+      </div>
+
+      <img src="/logo.png" alt="ClawJS" class="hero__logo" />
+
+      <h1 class="hero__title">
+        Build <span>AI Agent</span> Apps<br/>with Any Runtime
+      </h1>
+
+      <p class="hero__subtitle">
+        The open-source Node.js SDK that lets you build, ship, and manage AI agent applications. One API, one CLI &mdash; works across multiple runtime adapters.
+      </p>
+
+      <div class="hero__actions">
+        <a href="/docs/getting-started.html" class="btn btn--primary">
+          Get Started
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </a>
+        <a href="https://github.com/clawic/clawjs" class="btn btn--secondary" target="_blank" rel="noopener">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+          GitHub
+        </a>
+      </div>
+
+      <div class="install-bar">
+        <div class="install-bar__code">
+          <span class="prompt">$</span>
+          <span>npm install -g @clawjs/cli</span>
+          <button class="install-bar__copy" onclick="navigator.clipboard.writeText('npm install -g @clawjs/cli')" title="Copy to clipboard">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+              <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section class="section section--alt">
+    <div class="container">
+      <div class="section__header">
+        <p class="section__label">Supported Adapters</p>
+        <h2 class="section__title">A Real Runtime-Adapter Layer</h2>
+        <p class="section__desc">
+          ClawJS models a family of runtimes with explicit capabilities and degraded states instead of forcing one universal shape.
+        </p>
+      </div>
+
+      <div class="features-grid">
+        <div class="feature-card">
+          <h3 class="feature-card__title">Core Adapters</h3>
+          <p class="feature-card__desc"><code>demo</code>, <code>openclaw</code>, <code>zeroclaw</code>, <code>picoclaw</code></p>
+        </div>
+        <div class="feature-card">
+          <h3 class="feature-card__title">Extended Adapters</h3>
+          <p class="feature-card__desc"><code>nanobot</code>, <code>nanoclaw</code>, <code>nullclaw</code>, <code>ironclaw</code></p>
+        </div>
+        <div class="feature-card">
+          <h3 class="feature-card__title">Hosted / Bridge Adapters</h3>
+          <p class="feature-card__desc"><code>nemoclaw</code>, <code>hermes</code></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="code-section">
+        <div class="code-section__text">
+          <p class="section__label">Quick Start</p>
+          <h3>Swap runtimes without rewriting your app</h3>
+          <p>
+            The API is built around runtime adapters, workspace contracts, provider catalogs, and normalized conversation transports.
+          </p>
+          <p>
+            Capabilities such as scheduler, memory, skills, channels, sandbox, and plugins are declared explicitly per adapter.
+          </p>
+        </div>
+
+        <div class="code-block">
+          <div class="code-block__header">
+            <span class="code-block__dot"></span>
+            <span class="code-block__dot"></span>
+            <span class="code-block__dot"></span>
+            <span class="code-block__filename">app.ts</span>
+          </div>
+          <pre><code><span class="keyword">import</span> <span class="punctuation">{</span> <span class="function">Claw</span> <span class="punctuation">}</span> <span class="keyword">from</span> <span class="string">"@clawjs/claw"</span><span class="punctuation">;</span>
+
+<span class="keyword">const</span> claw <span class="punctuation">=</span> <span class="keyword">await</span> <span class="function">Claw</span><span class="punctuation">({</span>
+  <span class="property">runtime</span><span class="punctuation">:</span> <span class="punctuation">{</span> <span class="property">adapter</span><span class="punctuation">:</span> <span class="string">"zeroclaw"</span> <span class="punctuation">},</span>
+  <span class="property">workspace</span><span class="punctuation">:</span> <span class="punctuation">{</span>
+    <span class="property">appId</span><span class="punctuation">:</span> <span class="string">"my-app"</span><span class="punctuation">,</span>
+    <span class="property">workspaceId</span><span class="punctuation">:</span> <span class="string">"main"</span><span class="punctuation">,</span>
+    <span class="property">agentId</span><span class="punctuation">:</span> <span class="string">"assistant"</span><span class="punctuation">,</span>
+    <span class="property">rootDir</span><span class="punctuation">:</span> <span class="string">"./workspace"</span><span class="punctuation">,</span>
+  <span class="punctuation">},</span>
+<span class="punctuation">});</span>
+
+<span class="keyword">const</span> status <span class="punctuation">=</span> <span class="keyword">await</span> claw<span class="punctuation">.</span><span class="property">runtime</span><span class="punctuation">.</span><span class="function">status</span><span class="punctuation">();</span>
+console<span class="punctuation">.</span><span class="function">log</span><span class="punctuation">(</span>status<span class="punctuation">.</span><span class="property">capabilityMap</span><span class="punctuation">);</span>
+
+<span class="keyword">await</span> claw<span class="punctuation">.</span><span class="property">workspace</span><span class="punctuation">.</span><span class="function">init</span><span class="punctuation">();</span>
+
+<span class="keyword">const</span> providers <span class="punctuation">=</span> <span class="keyword">await</span> claw<span class="punctuation">.</span><span class="property">providers</span><span class="punctuation">.</span><span class="function">catalog</span><span class="punctuation">();</span>
+<span class="keyword">const</span> models <span class="punctuation">=</span> <span class="keyword">await</span> claw<span class="punctuation">.</span><span class="property">models</span><span class="punctuation">.</span><span class="function">catalog</span><span class="punctuation">();</span>
+
+<span class="keyword">for await</span> <span class="punctuation">(</span><span class="keyword">const</span> event <span class="keyword">of</span> claw<span class="punctuation">.</span><span class="property">conversations</span><span class="punctuation">.</span><span class="function">streamAssistantReplyEvents</span><span class="punctuation">({</span>
+  <span class="property">sessionId</span><span class="punctuation">:</span> <span class="string">"demo"</span><span class="punctuation">,</span>
+<span class="punctuation">}))</span> <span class="punctuation">{</span>
+  console<span class="punctuation">.</span><span class="function">log</span><span class="punctuation">(</span>event<span class="punctuation">);</span>
+<span class="punctuation">}</span></code></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section--alt">
+    <div class="container">
+      <div class="section__header">
+        <p class="section__label">Capabilities</p>
+        <h2 class="section__title">Common Core, Explicit Differences</h2>
+      </div>
+
+      <div class="capabilities">
+        <div class="capability">
+          <div>
+            <div class="capability__title">Runtime lifecycle</div>
+            <div class="capability__desc">`status`, `install`, `uninstall`, `repair`, `setup-workspace`</div>
+          </div>
+        </div>
+        <div class="capability">
+          <div>
+            <div class="capability__title">Workspace contracts</div>
+            <div class="capability__desc">Adapter-defined file layouts with one stable `.clawjs/` layer</div>
+          </div>
+        </div>
+        <div class="capability">
+          <div>
+            <div class="capability__title">Providers and models</div>
+            <div class="capability__desc">Catalogs, auth state, and adapter-driven default model handling</div>
+          </div>
+        </div>
+        <div class="capability">
+          <div>
+            <div class="capability__title">Conversations</div>
+            <div class="capability__desc">CLI, HTTP, SSE, WebSocket, and hybrid fallback transports</div>
+          </div>
+        </div>
+        <div class="capability">
+          <div>
+            <div class="capability__title">Operational state</div>
+            <div class="capability__desc">Compat, doctor, scheduler, memory, skills, and channels snapshots</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="section__header">
+        <p class="section__label">Demo</p>
+        <h2 class="section__title">See It in Action</h2>
+        <p class="section__desc">
+          A full local-first assistant built with ClawJS — chat, onboarding, settings, and integrations with WhatsApp, email, and calendar.
+        </p>
+      </div>
+
+      <div class="features-grid">
+        <a class="feature-card" href="#" data-demo-link>
+          <h3 class="feature-card__title">Live Demo</h3>
+          <p class="feature-card__desc">Explore the complete ClawJS demo app: chat with streaming, workspace setup, provider onboarding, channels, and integration management.</p>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
