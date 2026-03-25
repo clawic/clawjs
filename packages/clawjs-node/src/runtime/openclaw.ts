@@ -3,6 +3,7 @@ import type { CapabilityName, ProgressEvent } from "@clawjs/core";
 import { NodeProcessHost, type ExecResult } from "../host/process.ts";
 import type { RuntimeCompatReport, RuntimeDoctorReport, RuntimeProbeStatus } from "./contracts.ts";
 import { buildRuntimeCapabilityMap, buildRuntimeCompatReport } from "./adapters/shared.ts";
+import { buildOpenClawCommand, resolveOpenClawBinaryPath, type OpenClawCommandOptions } from "./openclaw-command.ts";
 
 export interface OpenClawRuntimeStatus extends RuntimeProbeStatus {}
 export interface CompatReport extends RuntimeCompatReport {}
@@ -20,6 +21,7 @@ export interface RuntimeSetupInput {
 export interface RuntimeCommandSpec {
   command: string;
   args: string[];
+  env?: NodeJS.ProcessEnv;
 }
 
 export type OpenClawRuntimeOperation = "install" | "uninstall" | "setup" | "repair";
@@ -86,6 +88,7 @@ export function buildOpenClawRuntimeProgressPlan(
   operation: OpenClawRuntimeOperation,
   input?: RuntimeSetupInput,
   installer: "npm" | "pnpm" = "npm",
+  commandOptions: OpenClawCommandOptions = {},
 ): OpenClawRuntimeProgressPlan {
   switch (operation) {
     case "install":
@@ -121,7 +124,7 @@ export function buildOpenClawRuntimeProgressPlan(
             "workspace.setup.execute",
             "Register the agent in the target workspace.",
             60,
-            buildOpenClawWorkspaceSetupCommand(input),
+            buildOpenClawWorkspaceSetupCommand(input, commandOptions),
           ),
           buildProgressStep("workspace.setup.finalize", "Workspace setup is ready for orchestration.", 100),
         ],
@@ -136,7 +139,7 @@ export function buildOpenClawRuntimeProgressPlan(
             "runtime.repair.execute",
             "Repair the OpenClaw gateway installation.",
             60,
-            buildOpenClawRepairCommand(),
+            buildOpenClawRepairCommand(commandOptions),
           ),
           buildProgressStep("runtime.repair.finalize", "The runtime can be rechecked after repair.", 100),
         ],
@@ -174,7 +177,10 @@ async function runOpenClawRuntimeProgressPlan(
     }
 
     try {
-      await runner.exec(step.command.command, step.command.args, { timeoutMs });
+      await runner.exec(step.command.command, step.command.args, {
+        env: step.command.env,
+        timeoutMs,
+      });
       emitOpenClawRuntimeProgress(onProgress, {
         operation: plan.operation,
         capability: plan.capability,
@@ -261,16 +267,34 @@ function buildRuntimeDiagnostics(
   };
 }
 
-export async function detectBinary(binary: string, runner: CommandRunner = new NodeProcessHost()): Promise<boolean> {
+export async function detectBinary(
+  binary: string,
+  runner: CommandRunner = new NodeProcessHost(),
+  options: OpenClawCommandOptions = {},
+): Promise<boolean> {
   try {
-    await runner.exec("which", [binary], { timeoutMs: 5_000 });
+    const resolvedBinary = binary === "openclaw" ? resolveOpenClawBinaryPath(options) : binary;
+    if (resolvedBinary.includes("/") || resolvedBinary.includes("\\")) {
+      await runner.exec(resolvedBinary, ["--version"], {
+        env: buildOpenClawCommand([], options).env,
+        timeoutMs: 5_000,
+      });
+      return true;
+    }
+    await runner.exec("which", [resolvedBinary], {
+      env: buildOpenClawCommand([], options).env,
+      timeoutMs: 5_000,
+    });
     return true;
   } catch {
     return false;
   }
 }
 
-export async function probeOpenClawCapabilities(runner: CommandRunner = new NodeProcessHost()): Promise<Record<string, boolean>> {
+export async function probeOpenClawCapabilities(
+  runner: CommandRunner = new NodeProcessHost(),
+  options: OpenClawCommandOptions = {},
+): Promise<Record<string, boolean>> {
   const capabilities: Record<string, boolean> = {
     version: false,
     modelsStatus: false,
@@ -279,7 +303,7 @@ export async function probeOpenClawCapabilities(runner: CommandRunner = new Node
     pluginsList: false,
   };
 
-  const cliAvailable = await detectBinary("openclaw", runner);
+  const cliAvailable = await detectBinary("openclaw", runner, options);
   if (!cliAvailable) return capabilities;
 
   for (const [key, args] of Object.entries({
@@ -290,7 +314,11 @@ export async function probeOpenClawCapabilities(runner: CommandRunner = new Node
     pluginsList: ["plugins", "list", "--json"],
   })) {
     try {
-      await runner.exec("openclaw", args, { timeoutMs: 8_000 });
+      const command = buildOpenClawCommand(args, options);
+      await runner.exec(command.command, command.args, {
+        env: command.env,
+        timeoutMs: 8_000,
+      });
       capabilities[key] = true;
     } catch {
       capabilities[key] = false;
@@ -300,8 +328,11 @@ export async function probeOpenClawCapabilities(runner: CommandRunner = new Node
   return capabilities;
 }
 
-export async function getOpenClawRuntimeStatus(runner: CommandRunner = new NodeProcessHost()): Promise<OpenClawRuntimeStatus> {
-  const cliAvailable = await detectBinary("openclaw", runner);
+export async function getOpenClawRuntimeStatus(
+  runner: CommandRunner = new NodeProcessHost(),
+  options: OpenClawCommandOptions = {},
+): Promise<OpenClawRuntimeStatus> {
+  const cliAvailable = await detectBinary("openclaw", runner, options);
   if (!cliAvailable) {
     const capabilities = {
       version: false,
@@ -346,14 +377,18 @@ export async function getOpenClawRuntimeStatus(runner: CommandRunner = new NodeP
   let version: string | null = null;
   let parseResult: OpenClawVersionParseResult = { version: null, strategy: "empty", family: null };
   try {
-    const versionResult = await runner.exec("openclaw", ["--version"], { timeoutMs: 8_000 });
+    const command = buildOpenClawCommand(["--version"], options);
+    const versionResult = await runner.exec(command.command, command.args, {
+      env: command.env,
+      timeoutMs: 8_000,
+    });
     parseResult = describeOpenClawVersion(versionResult.stdout);
     version = parseResult.version;
   } catch {
     version = null;
   }
 
-  const capabilities = await probeOpenClawCapabilities(runner);
+  const capabilities = await probeOpenClawCapabilities(runner, options);
 
   return {
     adapter: "openclaw",
@@ -481,26 +516,23 @@ export function buildOpenClawUninstallCommand(installer: "npm" | "pnpm" = "npm")
   };
 }
 
-export function buildOpenClawWorkspaceSetupCommand(input: RuntimeSetupInput): RuntimeCommandSpec {
-  return {
-    command: "openclaw",
-    args: [
-      "agents",
-      "add",
-      input.agentId,
-      "--non-interactive",
-      "--workspace",
-      input.workspaceDir,
-      "--json",
-    ],
-  };
+export function buildOpenClawWorkspaceSetupCommand(
+  input: RuntimeSetupInput,
+  options: OpenClawCommandOptions = {},
+): RuntimeCommandSpec {
+  return buildOpenClawCommand([
+    "agents",
+    "add",
+    input.agentId,
+    "--non-interactive",
+    "--workspace",
+    input.workspaceDir,
+    "--json",
+  ], options);
 }
 
-export function buildOpenClawRepairCommand(): RuntimeCommandSpec {
-  return {
-    command: "openclaw",
-    args: ["gateway", "install"],
-  };
+export function buildOpenClawRepairCommand(options: OpenClawCommandOptions = {}): RuntimeCommandSpec {
+  return buildOpenClawCommand(["gateway", "install"], options);
 }
 
 export async function installOpenClawRuntime(
@@ -523,13 +555,15 @@ export async function setupOpenClawWorkspace(
   input: RuntimeSetupInput,
   runner: CommandRunner,
   onProgress?: OpenClawRuntimeProgressSink,
+  options: OpenClawCommandOptions = {},
 ): Promise<void> {
-  await runOpenClawRuntimeProgressPlan(buildOpenClawRuntimeProgressPlan("setup", input), runner, onProgress);
+  await runOpenClawRuntimeProgressPlan(buildOpenClawRuntimeProgressPlan("setup", input, "npm", options), runner, onProgress);
 }
 
 export async function repairOpenClawRuntime(
   runner: CommandRunner,
   onProgress?: OpenClawRuntimeProgressSink,
+  options: OpenClawCommandOptions = {},
 ): Promise<void> {
-  await runOpenClawRuntimeProgressPlan(buildOpenClawRuntimeProgressPlan("repair"), runner, onProgress);
+  await runOpenClawRuntimeProgressPlan(buildOpenClawRuntimeProgressPlan("repair", undefined, "npm", options), runner, onProgress);
 }

@@ -1,4 +1,5 @@
 import type { ModelSummary } from "@clawjs/core";
+import { buildOpenClawCommand, type OpenClawCommandOptions } from "../runtime/openclaw-command.ts";
 
 export interface OpenClawModelsRunner {
   exec(command: string, args: string[], options?: { cwd?: string; env?: NodeJS.ProcessEnv; timeoutMs?: number }): Promise<{ stdout: string; stderr: string; exitCode: number }>;
@@ -167,13 +168,20 @@ export function getDefaultOpenClawModel(status: OpenClawModelsStatusJson): Model
   };
 }
 
-export async function readOpenClawModelsStatus(runner: OpenClawModelsRunner, agentId?: string): Promise<OpenClawModelsStatusJson> {
-  const args = [
+export async function readOpenClawModelsStatus(
+  runner: OpenClawModelsRunner,
+  agentId?: string,
+  options: OpenClawCommandOptions = {},
+): Promise<OpenClawModelsStatusJson> {
+  const command = buildOpenClawCommand([
     "models",
     ...(agentId ? ["--agent", agentId] : []),
     "status",
     "--json",
-  ];
-  const result = await runner.exec("openclaw", args, { timeoutMs: 20_000 });
+  ], options);
+  const result = await runner.exec(command.command, command.args, {
+    env: command.env,
+    timeoutMs: 20_000,
+  });
   return parseOpenClawModelsStatus(result.stdout || "{}");
 }

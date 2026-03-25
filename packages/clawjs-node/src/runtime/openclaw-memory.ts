@@ -1,9 +1,11 @@
 import path from "path";
 
 import type { CommandRunner } from "./contracts.ts";
+import { buildOpenClawCommand, type OpenClawCommandOptions } from "./openclaw-command.ts";
 
 export interface OpenClawMemorySearchCommandOptions {
   agentId?: string;
+  binaryPath?: string;
   limit?: number;
   minScore?: number;
 }
@@ -92,7 +94,7 @@ function unwrapHits(input: unknown): unknown[] {
 export function buildOpenClawMemorySearchCommand(
   query: string,
   options: OpenClawMemorySearchCommandOptions = {},
-): { command: string; args: string[] } {
+): { command: string; args: string[]; env?: NodeJS.ProcessEnv } {
   const args = [
     "memory",
     ...(options.agentId ? ["--agent", options.agentId] : []),
@@ -109,10 +111,7 @@ export function buildOpenClawMemorySearchCommand(
     args.push("--min-score", String(options.minScore));
   }
 
-  return {
-    command: "openclaw",
-    args,
-  };
+  return buildOpenClawCommand(args, options);
 }
 
 export function parseOpenClawMemorySearch(raw: string): OpenClawMemorySearchHit[] {
@@ -128,7 +127,7 @@ export function parseOpenClawMemorySearch(raw: string): OpenClawMemorySearchHit[
 export async function runOpenClawMemorySearch(
   query: string,
   runner: CommandRunner,
-  options: OpenClawMemorySearchCommandOptions & { env?: NodeJS.ProcessEnv; timeoutMs?: number } = {},
+  options: (OpenClawMemorySearchCommandOptions & OpenClawCommandOptions & { timeoutMs?: number }) = {},
 ): Promise<OpenClawMemorySearchHit[]> {
   const command = buildOpenClawMemorySearchCommand(query, options);
   const result = await runner.exec(command.command, command.args, {

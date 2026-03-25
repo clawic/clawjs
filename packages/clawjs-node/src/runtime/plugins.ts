@@ -1,6 +1,7 @@
 import type { CommandRunner, RuntimeAdapterOptions } from "./contracts.ts";
 import { readOpenClawRuntimeConfig, writeOpenClawRuntimeConfig } from "./openclaw-context.ts";
 import { restartOpenClawGateway } from "./gateway.ts";
+import { buildOpenClawCommand } from "./openclaw-command.ts";
 
 export type OpenClawPluginBridgeMode = "managed" | "detect-only" | "off";
 export type OpenClawPluginInstallSource = "npm";
@@ -142,7 +143,11 @@ async function execOpenClawPluginCommand(
   args: string[],
   options: RuntimeAdapterOptions = DEFAULT_PLUGIN_OPTIONS,
 ): Promise<{ stdout: string; stderr: string; exitCode: number }> {
-  return runner.exec("openclaw", args, pluginCommandOptions(options));
+  const command = buildOpenClawCommand(args, options);
+  return runner.exec(command.command, command.args, {
+    ...pluginCommandOptions(options),
+    env: command.env,
+  });
 }
 
 export function resolveOpenClawPluginBridgePolicy(
@@ -194,8 +199,9 @@ export async function listOpenClawHooks(
   runner: CommandRunner,
   options: RuntimeAdapterOptions = DEFAULT_PLUGIN_OPTIONS,
 ): Promise<OpenClawHooksListResult> {
-  const result = await runner.exec("openclaw", ["hooks", "list", "--json"], {
-    env: options.env,
+  const command = buildOpenClawCommand(["hooks", "list", "--json"], options);
+  const result = await runner.exec(command.command, command.args, {
+    env: command.env,
     timeoutMs: 20_000,
   });
   return parseJson<OpenClawHooksListResult>(result.stdout);

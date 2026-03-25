@@ -8,6 +8,7 @@ import {
   providerHasSubscription,
 } from "../models/openclaw-models.ts";
 import { NodeFileSystemHost, resolveFileLockPath } from "../host/filesystem.ts";
+import { buildOpenClawCommand, type OpenClawCommandOptions } from "../runtime/openclaw-command.ts";
 
 export interface OpenClawAuthCredential {
   type: "api_key" | "token" | "oauth";
@@ -169,15 +170,20 @@ export function launchOpenClawAuthLogin(
   provider: string,
   launcher: DetachedAuthLauncher,
   agentId?: string,
-  options: { setDefault?: boolean; cwd?: string; env?: NodeJS.ProcessEnv } = {},
+  options: { setDefault?: boolean; cwd?: string; env?: NodeJS.ProcessEnv; binaryPath?: string } = {},
 ): OpenClawAuthLaunchResult {
   const command = buildOpenClawAuthLoginCommand(provider, agentId, {
     setDefault: options.setDefault,
   });
-  const spawned = launcher.spawnDetachedPty("openclaw", command.args, {
-    cwd: options.cwd,
-    env: options.env,
-  });
+  const runtimeCommand = buildOpenClawCommand(command.args, options);
+  const spawned = launcher.spawnDetachedPty(
+    runtimeCommand.command,
+    command.args,
+    {
+      cwd: options.cwd,
+      env: runtimeCommand.env,
+    },
+  );
 
   return {
     provider: command.provider,
@@ -322,11 +328,16 @@ export async function setDefaultModel(
   model: string,
   runner: OpenClawAuthRunner,
   agentId?: string,
+  options: OpenClawCommandOptions = {},
 ): Promise<string> {
   const { buildSetDefaultModelCommand } = await import("../models/openclaw-models.ts");
   const command = buildSetDefaultModelCommand(model, agentId);
   try {
-    await runner.exec("openclaw", command.args, { timeoutMs: 20_000 });
+    const runtimeCommand = buildOpenClawCommand(command.args, options);
+    await runner.exec(runtimeCommand.command, runtimeCommand.args, {
+      env: runtimeCommand.env,
+      timeoutMs: 20_000,
+    });
     return command.modelId;
   } catch (error) {
     throw new Error(`Failed to set default model ${command.modelId}: ${error instanceof Error ? error.message : "unknown error"}`);

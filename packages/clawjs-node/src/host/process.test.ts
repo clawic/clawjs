@@ -22,6 +22,14 @@ test("stream yields stdout through callbacks", async () => {
   assert.equal(seen, "chunk");
 });
 
+test("exec surfaces a clearer message when the command is missing", async () => {
+  const host = new NodeProcessHost();
+  await assert.rejects(
+    () => host.exec("definitely-not-a-real-command-clawjs", []),
+    /Command not found: definitely-not-a-real-command-clawjs/,
+  );
+});
+
 test("buildDetachedPtySpec wraps commands for the current platform", () => {
   const spec = buildDetachedPtySpec("openclaw", ["models", "status", "--json"]);
 

@@ -71,6 +71,9 @@ The current Playwright specs are:
 - [generator-smoke.spec.ts](./generator-smoke.spec.ts)
   Scaffolds a `create-claw-app` project into a temp directory, installs dependencies, builds it, boots it, and performs a smoke request.
 
+- [sdk-openclaw-binary-path.spec.ts](./sdk-openclaw-binary-path.spec.ts)
+  Verifies the published SDK can target an explicit OpenClaw binary path even when the binary is not available on `PATH`, and captures a final validation screenshot.
+
 - [repository-package-surface.spec.ts](./repository-package-surface.spec.ts)
   Verifies unpublished package names are absent from the public repo surface and captures a final browser screenshot of the cleaned docs state.
 
@@ -188,6 +191,7 @@ The current blocking suite covers the main mutable demo surfaces and the generat
 - sidebar navigation and session switching
 - hermetic API contracts
 - one generator smoke
+- one SDK binary-path smoke
 
 What still remains outside the blocking browser suite is primarily depth, not breadth:
 

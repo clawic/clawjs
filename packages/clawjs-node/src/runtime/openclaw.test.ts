@@ -368,3 +368,44 @@ exit 0
 
   assert.match(fs.readFileSync(npmLog, "utf8"), /install -g openclaw/);
 });
+
+test("runtime status can use an explicit OpenClaw binary path outside PATH", async () => {
+  const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "clawjs-openclaw-explicit-bin-"));
+  const openclawPath = path.join(rootDir, "custom-openclaw");
+
+  fs.writeFileSync(openclawPath, `#!/bin/sh
+if [ "$1" = "--version" ]; then
+  echo "openclaw 9.9.9"
+  exit 0
+fi
+if [ "$1" = "models" ] && [ "$2" = "status" ]; then
+  echo "{}"
+  exit 0
+fi
+if [ "$1" = "agents" ] && [ "$2" = "list" ]; then
+  echo "[]"
+  exit 0
+fi
+if [ "$1" = "plugins" ] && [ "$2" = "list" ]; then
+  echo '{"plugins":[]}'
+  exit 0
+fi
+if [ "$1" = "gateway" ] && [ "$2" = "call" ]; then
+  exit 1
+fi
+echo "{}"
+exit 0
+`, { mode: 0o755 });
+
+  const host = new NodeProcessHost();
+  const status = await getOpenClawRuntimeStatus(host, {
+    binaryPath: openclawPath,
+    env: {
+      ...process.env,
+      PATH: process.env.PATH || "",
+    },
+  });
+
+  assert.equal(status.cliAvailable, true);
+  assert.equal(status.version, "9.9.9");
+});

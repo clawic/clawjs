@@ -1,5 +1,13 @@
 import { execFile, spawn } from "child_process";
 
+function buildCommandNotFoundMessage(command: string, error: Error & { code?: unknown }): string {
+  const isExplicitPath = command.includes("/") || command.includes("\\");
+  if (isExplicitPath) {
+    return `Command not found: ${command}. Ensure the configured binary exists and is executable.`;
+  }
+  return `Command not found: ${command}. Ensure it is installed and available on PATH.`;
+}
+
 export interface ExecResult {
   stdout: string;
   stderr: string;
@@ -72,7 +80,10 @@ export class NodeProcessHost {
             exitCode,
           };
           if (error) {
-            reject(Object.assign(new Error(stderr?.trim() || error.message), { result }));
+            const message = error.code === "ENOENT"
+              ? buildCommandNotFoundMessage(command, error)
+              : stderr?.trim() || error.message;
+            reject(Object.assign(new Error(message), { result, code: error.code }));
             return;
           }
           resolve(result);
@@ -113,7 +124,14 @@ export class NodeProcessHost {
 
       child.on("error", (error) => {
         if (timeoutId) clearTimeout(timeoutId);
-        reject(error);
+        const normalized = error instanceof Error
+          ? Object.assign(new Error(
+            (error as Error & { code?: unknown }).code === "ENOENT"
+              ? buildCommandNotFoundMessage(command, error as Error & { code?: unknown })
+              : error.message,
+          ), { code: (error as Error & { code?: unknown }).code })
+          : error;
+        reject(normalized);
       });
 
       child.on("close", (code) => {

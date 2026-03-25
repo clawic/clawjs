@@ -5,6 +5,7 @@ import type { Message, PromptContextBlock, StreamChunk } from "@clawjs/core";
 import type { CommandRunner, RuntimeConversationAdapter, ConversationGatewayDescriptor } from "../runtime/contracts.ts";
 import { buildOpenAIMessages, buildOpenClawCliPrompt } from "./prompt.ts";
 import { DEFAULT_SESSION_TITLE, suggestConversationTitle } from "./transcript.ts";
+import { buildOpenClawCommand } from "../runtime/openclaw-command.ts";
 
 export interface StreamConversationInput {
   sessionId: string;
@@ -75,8 +76,7 @@ function createFallbackOpenClawConversationAdapter(
       }
       const agentId = cliInput.agentId ?? input.agentId!;
       return {
-        command: "openclaw",
-        args: [
+        ...buildOpenClawCommand([
           "agent",
           "--agent",
           agentId,
@@ -89,7 +89,7 @@ function createFallbackOpenClawConversationAdapter(
           "--json",
           "--timeout",
           "120",
-        ],
+        ]),
         timeoutMs: 130_000,
         parser: "json-payloads",
       };
@@ -253,7 +253,10 @@ async function* streamCliChunks(
     prompt,
     ...(input.model ? { model: input.model } : {}),
   });
-  const result = await runner.exec(invocation.command, invocation.args, { timeoutMs: invocation.timeoutMs ?? 130_000 });
+  const result = await runner.exec(invocation.command, invocation.args, {
+    env: invocation.env,
+    timeoutMs: invocation.timeoutMs ?? 130_000,
+  });
 
   const text = invocation.parser === "json-payloads"
     ? extractJsonPayloadText(result.stdout)

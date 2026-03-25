@@ -103,6 +103,7 @@ export interface RuntimeAdapterPaths {
 
 export interface RuntimeAdapterOptions {
   adapter: RuntimeAdapterId;
+  binaryPath?: string;
   agentId?: string;
   agentDir?: string;
   homeDir?: string;
@@ -151,6 +152,7 @@ export interface SaveApiKeyResult {
 export interface ConversationCliInvocation {
   command: string;
   args: string[];
+  env?: NodeJS.ProcessEnv;
   timeoutMs?: number;
   parser: "json-payloads" | "stdout-text";
 }

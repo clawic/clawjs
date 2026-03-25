@@ -164,11 +164,14 @@ If an adapter exposes only one agent, ClawJS still uses the `agent` term. If an 
 
 Use adapter-specific location overrides when you need them:
 
+- `binaryPath` for runtimes like `openclaw` when the binary is installed outside the current `PATH`
 - `homeDir`
 - `configPath`
 - `workspacePath`
 - `authStorePath`
 - `gateway.configPath`
+
+For OpenClaw specifically, you can also set `CLAWJS_OPENCLAW_PATH` if you prefer an environment variable over `runtime.binaryPath`.
 
 ## Inspect and validate
 

@@ -12,7 +12,11 @@ import { Claw } from "@clawjs/claw";
 
 ```ts
 const claw = await Claw({
-  runtime: { adapter: "openclaw" },
+  runtime: {
+    adapter: "openclaw",
+    // Use this when openclaw is installed outside the current PATH.
+    binaryPath: "/opt/openclaw/bin/openclaw",
+  },
   workspace: {
     appId: "demo",
     workspaceId: "demo-main",

@@ -3,6 +3,7 @@ import type { Message } from "@clawjs/core";
 import { summarizeTitle } from "./transcript.ts";
 import type { CommandRunner, ConversationGatewayDescriptor, RuntimeConversationAdapter } from "../runtime/contracts.ts";
 import { extractJsonPayloadText } from "./stream.ts";
+import { buildOpenClawCommand } from "../runtime/openclaw-command.ts";
 
 function normalizeText(value: string): string {
   return value.replace(/\s+/g, " ").trim();
@@ -76,6 +77,7 @@ async function generateTitleViaCli(
     prompt: buildTitlePrompt(messages),
   });
   const result = await runner.exec(invocation.command, invocation.args, {
+    env: invocation.env,
     timeoutMs: invocation.timeoutMs ?? 65_000,
   });
 
@@ -124,8 +126,7 @@ export async function generateRuntimeConversationTitle(input: {
             throw new Error("agentId is required for OpenClaw CLI title generation");
           }
           return {
-            command: "openclaw",
-            args: [
+            ...buildOpenClawCommand([
               "agent",
               "--agent",
               cliInput.agentId,
@@ -136,7 +137,7 @@ export async function generateRuntimeConversationTitle(input: {
               "--json",
               "--timeout",
               "60",
-            ],
+            ]),
             timeoutMs: 65_000,
             parser: "json-payloads" as const,
           };

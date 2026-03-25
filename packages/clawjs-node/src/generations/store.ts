@@ -360,7 +360,10 @@ function resolveOpenClawSkillsDir(filesystem: NodeFileSystemHost, env: NodeJS.Pr
     return explicit;
   }
 
-  const openclawBinary = resolveBinaryOnPath("openclaw", env);
+  const configuredBinary = resolveEnvValue(env, "CLAWJS_OPENCLAW_PATH");
+  const openclawBinary = configuredBinary && isExecutablePath(configuredBinary)
+    ? configuredBinary
+    : resolveBinaryOnPath("openclaw", env);
   const candidates = new Set<string>();
   if (openclawBinary) {
     const resolvedBinary = fs.realpathSync.native?.(openclawBinary) ?? fs.realpathSync(openclawBinary);

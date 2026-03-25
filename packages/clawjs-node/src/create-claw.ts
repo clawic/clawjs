@@ -159,6 +159,7 @@ import {
   type RuntimeProbeStatus,
   type SaveApiKeyResult,
 } from "./runtime/index.ts";
+import { withOpenClawBinaryEnv, withOpenClawCommandRunner } from "./runtime/openclaw-command.ts";
 import {
   disableManagedOpenClawPlugins,
   doctorOpenClawPlugins,
@@ -213,6 +214,7 @@ import {
 export interface CreateClawOptions {
   runtime: {
     adapter: RuntimeAdapterId;
+    binaryPath?: string;
     agentDir?: string;
     homeDir?: string;
     configPath?: string;
@@ -695,23 +697,33 @@ function extractSessionIdFromSourcePath(sourcePath?: string): string | null {
 
 export async function createClaw(options: CreateClawOptions): Promise<ClawInstance> {
   const filesystem = new NodeFileSystemHost();
-  const processHost = new NodeProcessHost();
+  const baseProcessHost = new NodeProcessHost();
   const audit = new WorkspaceAuditLog(filesystem);
   const workspaceDir = options.workspace.rootDir;
   const conversationStore = new ConversationStore(workspaceDir, { filesystem });
   const dataStore = createWorkspaceDataStore(workspaceDir, filesystem);
+  const adapter = getRuntimeAdapter(options.runtime.adapter);
+  const runtimeEnv = adapter.id === "openclaw"
+    ? withOpenClawBinaryEnv(options.runtime.env, options.runtime.binaryPath)
+    : options.runtime.env;
+  const processHost = adapter.id === "openclaw"
+    ? withOpenClawCommandRunner(baseProcessHost, {
+        binaryPath: options.runtime.binaryPath,
+        env: runtimeEnv,
+      })
+    : baseProcessHost;
   const generationStore = createGenerationStore({
     workspaceDir,
     runtimeAdapter: options.runtime.adapter,
     filesystem,
     processHost,
     dataStore,
-    env: options.runtime.env,
+    env: runtimeEnv,
   });
   const eventBus = new ClawEventBus();
-  const adapter = getRuntimeAdapter(options.runtime.adapter);
   const runtimeOptions: RuntimeAdapterOptions = {
     adapter: adapter.id,
+    binaryPath: options.runtime.binaryPath,
     agentId: options.workspace.agentId,
     agentDir: options.runtime.agentDir,
     homeDir: options.runtime.homeDir,
@@ -719,7 +731,7 @@ export async function createClaw(options: CreateClawOptions): Promise<ClawInstan
     workspacePath: options.runtime.workspacePath ?? workspaceDir,
     authStorePath: options.runtime.authStorePath,
     gateway: options.runtime.gateway,
-    env: options.runtime.env,
+    env: runtimeEnv,
   };
   const resolvedLocations = adapter.resolveLocations(runtimeOptions);
   const resolvedRuntimeOptions: RuntimeAdapterOptions = {
@@ -1107,16 +1119,26 @@ export async function createClaw(options: CreateClawOptions): Promise<ClawInstan
     const whatsappChannel = whatsapp.channel();
     try {
       const channels = await adapter.listChannels(processHost, resolvedRuntimeOptions);
+      const runtimeChannelMap = new Map(channels.map((channel) => [channel.id, channel]));
       const filtered = channels.filter((channel) => channel.id !== "telegram" && channel.id !== "slack" && channel.id !== "whatsapp");
       const result = [...filtered];
-      if (telegramChannel.status !== "disconnected" || readTelegramStateSnapshot(workspaceDir, filesystem)) {
+      const shouldUseLocalTelegram = telegramChannel.status !== "disconnected" || !!readTelegramStateSnapshot(workspaceDir, filesystem);
+      if (shouldUseLocalTelegram) {
         result.push(telegramChannel);
+      } else if (runtimeChannelMap.has("telegram")) {
+        result.push(runtimeChannelMap.get("telegram")!);
       }
-      if (slackChannel.status !== "disconnected" || readSlackStateSnapshot(workspaceDir, filesystem)) {
+      const shouldUseLocalSlack = slackChannel.status !== "disconnected" || !!readSlackStateSnapshot(workspaceDir, filesystem);
+      if (shouldUseLocalSlack) {
         result.push(slackChannel);
+      } else if (runtimeChannelMap.has("slack")) {
+        result.push(runtimeChannelMap.get("slack")!);
       }
-      if (whatsappChannel.status !== "disconnected" || readWhatsAppStateSnapshot(workspaceDir, filesystem)) {
+      const shouldUseLocalWhatsApp = whatsappChannel.status !== "disconnected" || !!readWhatsAppStateSnapshot(workspaceDir, filesystem);
+      if (shouldUseLocalWhatsApp) {
         result.push(whatsappChannel);
+      } else if (runtimeChannelMap.has("whatsapp")) {
+        result.push(runtimeChannelMap.get("whatsapp")!);
       }
       return result;
     } catch {

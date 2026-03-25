@@ -42,6 +42,7 @@ import {
   setupOpenClawWorkspace,
   uninstallOpenClawRuntime,
 } from "../openclaw.ts";
+import { buildOpenClawCommand, withOpenClawBinaryEnv } from "../openclaw-command.ts";
 import {
   buildOpenClawAuthDiagnostics,
   launchOpenClawAuthLogin,
@@ -71,7 +72,8 @@ const OPENCLAW_WORKSPACE_FILES: RuntimeFileDescriptor[] = [
   { key: "HEARTBEAT", path: "HEARTBEAT.md", required: true, visibleToUser: true, seedPolicy: "seed_if_missing" },
 ];
 
-function withRuntimeEnv(runner: CommandRunner, env?: NodeJS.ProcessEnv): CommandRunner {
+function withRuntimeEnv(runner: CommandRunner, options: Pick<RuntimeAdapterOptions, "env" | "binaryPath"> = {}): CommandRunner {
+  const env = withOpenClawBinaryEnv(options.env, options.binaryPath);
   if (!env) return runner;
   return {
     exec(command, args, options = {}) {
@@ -87,13 +89,13 @@ function withRuntimeEnv(runner: CommandRunner, env?: NodeJS.ProcessEnv): Command
 }
 
 async function readProviderState(runner: CommandRunner, options: RuntimeAdapterOptions): Promise<Record<string, ProviderAuthSummary>> {
-  const status = await readOpenClawModelsStatus(withRuntimeEnv(runner, options.env), options.agentId);
+  const status = await readOpenClawModelsStatus(withRuntimeEnv(runner, options), options.agentId, options);
   const authStore = options.agentDir ? loadAuthStore(options.agentDir) : null;
   return normalizeAuthSummaries(status, authStore);
 }
 
 async function listProviders(runner: CommandRunner, options: RuntimeAdapterOptions): Promise<ProviderDescriptor[]> {
-  const status = await readOpenClawModelsStatus(withRuntimeEnv(runner, options.env), options.agentId);
+  const status = await readOpenClawModelsStatus(withRuntimeEnv(runner, options), options.agentId, options);
   return (status.auth?.providers ?? []).map((provider) => ({
     id: provider.provider,
     label: provider.provider,
@@ -107,7 +109,7 @@ async function listProviders(runner: CommandRunner, options: RuntimeAdapterOptio
 }
 
 async function listModels(runner: CommandRunner, options: RuntimeAdapterOptions): Promise<ModelDescriptor[]> {
-  const status = await readOpenClawModelsStatus(withRuntimeEnv(runner, options.env), options.agentId);
+  const status = await readOpenClawModelsStatus(withRuntimeEnv(runner, options), options.agentId, options);
   return listOpenClawModels(status).map((model) => ({
     ...model,
     ref: {
@@ -189,7 +191,7 @@ export const openclawAdapter: RuntimeAdapter = {
     };
   },
   async getStatus(runner = new NodeProcessHost(), options = { adapter: "openclaw" }): Promise<RuntimeProbeStatus> {
-    const status = await getOpenClawRuntimeStatus(withRuntimeEnv(runner, options.env));
+    const status = await getOpenClawRuntimeStatus(withRuntimeEnv(runner, options), options);
     const capabilityMap = buildRuntimeCapabilityMap({
       runtime: { supported: true, status: status.cliAvailable ? "ready" : "error", strategy: "cli" },
       workspace: { supported: true, status: "ready", strategy: "native" },
@@ -270,7 +272,7 @@ export const openclawAdapter: RuntimeAdapter = {
   },
   listModels,
   async getDefaultModel(runner, options) {
-    const model = getDefaultOpenClawModel(await readOpenClawModelsStatus(withRuntimeEnv(runner, options.env), options.agentId));
+    const model = getDefaultOpenClawModel(await readOpenClawModelsStatus(withRuntimeEnv(runner, options), options.agentId, options));
     return model ? {
       provider: model.provider,
       modelId: model.id,
@@ -278,7 +280,7 @@ export const openclawAdapter: RuntimeAdapter = {
     } : null;
   },
   setDefaultModel(model, runner, options) {
-    return setDefaultModel(model, runner, options.agentId);
+    return setDefaultModel(model, runner, options.agentId, options);
   },
   getProviderAuth(runner, options) {
     return readProviderState(runner, options);
@@ -292,6 +294,7 @@ export const openclawAdapter: RuntimeAdapter = {
     const launched = launchOpenClawAuthLogin(provider, launcher, options.agentId, {
       setDefault: options.setDefault,
       cwd: options.cwd,
+      binaryPath: options.binaryPath,
       env: options.env,
     });
     return launched;
@@ -344,6 +347,7 @@ export const openclawAdapter: RuntimeAdapter = {
   async searchMemory(query, runner, options): Promise<MemoryDescriptor[]> {
     const hits = await runOpenClawMemorySearch(query, runner, {
       agentId: options.agentId,
+      binaryPath: options.binaryPath,
       env: options.env,
     });
     return hits.map((hit, index) => ({
@@ -363,6 +367,7 @@ export const openclawAdapter: RuntimeAdapter = {
   },
   async listChannels(runner, options): Promise<ChannelDescriptor[]> {
     return listOpenClawChannels(runner, {
+      binaryPath: options.binaryPath,
       url: options.gateway?.url,
       token: options.gateway?.token,
       port: options.gateway?.port,
@@ -388,8 +393,7 @@ export const openclawAdapter: RuntimeAdapter = {
           throw new Error("agentId is required for OpenClaw CLI conversations");
         }
         return {
-          command: "openclaw",
-          args: [
+          ...buildOpenClawCommand([
             "agent",
             "--agent",
             input.agentId,
@@ -402,7 +406,7 @@ export const openclawAdapter: RuntimeAdapter = {
             "--json",
             "--timeout",
             "120",
-          ],
+          ], options),
           timeoutMs: 130_000,
           parser: "json-payloads",
         };

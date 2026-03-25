@@ -104,6 +104,9 @@ import { Claw } from "@clawjs/claw";
 const claw = await Claw({
   runtime: {
     adapter: "openclaw",
+    // Optional: point directly at the installed OpenClaw binary
+    // when the current PATH does not include it.
+    binaryPath: "/opt/openclaw/bin/openclaw",
   },
   workspace: {
     appId: "demo",
@@ -116,6 +119,8 @@ const claw = await Claw({
 const status = await claw.runtime.status();
 console.log(status.capabilityMap);
 ```
+
+If the OpenClaw CLI is installed outside the current `PATH`, set `runtime.binaryPath` in code or export `CLAWJS_OPENCLAW_PATH`.
 
 ## Project scaffolding
 

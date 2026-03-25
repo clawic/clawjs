@@ -5,6 +5,7 @@ import path from "path";
 import type { ChannelDescriptor } from "@clawjs/core";
 
 import type { CommandRunner } from "./contracts.ts";
+import { buildOpenClawCommand } from "./openclaw-command.ts";
 
 export interface OpenClawGatewayConfig {
   url: string;
@@ -74,6 +75,7 @@ export interface OpenClawGatewayChannelsResponse {
 }
 
 export interface GatewayConfigOptions {
+  binaryPath?: string;
   url?: string;
   token?: string;
   port?: number;
@@ -308,8 +310,9 @@ export async function callOpenClawGateway(
 
   args.push(method);
 
-  const result = await options.runner.exec("openclaw", args, {
-    env: options.env,
+  const command = buildOpenClawCommand(args, options);
+  const result = await options.runner.exec(command.command, command.args, {
+    env: command.env,
     timeoutMs: options.timeoutMs ?? 12_000,
   });
   return parseGatewayCallOutput(result.stdout);
@@ -384,22 +387,25 @@ export async function listOpenClawChannels(
 }
 
 export async function startOpenClawGateway(runner: CommandRunner, options: GatewayConfigOptions = {}): Promise<void> {
-  await runner.exec("openclaw", ["gateway", "start"], {
-    env: options.env,
+  const command = buildOpenClawCommand(["gateway", "start"], options);
+  await runner.exec(command.command, command.args, {
+    env: command.env,
     timeoutMs: 20_000,
   });
 }
 
 export async function stopOpenClawGateway(runner: CommandRunner, options: GatewayConfigOptions = {}): Promise<void> {
-  await runner.exec("openclaw", ["gateway", "stop"], {
-    env: options.env,
+  const command = buildOpenClawCommand(["gateway", "stop"], options);
+  await runner.exec(command.command, command.args, {
+    env: command.env,
     timeoutMs: 20_000,
   });
 }
 
 export async function restartOpenClawGateway(runner: CommandRunner, options: GatewayConfigOptions = {}): Promise<void> {
-  await runner.exec("openclaw", ["gateway", "restart"], {
-    env: options.env,
+  const command = buildOpenClawCommand(["gateway", "restart"], options);
+  await runner.exec(command.command, command.args, {
+    env: command.env,
     timeoutMs: 20_000,
   });
 }

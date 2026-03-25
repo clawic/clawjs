@@ -184,6 +184,43 @@ exit 0
   return { binDir, openclawLog };
 }
 
+function createExplicitOpenClawToolchain(): { binaryPath: string; openclawLog: string } {
+  const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "clawjs-openclaw-explicit-runtime-"));
+  const openclawLog = path.join(rootDir, "openclaw.log");
+  const binaryPath = path.join(rootDir, "custom-openclaw");
+
+  fs.writeFileSync(binaryPath, `#!/bin/sh
+echo "$@" >> "${openclawLog}"
+if [ "$1" = "--version" ]; then
+  echo "openclaw 3.2.1"
+  exit 0
+fi
+if [ "$1" = "models" ] && [ "$2" = "status" ]; then
+  echo "{}"
+  exit 0
+fi
+if [ "$1" = "agents" ] && [ "$2" = "list" ]; then
+  echo "[]"
+  exit 0
+fi
+if [ "$1" = "plugins" ] && [ "$2" = "list" ]; then
+  echo '{"plugins":[],"diagnostics":[]}'
+  exit 0
+fi
+if [ "$1" = "agents" ] && [ "$2" = "add" ]; then
+  echo "{}"
+  exit 0
+fi
+if [ "$1" = "gateway" ] && [ "$2" = "call" ]; then
+  exit 1
+fi
+echo "{}"
+exit 0
+`, { mode: 0o755 });
+
+  return { binaryPath, openclawLog };
+}
+
 function createFakeOpenClawChannelsToolchain(): { binDir: string; configPath: string } {
   const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "clawjs-openclaw-channels-"));
   const binDir = path.join(rootDir, "bin");
@@ -1225,6 +1262,34 @@ test("createClaw exposes OpenClaw channels through the public channels API", asy
     },
   });
   assert.equal(inspected.channelsState?.channels.some((channel) => channel.id === "whatsapp" && channel.status === "connected"), true);
+});
+
+test("createClaw can use runtime.binaryPath when OpenClaw is outside PATH", async () => {
+  const workspaceDir = fs.mkdtempSync(path.join(os.tmpdir(), "clawjs-instance-openclaw-explicit-"));
+  const { binaryPath, openclawLog } = createExplicitOpenClawToolchain();
+  const claw = await createClaw({
+    runtime: {
+      adapter: "openclaw",
+      binaryPath,
+      env: {
+        ...process.env,
+        PATH: process.env.PATH || "",
+      },
+    },
+    workspace: {
+      appId: "demo",
+      workspaceId: "demo-openclaw-explicit",
+      agentId: "demo-openclaw-explicit",
+      rootDir: workspaceDir,
+    },
+  });
+
+  const status = await claw.runtime.status();
+  await claw.runtime.setupWorkspace();
+
+  assert.equal(status.cliAvailable, true);
+  assert.equal(status.version, "3.2.1");
+  assert.match(fs.readFileSync(openclawLog, "utf8"), /agents add demo-openclaw-explicit/);
 });
 
 test("createClaw exposes external skill sources and search results", async () => {
