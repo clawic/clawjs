@@ -6,7 +6,6 @@ const rootDir = path.resolve(new URL("..", import.meta.url).pathname);
 const docRoots = [
   path.join(rootDir, "README.md"),
   path.join(rootDir, "docs"),
-  path.join(rootDir, "website", "docs"),
 ];
 
 const forbiddenPatterns = [
@@ -59,6 +58,7 @@ const forbiddenPatterns = [
 const requiredSnippets = [
   {
     file: path.join(rootDir, "website", "docs", "api.html"),
+    file: path.join(rootDir, "docs", "site", "api.html"),
     snippets: [
       "claw.telegram",
       "claw.secrets",
@@ -69,7 +69,7 @@ const requiredSnippets = [
     ],
   },
   {
-    file: path.join(rootDir, "website", "docs", "cli.html"),
+    file: path.join(rootDir, "docs", "site", "cli.html"),
     snippets: [
       "files apply-template-pack",
       "telegram webhook set",
@@ -80,7 +80,7 @@ const requiredSnippets = [
     ],
   },
   {
-    file: path.join(rootDir, "website", "docs", "files.html"),
+    file: path.join(rootDir, "docs", "site", "files.html"),
     snippets: [
       "writeWorkspaceFilePreservingManagedBlocks",
       "updateSettings",
@@ -89,7 +89,7 @@ const requiredSnippets = [
     ],
   },
   {
-    file: path.join(rootDir, "website", "docs", "watchers.html"),
+    file: path.join(rootDir, "docs", "site", "watchers.html"),
     snippets: [
       "claw.watch.runtimeStatus",
       "claw.watch.providerStatus",
@@ -164,24 +164,24 @@ for (const href of docHrefMatches) {
   if (href.startsWith("http")) continue;
   if (!href.startsWith("/docs/")) continue;
   const relative = href.replace(/^\/docs\//, "");
-  const targetPath = relative ? path.join(rootDir, "website", "docs", relative) : path.join(rootDir, "website", "docs", "index.html");
+  const targetPath = relative ? path.join(rootDir, "docs", "site", relative) : path.join(rootDir, "docs", "site", "index.html");
   if (!fs.existsSync(targetPath)) {
     violations.push(`website/src/docs-nav.js references missing doc page ${href}`);
   }
 }
 
-const surfacePath = path.join(rootDir, "website", "docs", "surface.html");
+const surfacePath = path.join(rootDir, "docs", "site", "surface.html");
 const surfaceRaw = read(surfacePath);
 
 for (const exportName of extractExports(path.join(rootDir, "packages", "clawjs-node", "dist", "index.d.ts"))) {
   if (!surfaceRaw.includes(exportName)) {
-    violations.push(`website/docs/surface.html is missing @clawjs/claw export ${exportName}`);
+    violations.push(`docs/site/surface.html is missing @clawjs/claw export ${exportName}`);
   }
 }
 
 for (const exportName of extractExports(path.join(rootDir, "packages", "clawjs-core", "dist", "index.d.ts"))) {
   if (!surfaceRaw.includes(exportName)) {
-    violations.push(`website/docs/surface.html is missing @clawjs/core export ${exportName}`);
+    violations.push(`docs/site/surface.html is missing @clawjs/core export ${exportName}`);
   }
 }
 

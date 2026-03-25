@@ -16,6 +16,7 @@ const defaultSpecFiles = [
   "tests/e2e/demo-workspace.spec.ts",
   "tests/e2e/repository-package-surface.spec.ts",
   "tests/e2e/repository-release-readiness.spec.ts",
+  "tests/e2e/website-docs.spec.ts",
   "tests/e2e/generator-smoke.spec.ts",
 ];
 

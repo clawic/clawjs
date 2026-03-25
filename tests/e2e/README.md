@@ -74,11 +74,17 @@ The current Playwright specs are:
 - [sdk-openclaw-binary-path.spec.ts](./sdk-openclaw-binary-path.spec.ts)
   Verifies the published SDK can target an explicit OpenClaw binary path even when the binary is not available on `PATH`, and captures a final validation screenshot.
 
+- [sdk-openclaw-regressions.spec.ts](./sdk-openclaw-regressions.spec.ts)
+  Verifies the published SDK preserves the `status.installed` and `modelId` compatibility aliases and surfaces gateway lifecycle failures as explicit errors, with a final validation screenshot.
+
 - [repository-package-surface.spec.ts](./repository-package-surface.spec.ts)
   Verifies unpublished package names are absent from the public repo surface and captures a final browser screenshot of the cleaned docs state.
 
 - [repository-release-readiness.spec.ts](./repository-release-readiness.spec.ts)
   Verifies the repository keeps the expected OSS release baseline.
+
+- [website-docs.spec.ts](./website-docs.spec.ts)
+  Builds the Vite docs site from `docs/site`, serves the generated output, and captures a final screenshot of the retained docs UI.
 
 ## How hermetic mode works
 
