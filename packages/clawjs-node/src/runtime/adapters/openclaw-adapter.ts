@@ -114,7 +114,7 @@ async function listModels(runner: CommandRunner, options: RuntimeAdapterOptions)
     ...model,
     ref: {
       provider: model.provider,
-      modelId: model.id,
+      modelId: model.modelId ?? model.id,
       label: model.label,
     },
     source: "runtime",
@@ -219,6 +219,7 @@ export const openclawAdapter: RuntimeAdapter = {
       compat: { supported: true, status: "ready", strategy: "native" },
     });
     return {
+      installed: status.cliAvailable,
       ...status,
       capabilityMap,
     };
@@ -275,7 +276,7 @@ export const openclawAdapter: RuntimeAdapter = {
     const model = getDefaultOpenClawModel(await readOpenClawModelsStatus(withRuntimeEnv(runner, options), options.agentId, options));
     return model ? {
       provider: model.provider,
-      modelId: model.id,
+      modelId: model.modelId ?? model.id,
       label: model.label,
     } : null;
   },

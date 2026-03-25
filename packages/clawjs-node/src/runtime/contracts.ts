@@ -27,6 +27,7 @@ import type {
 import type { ExecResult } from "../host/process.ts";
 
 export interface RuntimeProbeStatus extends RuntimeInfo {
+  installed?: boolean;
   cliAvailable: boolean;
   gatewayAvailable: boolean;
   diagnostics: Record<string, unknown>;

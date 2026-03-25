@@ -231,6 +231,7 @@ export const zeroclawAdapter: RuntimeAdapter = {
         adapter: "zeroclaw",
         runtimeName: "ZeroClaw",
         version: null,
+        installed: false,
         cliAvailable: false,
         gatewayAvailable: false,
         capabilities,
@@ -283,6 +284,7 @@ export const zeroclawAdapter: RuntimeAdapter = {
       adapter: "zeroclaw",
       runtimeName: "ZeroClaw",
       version,
+      installed: true,
       cliAvailable: true,
       gatewayAvailable: capabilities.gateway,
       capabilities,
@@ -426,6 +428,7 @@ export const zeroclawAdapter: RuntimeAdapter = {
     if (!defaultModel) return [];
     return [{
       id: defaultModel.modelId,
+      modelId: defaultModel.modelId,
       provider: defaultModel.provider ?? "default",
       label: defaultModel.label ?? defaultModel.modelId,
       available: true,

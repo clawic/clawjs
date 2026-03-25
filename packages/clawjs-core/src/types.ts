@@ -109,6 +109,7 @@ export interface RuntimeInfo {
   version: string | null;
   capabilities: Record<string, boolean>;
   capabilityMap: RuntimeCapabilityMap;
+  installed?: boolean;
 }
 
 export interface RuntimeFileDescriptor {
@@ -356,6 +357,7 @@ export interface RuntimeObservedState {
   schemaVersion: number;
   updatedAt: string;
   runtime: RuntimeInfo & {
+    installed?: boolean;
     cliAvailable?: boolean;
     gatewayAvailable?: boolean;
     diagnostics?: Record<string, unknown>;
@@ -669,6 +671,7 @@ export interface ProviderCatalog {
 
 export interface ModelSummary {
   id: string;
+  modelId?: string;
   provider: string;
   label: string;
   available?: boolean;

@@ -34,8 +34,8 @@ export interface SetDefaultModelCommand {
 }
 
 const FLAGSHIP_MODELS: Record<string, string> = {
-  "openai-codex": "openai-codex/chatgpt-4o-latest",
-  openai: "openai/gpt-4.1",
+  "openai-codex": "openai/gpt-5.4",
+  openai: "openai/gpt-5.4",
   anthropic: "anthropic/claude-sonnet-4-5-20250929",
   google: "google/gemini-2.5-pro",
   "google-gemini-cli": "google-gemini-cli/gemini-2.5-pro",
@@ -146,6 +146,7 @@ export function listOpenClawModels(status: OpenClawModelsStatusJson): ModelSumma
       const modelId = resolveModelId(provider.provider);
       return {
         id: modelId,
+        modelId,
         provider: provider.provider,
         label: provider.provider,
         available: providerHasAuth(provider),
@@ -159,13 +160,15 @@ export function getDefaultOpenClawModel(status: OpenClawModelsStatusJson): Model
   if (!defaultModel) return null;
 
   const models = listOpenClawModels(status);
-  return models.find((model) => model.id === defaultModel || model.provider === defaultModel) ?? {
+  const fallback = {
     id: defaultModel,
+    modelId: defaultModel,
     provider: defaultModel,
     label: defaultModel,
     available: true,
     isDefault: true,
-  };
+  } as ModelSummary;
+  return models.find((model) => model.id === defaultModel || model.provider === defaultModel) ?? fallback;
 }
 
 export async function readOpenClawModelsStatus(

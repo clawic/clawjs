@@ -116,6 +116,7 @@ function normalizeModelList(stdout: string, fallback: DefaultModelRef | null): M
   if (!raw) {
     return fallback ? [{
       id: fallback.modelId,
+      modelId: fallback.modelId,
       provider: fallback.provider ?? "default",
       label: fallback.label ?? fallback.modelId,
       available: true,
@@ -145,6 +146,7 @@ function normalizeModelList(stdout: string, fallback: DefaultModelRef | null): M
       .filter((entry): entry is { modelId: string; provider: string } => !!entry?.modelId)
       .map((entry) => ({
         id: entry.modelId,
+        modelId: entry.modelId,
         provider: entry.provider,
         label: entry.modelId,
         available: true,
@@ -163,6 +165,7 @@ function normalizeModelList(stdout: string, fallback: DefaultModelRef | null): M
       .filter(Boolean)
       .map((modelId) => ({
         id: modelId,
+        modelId,
         provider: deriveProvider(modelId),
         label: modelId,
         available: true,
@@ -267,6 +270,7 @@ export const picoclawAdapter: RuntimeAdapter = {
         adapter: "picoclaw",
         runtimeName: "PicoClaw",
         version: null,
+        installed: false,
         cliAvailable: false,
         gatewayAvailable: false,
         capabilities,
@@ -317,6 +321,7 @@ export const picoclawAdapter: RuntimeAdapter = {
       adapter: "picoclaw",
       runtimeName: "PicoClaw",
       version,
+      installed: true,
       cliAvailable: true,
       gatewayAvailable: false,
       capabilities,
@@ -443,6 +448,7 @@ export const picoclawAdapter: RuntimeAdapter = {
     const defaultModel = getDefaultModelRef(locations);
     const models = await this.listModels(runner, options).catch(() => defaultModel ? [{
       id: defaultModel.modelId,
+      modelId: defaultModel.modelId,
       provider: defaultModel.provider ?? "default",
       label: defaultModel.label ?? defaultModel.modelId,
       available: true,
@@ -468,6 +474,7 @@ export const picoclawAdapter: RuntimeAdapter = {
     } catch {}
     return fallback ? [{
       id: fallback.modelId,
+      modelId: fallback.modelId,
       provider: fallback.provider ?? "default",
       label: fallback.label ?? fallback.modelId,
       available: true,

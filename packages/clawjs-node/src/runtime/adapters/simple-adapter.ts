@@ -210,6 +210,7 @@ export function createSimpleRuntimeAdapter(spec: SimpleRuntimeAdapterSpec): Runt
           adapter: spec.id,
           runtimeName: spec.runtimeName,
           version: null,
+          installed: false,
           cliAvailable: false,
           gatewayAvailable: false,
           capabilities,
@@ -269,6 +270,7 @@ export function createSimpleRuntimeAdapter(spec: SimpleRuntimeAdapterSpec): Runt
         adapter: spec.id,
         runtimeName: spec.runtimeName,
         version,
+        installed: true,
         cliAvailable: true,
         gatewayAvailable,
         capabilities,
@@ -409,6 +411,7 @@ export function createSimpleRuntimeAdapter(spec: SimpleRuntimeAdapterSpec): Runt
             if (typeof entry === "string") {
               return {
                 id: entry,
+                modelId: entry,
                 provider: entry.includes("/") ? entry.split("/")[0] : "default",
                 label: entry,
                 available: true,
@@ -426,6 +429,7 @@ export function createSimpleRuntimeAdapter(spec: SimpleRuntimeAdapterSpec): Runt
             const provider = entry.provider ?? (modelId.includes("/") ? modelId.split("/")[0] : "default");
             return {
               id: modelId,
+              modelId,
               provider,
               label: modelId,
               available: true,
@@ -440,6 +444,7 @@ export function createSimpleRuntimeAdapter(spec: SimpleRuntimeAdapterSpec): Runt
       }
       return fallback ? [{
         id: fallback.modelId,
+        modelId: fallback.modelId,
         provider: fallback.provider ?? "default",
         label: fallback.label ?? fallback.modelId,
         available: true,

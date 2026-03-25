@@ -217,6 +217,7 @@ export const demoAdapter: RuntimeAdapter = {
       adapter: "demo",
       runtimeName: "DemoClaw",
       version: `demo-${scenarioId}`,
+      installed: true,
       cliAvailable: true,
       gatewayAvailable: true,
       capabilities: capabilityBooleansFromMap(capabilityMap),
@@ -290,10 +291,11 @@ export const demoAdapter: RuntimeAdapter = {
     const defaultModel = getDefaultModelRef(options)?.modelId;
     return scenario.models.map((model) => ({
       ...model,
+      modelId: model.modelId ?? model.id,
       isDefault: model.id === defaultModel,
       ref: model.ref ?? {
         provider: model.provider,
-        modelId: model.id,
+        modelId: model.modelId ?? model.id,
         label: model.label,
       },
     }));

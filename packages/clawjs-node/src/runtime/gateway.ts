@@ -81,6 +81,8 @@ export interface GatewayConfigOptions {
   port?: number;
   configPath?: string;
   env?: NodeJS.ProcessEnv;
+  verifyTimeoutMs?: number;
+  verifyIntervalMs?: number;
 }
 
 export function resolveOpenClawConfigPath(options: GatewayConfigOptions = {}): string {
@@ -125,6 +127,48 @@ function parseGatewayCallOutput(stdout: string): unknown {
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function normalizeCommandOutput(stdout: string, stderr: string): string {
+  return [stdout.trim(), stderr.trim()].filter(Boolean).join("\n");
+}
+
+function outputShowsServiceNotLoaded(output: string): boolean {
+  return /gateway service not loaded/i.test(output);
+}
+
+async function waitForGatewayAvailabilityState(
+  runner: CommandRunner,
+  options: GatewayConfigOptions,
+  targetAvailable: boolean,
+): Promise<OpenClawGatewayStatus> {
+  const timeoutMs = options.verifyTimeoutMs ?? 5_000;
+  const intervalMs = options.verifyIntervalMs ?? 250;
+  const startedAt = Date.now();
+  let lastStatus = await getOpenClawGatewayStatus(runner, options);
+
+  while (Date.now() - startedAt <= timeoutMs) {
+    if (lastStatus.available === targetAvailable) {
+      return lastStatus;
+    }
+    await sleep(intervalMs);
+    lastStatus = await getOpenClawGatewayStatus(runner, options);
+  }
+
+  return lastStatus;
+}
+
+function buildGatewayLifecycleError(
+  action: "start" | "stop" | "restart",
+  output: string,
+  status: OpenClawGatewayStatus,
+): Error {
+  const details = [
+    `OpenClaw gateway ${action} did not reach the expected state.`,
+    output ? `Command output: ${output}` : "",
+    status.lastError ? `Gateway status error: ${status.lastError}` : "",
+  ].filter(Boolean);
+  return new Error(details.join(" "));
 }
 
 function readString(value: unknown): string | undefined {
@@ -388,26 +432,61 @@ export async function listOpenClawChannels(
 
 export async function startOpenClawGateway(runner: CommandRunner, options: GatewayConfigOptions = {}): Promise<void> {
   const command = buildOpenClawCommand(["gateway", "start"], options);
-  await runner.exec(command.command, command.args, {
+  const result = await runner.exec(command.command, command.args, {
     env: command.env,
     timeoutMs: 20_000,
   });
+  const output = normalizeCommandOutput(result.stdout, result.stderr);
+  if (outputShowsServiceNotLoaded(output)) {
+    throw buildGatewayLifecycleError("start", output, {
+      configured: false,
+      available: false,
+      running: false,
+      config: readOpenClawGatewayConfig(options),
+    });
+  }
+  const status = await waitForGatewayAvailabilityState(runner, options, true);
+  if (!status.available) {
+    throw buildGatewayLifecycleError("start", output, status);
+  }
 }
 
 export async function stopOpenClawGateway(runner: CommandRunner, options: GatewayConfigOptions = {}): Promise<void> {
+  const initialStatus = await getOpenClawGatewayStatus(runner, options);
   const command = buildOpenClawCommand(["gateway", "stop"], options);
-  await runner.exec(command.command, command.args, {
+  const result = await runner.exec(command.command, command.args, {
     env: command.env,
     timeoutMs: 20_000,
   });
+  const output = normalizeCommandOutput(result.stdout, result.stderr);
+  if (!initialStatus.available) {
+    return;
+  }
+  const status = await waitForGatewayAvailabilityState(runner, options, false);
+  if (status.available) {
+    throw buildGatewayLifecycleError("stop", output, status);
+  }
 }
 
 export async function restartOpenClawGateway(runner: CommandRunner, options: GatewayConfigOptions = {}): Promise<void> {
   const command = buildOpenClawCommand(["gateway", "restart"], options);
-  await runner.exec(command.command, command.args, {
+  const result = await runner.exec(command.command, command.args, {
     env: command.env,
     timeoutMs: 20_000,
   });
+  const output = normalizeCommandOutput(result.stdout, result.stderr);
+  if (outputShowsServiceNotLoaded(output)) {
+    throw buildGatewayLifecycleError("restart", output, {
+      configured: false,
+      available: false,
+      running: false,
+      config: readOpenClawGatewayConfig(options),
+    });
+  }
+  const status = await waitForGatewayAvailabilityState(runner, options, true);
+  if (!status.available) {
+    throw buildGatewayLifecycleError("restart", output, status);
+  }
 }
 
 export async function waitForOpenClawGateway(

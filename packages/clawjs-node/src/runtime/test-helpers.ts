@@ -15,6 +15,7 @@ export function createMockRuntimeProbeStatus(input: {
   const pluginsSupported = input.capabilities.pluginsList === true;
   return {
     ...input,
+    installed: input.cliAvailable,
     diagnostics: input.diagnostics ?? {},
     capabilityMap: buildRuntimeCapabilityMap({
       runtime: { supported: true, status: input.cliAvailable ? "ready" : "error", strategy: "cli" },
