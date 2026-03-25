@@ -40,6 +40,6 @@
   },
   "dependencies": {
     "@clawjs/claw": "0.1.0",
-    "@clawjs/core": "0.1.1"
+    "@clawjs/core": "0.1.0"
   }
 }

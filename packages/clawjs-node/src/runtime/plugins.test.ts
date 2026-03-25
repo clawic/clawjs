@@ -130,7 +130,7 @@ class FakePluginRunner implements CommandRunner {
       }
       this.plugins.set(id, {
         ...plugin,
-        version: "0.1.1",
+        version: "0.1.0",
       });
       return { stdout: "", stderr: "", exitCode: 0 };
     }

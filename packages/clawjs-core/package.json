@@ -1,6 +1,6 @@
 {
   "name": "@clawjs/core",
-  "version": "0.1.1",
+  "version": "0.1.0",
   "description": "Core contracts and schemas for Claw.",
   "type": "module",
   "license": "MIT",

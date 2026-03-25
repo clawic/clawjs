@@ -119,6 +119,25 @@ if [ "$1" = "--help" ]; then
   echo "npx"
   exit 0
 fi
+if [ "$1" = "--yes" ] && [ "$2" = "clawhub" ]; then
+  shift 2
+  echo "$@" >> "${clawhubLog}"
+  if [ "$1" = "search" ]; then
+    if [ -n "$FAKE_CLAWHUB_SEARCH_JSON" ]; then
+      printf "%s\\n" "$FAKE_CLAWHUB_SEARCH_JSON"
+    else
+      printf "%s\\n" "[]"
+    fi
+    exit 0
+  fi
+  if [ "$1" = "install" ]; then
+    slug="$2"
+    mkdir -p "$PWD/skills/$slug"
+    printf "# %s\\n" "$slug" > "$PWD/skills/$slug/SKILL.md"
+    exit 0
+  fi
+  exit 0
+fi
 if [ "$1" = "--yes" ] && [ "$2" = "skills" ] && [ "$3" = "add" ]; then
   ref="$4"
   if [ "${"${FAKE_SKILLS_ADD_CREATE:-0}"}" = "1" ]; then

@@ -1,6 +1,4 @@
 node_modules/
-examples-app/node_modules/
-examples-app/.next/
 packages/*/dist/
 packages/*/*.tgz
 website/node_modules/

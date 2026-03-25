@@ -379,7 +379,7 @@ if (args[0] === "plugins" && args[1] === "disable") {
 if (args[0] === "plugins" && args[1] === "update") {
   const id = args[2] || "";
   if (state.plugins[id]) {
-    state.plugins[id].version = "0.1.1";
+    state.plugins[id].version = "0.1.0";
   }
   writeState(state);
   process.exit(0);

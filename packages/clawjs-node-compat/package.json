@@ -1,6 +1,6 @@
 {
   "name": "@clawjs/node",
-  "version": "0.1.1",
+  "version": "0.1.0",
   "description": "Compatibility wrapper for Claw. Prefer @clawjs/claw for new code.",
   "type": "module",
   "license": "MIT",

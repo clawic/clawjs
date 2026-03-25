@@ -45,7 +45,7 @@
     "build": "tsup src/index.ts --format esm --dts --out-dir dist --clean --target node20"
   },
   "dependencies": {
-    "@clawjs/core": "0.1.1",
+    "@clawjs/core": "0.1.0",
     "@clawjs/claw": "0.1.0",
     "@clawjs/workspace": "0.1.0"
   }
