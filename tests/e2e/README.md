@@ -84,7 +84,7 @@ The current Playwright specs are:
   Verifies the repository keeps the expected OSS release baseline.
 
 - [website-docs.spec.ts](./website-docs.spec.ts)
-  Builds the Vite docs site from `docs/site`, serves the generated output, and captures a final screenshot of the retained docs UI.
+  Builds the VitePress docs site from Markdown in `docs/`, serves the generated output locally, and captures a final screenshot of the public docs UI.
 
 ## How hermetic mode works
 

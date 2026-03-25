@@ -16,8 +16,8 @@ Important top-level areas:
 
 - `packages/`: published packages and scaffolding tools.
 - `demo/`: Next.js demo app used by the browser E2E suite.
-- `website/`: Vite docs site.
-- `docs/`: product and workflow documentation, including the website docs source under `docs/site/`.
+- `website/`: docs-site runtime wrapper for local preview and production builds.
+- `docs/`: the single Markdown source for product, reference, and workflow documentation.
 - `tests/e2e/`: canonical Playwright end-to-end suite.
 - `scripts/`: repo automation such as docs and packaging checks.
 - `mock/`: local mock helpers for demo workflows.

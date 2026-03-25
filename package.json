@@ -14,7 +14,7 @@
     "packages/*"
   ],
   "scripts": {
-    "clean": "rm -rf packages/clawjs/dist packages/clawjs-node/dist packages/clawjs-core/dist packages/clawjs-workspace/dist packages/clawjs-node-compat/dist packages/create-claw-app/dist packages/create-claw-agent/dist packages/create-claw-server/dist packages/create-claw-plugin/dist packages/eslint-config-claw/dist website/.generated website/docs website/dist .tmp-pack-smoke demo/.next demo/.next-e2e demo/tsconfig.tsbuildinfo",
+    "clean": "rm -rf packages/clawjs/dist packages/clawjs-node/dist packages/clawjs-core/dist packages/clawjs-workspace/dist packages/clawjs-node-compat/dist packages/create-claw-app/dist packages/create-claw-agent/dist packages/create-claw-server/dist packages/create-claw-plugin/dist packages/eslint-config-claw/dist docs/.vitepress/cache website/dist dist .tmp-pack-smoke demo/.next demo/.next-e2e demo/tsconfig.tsbuildinfo",
     "build:packages": "npm run build --workspace @clawjs/core && npm run build --workspace @clawjs/claw && npm run build --workspace @clawjs/workspace && npm run build --workspace @clawjs/node && npm run build --workspace @clawjs/cli && npm run build --workspace @clawjs/openclaw-plugin && npm run build --workspace @clawjs/openclaw-context-engine && npm run build --workspace create-claw-app && npm run build --workspace create-claw-agent && npm run build --workspace create-claw-server && npm run build --workspace create-claw-plugin && npm run build --workspace eslint-config-claw",
     "build:website": "npm --prefix website run build",
     "build": "npm run clean && npm run build:packages && npm run build:website",
@@ -38,6 +38,8 @@
     "@playwright/test": "^1.56.1",
     "@types/node": "^22.19.15",
     "tsup": "^8.5.1",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitepress": "^1.6.4",
+    "vue": "^3.5.31"
   }
 }

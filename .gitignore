@@ -2,11 +2,11 @@ node_modules/
 packages/*/dist/
 packages/*/*.tgz
 website/node_modules/
-website/.generated/
-website/docs/
 website/dist/
 website/public/demo-fixtures/
 demo/node_modules/
+docs/.vitepress/cache/
+dist/
 .claude/
 demo/.claude/
 .clawjs/

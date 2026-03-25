@@ -7,7 +7,7 @@ const cleanedFiles = [
   "README.md",
   "docs/setup.md",
   "RELEASING.md",
-  "docs/site/cli.html",
+  "docs/cli.md",
   "package.json",
   "scripts/pack-smoke.mjs",
   ".gitignore",

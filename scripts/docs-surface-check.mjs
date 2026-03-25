@@ -1,11 +1,28 @@
-import fs from "fs";
-import path from "path";
+import fs from "node:fs";
+import path from "node:path";
 
 const rootDir = path.resolve(new URL("..", import.meta.url).pathname);
 
 const docRoots = [
   path.join(rootDir, "README.md"),
   path.join(rootDir, "docs"),
+];
+
+const publicDocPages = [
+  "index.md",
+  "getting-started.md",
+  "terminology.md",
+  "runtime.md",
+  "workspace.md",
+  "authentication.md",
+  "models.md",
+  "conversations.md",
+  "files.md",
+  "watchers.md",
+  "diagnostics.md",
+  "cli.md",
+  "api.md",
+  "surface.md",
 ];
 
 const forbiddenPatterns = [
@@ -57,8 +74,7 @@ const forbiddenPatterns = [
 
 const requiredSnippets = [
   {
-    file: path.join(rootDir, "website", "docs", "api.html"),
-    file: path.join(rootDir, "docs", "site", "api.html"),
+    file: path.join(rootDir, "docs", "api.md"),
     snippets: [
       "claw.telegram",
       "claw.secrets",
@@ -69,7 +85,7 @@ const requiredSnippets = [
     ],
   },
   {
-    file: path.join(rootDir, "docs", "site", "cli.html"),
+    file: path.join(rootDir, "docs", "cli.md"),
     snippets: [
       "files apply-template-pack",
       "telegram webhook set",
@@ -80,7 +96,7 @@ const requiredSnippets = [
     ],
   },
   {
-    file: path.join(rootDir, "docs", "site", "files.html"),
+    file: path.join(rootDir, "docs", "files.md"),
     snippets: [
       "writeWorkspaceFilePreservingManagedBlocks",
       "updateSettings",
@@ -89,7 +105,7 @@ const requiredSnippets = [
     ],
   },
   {
-    file: path.join(rootDir, "docs", "site", "watchers.html"),
+    file: path.join(rootDir, "docs", "watchers.md"),
     snippets: [
       "claw.watch.runtimeStatus",
       "claw.watch.providerStatus",
@@ -104,7 +120,7 @@ function listFiles(targetPath) {
   const stat = fs.statSync(targetPath);
   if (stat.isFile()) return [targetPath];
   return fs.readdirSync(targetPath, { withFileTypes: true }).flatMap((entry) => {
-    if (entry.name === "dist" || entry.name === "node_modules") return [];
+    if (entry.name === "dist" || entry.name === "node_modules" || entry.name === ".vitepress") return [];
     const next = path.join(targetPath, entry.name);
     return entry.isDirectory() ? listFiles(next) : [next];
   });
@@ -138,6 +154,13 @@ const docFiles = docRoots.flatMap((targetPath) => listFiles(targetPath))
 
 const violations = [];
 
+for (const page of publicDocPages) {
+  const targetPath = path.join(rootDir, "docs", page);
+  if (!fs.existsSync(targetPath)) {
+    violations.push(`docs site is missing required page ${page}`);
+  }
+}
+
 for (const filePath of docFiles) {
   const raw = read(filePath);
   for (const rule of forbiddenPatterns) {
@@ -157,31 +180,18 @@ for (const requirement of requiredSnippets) {
   }
 }
 
-const docsNavPath = path.join(rootDir, "website", "src", "docs-nav.js");
-const docsNavRaw = read(docsNavPath);
-const docHrefMatches = Array.from(docsNavRaw.matchAll(/href:\s*"([^"]+)"/g)).map((match) => match[1]);
-for (const href of docHrefMatches) {
-  if (href.startsWith("http")) continue;
-  if (!href.startsWith("/docs/")) continue;
-  const relative = href.replace(/^\/docs\//, "");
-  const targetPath = relative ? path.join(rootDir, "docs", "site", relative) : path.join(rootDir, "docs", "site", "index.html");
-  if (!fs.existsSync(targetPath)) {
-    violations.push(`website/src/docs-nav.js references missing doc page ${href}`);
-  }
-}
-
-const surfacePath = path.join(rootDir, "docs", "site", "surface.html");
+const surfacePath = path.join(rootDir, "docs", "surface.md");
 const surfaceRaw = read(surfacePath);
 
 for (const exportName of extractExports(path.join(rootDir, "packages", "clawjs-node", "dist", "index.d.ts"))) {
   if (!surfaceRaw.includes(exportName)) {
-    violations.push(`docs/site/surface.html is missing @clawjs/claw export ${exportName}`);
+    violations.push(`docs/surface.md is missing @clawjs/claw export ${exportName}`);
   }
 }
 
 for (const exportName of extractExports(path.join(rootDir, "packages", "clawjs-core", "dist", "index.d.ts"))) {
   if (!surfaceRaw.includes(exportName)) {
-    violations.push(`docs/site/surface.html is missing @clawjs/core export ${exportName}`);
+    violations.push(`docs/surface.md is missing @clawjs/core export ${exportName}`);
   }
 }
 
