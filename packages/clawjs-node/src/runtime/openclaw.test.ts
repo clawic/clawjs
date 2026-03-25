@@ -83,6 +83,7 @@ test("getOpenClawRuntimeStatus detects capabilities", async () => {
   });
 
   const status = await getOpenClawRuntimeStatus(runner);
+  assert.equal(status.installed, true);
   assert.equal(status.cliAvailable, true);
   assert.equal(status.version, "1.2.3");
   assert.equal(status.capabilities.modelsStatus, true);
@@ -156,6 +157,16 @@ test("compat and doctor reports degrade when capabilities are missing", () => {
   }));
   assert.equal(doctor.ok, false);
   assert.match(doctor.suggestedRepairs[0] || "", /Install OpenClaw/);
+});
+
+test("getOpenClawRuntimeStatus exposes installed=false when the CLI is missing", async () => {
+  const runner = new FakeRunner({
+    "which openclaw": { fail: true, stderr: "missing" },
+  });
+
+  const status = await getOpenClawRuntimeStatus(runner);
+  assert.equal(status.installed, false);
+  assert.equal(status.cliAvailable, false);
 });
 
 test("runtime install, uninstall, setup, and repair build the expected commands", async () => {

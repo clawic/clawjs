@@ -9,7 +9,10 @@ import {
   getOpenClawGatewayStatus,
   listOpenClawChannels,
   readOpenClawGatewayConfig,
+  restartOpenClawGateway,
   resolveOpenClawConfigPath,
+  startOpenClawGateway,
+  stopOpenClawGateway,
 } from "./gateway.ts";
 
 test("resolveOpenClawConfigPath prefers explicit config and state dir env", () => {
@@ -157,4 +160,74 @@ test("listOpenClawChannels derives descriptors from gateway status and enabled p
       accountCount: 1,
     },
   }]);
+});
+
+test("startOpenClawGateway throws when the CLI exits cleanly but the gateway stays unavailable", async () => {
+  await assert.rejects(() => startOpenClawGateway({
+    exec: async (_command, args) => {
+      if (args[0] === "gateway" && args[1] === "start") {
+        return {
+          stdout: "Gateway service not loaded.\nStart with: openclaw gateway install\n",
+          stderr: "",
+          exitCode: 0,
+        };
+      }
+      if (args[0] === "gateway" && args[1] === "call") {
+        throw new Error("gateway closed");
+      }
+      throw new Error(`unexpected command: ${args.join(" ")}`);
+    },
+  }, {
+    url: "127.0.0.1:18789",
+    verifyTimeoutMs: 10,
+    verifyIntervalMs: 1,
+  }), /did not reach the expected state/);
+});
+
+test("stopOpenClawGateway throws when the gateway remains available after stop", async () => {
+  await assert.rejects(() => stopOpenClawGateway({
+    exec: async (_command, args) => {
+      if (args[0] === "gateway" && args[1] === "stop") {
+        return {
+          stdout: "ignored stop\n",
+          stderr: "",
+          exitCode: 0,
+        };
+      }
+      if (args[0] === "gateway" && args[1] === "call") {
+        return {
+          stdout: "{\"ok\":true}",
+          stderr: "",
+          exitCode: 0,
+        };
+      }
+      throw new Error(`unexpected command: ${args.join(" ")}`);
+    },
+  }, {
+    url: "127.0.0.1:18789",
+    verifyTimeoutMs: 10,
+    verifyIntervalMs: 1,
+  }), /did not reach the expected state/);
+});
+
+test("restartOpenClawGateway throws when the gateway never comes back", async () => {
+  await assert.rejects(() => restartOpenClawGateway({
+    exec: async (_command, args) => {
+      if (args[0] === "gateway" && args[1] === "restart") {
+        return {
+          stdout: "Gateway service not loaded.\n",
+          stderr: "",
+          exitCode: 0,
+        };
+      }
+      if (args[0] === "gateway" && args[1] === "call") {
+        throw new Error("gateway closed");
+      }
+      throw new Error(`unexpected command: ${args.join(" ")}`);
+    },
+  }, {
+    url: "127.0.0.1:18789",
+    verifyTimeoutMs: 10,
+    verifyIntervalMs: 1,
+  }), /did not reach the expected state/);
 });

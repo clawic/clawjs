@@ -134,19 +134,19 @@ test("removeAuthProfilesForProvider deletes fallback auth files", () => {
 
 test("setDefaultModel forwards resolved command args", async () => {
   const runner = new FakeRunner({
-    "openclaw models --agent agent-1 set openai/gpt-4.1": { stdout: "{}" },
+    "openclaw models --agent agent-1 set openai/gpt-5.4": { stdout: "{}" },
   });
 
   const modelId = await setDefaultModel("openai", runner, "agent-1");
-  assert.equal(modelId, "openai/gpt-4.1");
+  assert.equal(modelId, "openai/gpt-5.4");
 });
 
 test("setDefaultModel normalizes failure output", async () => {
   const runner = new FakeRunner({
-    "openclaw models --agent agent-1 set openai/gpt-4.1": { fail: true, stderr: "boom" },
+    "openclaw models --agent agent-1 set openai/gpt-5.4": { fail: true, stderr: "boom" },
   });
 
-  await assert.rejects(() => setDefaultModel("openai", runner, "agent-1"), /Failed to set default model openai\/gpt-4.1: boom/);
+  await assert.rejects(() => setDefaultModel("openai", runner, "agent-1"), /Failed to set default model openai\/gpt-5.4: boom/);
 });
 
 test("resolveOpenClawOAuthProvider and build login command normalize aliases", () => {

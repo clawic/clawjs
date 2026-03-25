@@ -19,11 +19,13 @@ test("demo adapter exposes status, models, channels, and auth without external r
 
   const status = await demoAdapter.getStatus(host, options);
   assert.equal(status.adapter, "demo");
+  assert.equal(status.installed, true);
   assert.equal(status.cliAvailable, true);
   assert.equal(status.capabilityMap.channels.status, "ready");
 
   const models = await demoAdapter.listModels(host, options);
   assert.equal(models.length >= 3, true);
+  assert.equal(models[0]?.modelId, models[0]?.id);
   assert.equal((await demoAdapter.getDefaultModel(host, options))?.modelId, "anthropic/claude-sonnet-4");
 
   await demoAdapter.setDefaultModel("openai/gpt-5-mini", host, options);
