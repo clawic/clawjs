@@ -9,6 +9,9 @@ export default defineConfig({
     ["link", { rel: "icon", href: "/favicon.ico" }],
     ["link", { rel: "icon", type: "image/png", sizes: "192x192", href: "/icon-192.png" }],
     ["link", { rel: "apple-touch-icon", href: "/apple-touch-icon.png" }],
+    ["link", { rel: "preconnect", href: "https://fonts.googleapis.com" }],
+    ["link", { rel: "preconnect", href: "https://fonts.gstatic.com", crossorigin: "" }],
+    ["link", { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" }],
   ],
   themeConfig: {
     logo: "/logo.png",
