@@ -160,6 +160,7 @@ Pull request rules:
 - Read before changing: inspect the affected package, tests, and docs before editing.
 - Prefer small, surgical patches over broad refactors unless the task explicitly asks for structural change.
 - Do not overwrite unrelated user changes in a dirty worktree.
+- For every change, review the relevant docs, README files, examples, templates, and website content to confirm they still match the current behavior, APIs, and workflows; update them in the same patch whenever they are stale.
 - When you touch a package, verify whether corresponding docs, templates, smoke coverage, and repository surface checks also need updates.
 - When you add or rename public packages, commands, or scaffolding behavior, update docs and package-surface coverage.
 - If unsure about release or merge target, default to `main` for normal work and document the assumption.
