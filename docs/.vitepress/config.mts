@@ -1,9 +1,9 @@
 import { defineConfig } from "vitepress";
 
-const SITE_URL = process.env.VITE_SITE_URL ?? "https://clawjs.ai";
-const DOCS_URL = process.env.VITE_DOCS_URL ?? "https://docs.clawjs.ai";
-const GITHUB_URL =
-  process.env.VITE_GITHUB_URL ?? "https://github.com/clawic/clawjs";
+const SITE_URL = "https://clawjs.ai";
+const DOCS_URL = "https://docs.clawjs.ai";
+const DEMO_URL = "https://demo.clawjs.ai";
+const GITHUB_URL = "https://github.com/clawic/clawjs";
 
 export default defineConfig({
   title: "ClawJS",
