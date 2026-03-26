@@ -46,11 +46,6 @@
 
   <section class="hero">
     <div class="container">
-      <div class="hero__badge">
-        <span class="hero__badge__dot"></span>
-        v0.1.0, Open Source
-      </div>
-
       <img src="/logo.png" alt="ClawJS" class="hero__logo" />
 
       <h1 class="hero__title">
@@ -60,6 +55,8 @@
       <p class="hero__subtitle">
         The open-source Node.js SDK that lets you build, ship, and manage AI agent applications. One API, one CLI. Works across multiple runtime adapters.
       </p>
+
+      <p class="hero__tagline">Open Source · MIT License</p>
 
       <div class="hero__actions">
         <a href="https://docs.clawjs.ai/getting-started" class="btn btn--primary" target="_blank" rel="noopener">
@@ -123,22 +120,40 @@
         <p class="section__label">Supported Adapters</p>
         <h2 class="section__title">A Real Runtime-Adapter Layer</h2>
         <p class="section__desc">
-          ClawJS models a family of runtimes with explicit capabilities and degraded states instead of forcing one universal shape.
+          Not a leaky abstraction. A typed contract. Each adapter declares what it can do, what it can't, and how it degrades. Switch runtimes, keep your code.
         </p>
       </div>
 
       <div class="features-grid">
         <div class="feature-card">
-          <h3 class="feature-card__title">Core Adapters</h3>
-          <p class="feature-card__desc"><code>demo</code>, <code>openclaw</code>, <code>zeroclaw</code>, <code>picoclaw</code></p>
+          <div class="feature-card__icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.11v5.77c0 .57.31 1.1.81 1.39l5 2.88c.49.28 1.09.28 1.58 0l5-2.88c.5-.29.81-.82.81-1.39V9.11c0-.57-.31-1.1-.81-1.39l-5-2.88a1.6 1.6 0 0 0-1.58 0l-5 2.88c-.5.29-.81.82-.81 1.39Z"/><path d="m3.15 8.62 7 4.04 6.85-3.96M10.15 17.77v-5.12"/></svg></div>
+          <h3 class="feature-card__title">OpenClaw</h3>
+          <p class="feature-card__desc">Full-featured open-source runtime. Complete capability coverage for production stacks with no proprietary dependencies.</p>
         </div>
         <div class="feature-card">
-          <h3 class="feature-card__title">Extended Adapters</h3>
-          <p class="feature-card__desc"><code>nanobot</code>, <code>nanoclaw</code>, <code>nullclaw</code>, <code>ironclaw</code></p>
+          <div class="feature-card__icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.52 0 10-4.48 10-10S17.52 2 12 2 2 6.48 2 12s4.48 10 10 10Z"/><path d="m8 12 2.83 2.83 5.66-5.66"/></svg></div>
+          <h3 class="feature-card__title">ZeroClaw</h3>
+          <p class="feature-card__desc">Zero-config setup. Sensible defaults for every setting so you can go from install to streaming in under a minute.</p>
         </div>
         <div class="feature-card">
-          <h3 class="feature-card__title">Hosted / Bridge Adapters</h3>
-          <p class="feature-card__desc"><code>nemoclaw</code>, <code>hermes</code></p>
+          <div class="feature-card__icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.49 2.23 5.5 4.1c-1.15.43-2.09 1.79-2.09 3.01v7.43c0 1.18.78 2.73 1.73 3.44l4.3 3.21c1.41 1.06 3.73 1.06 5.14 0l4.3-3.21c.95-.71 1.73-2.26 1.73-3.44V7.12c0-1.23-.94-2.59-2.09-3.02l-4.99-1.87c-.84-.31-2.21-.31-3.04 0Z"/></svg></div>
+          <h3 class="feature-card__title">IronClaw</h3>
+          <p class="feature-card__desc">Hardened for enterprise. Stricter sandboxing, audit logging, and compliance-ready defaults for regulated environments.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-card__icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6.37 9.51c-2.19.42-3.87 2.34-3.87 4.67 0 2.62 2.13 4.75 4.75 4.75h9c3.17 0 5.75-2.58 5.75-5.75 0-3.17-2.58-5.75-5.75-5.75-.33 0-.65.03-.97.09"/><path d="M6.37 9.51A5.47 5.47 0 0 1 6 7.68C6 4.55 8.55 2 11.68 2c2.65 0 4.88 1.83 5.49 4.29"/></svg></div>
+          <h3 class="feature-card__title">Hermes</h3>
+          <p class="feature-card__desc">Bridge to external APIs. Routes requests through third-party providers while keeping the same SDK interface.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-card__icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v5l3 3"/><path d="M3.05 11a9 9 0 1 1 .53 4"/><path d="m1 15 2.05-.53L3.58 17"/></svg></div>
+          <h3 class="feature-card__title">NanoClaw</h3>
+          <p class="feature-card__desc">Lightweight embedded agents. Minimal memory footprint for edge devices, IoT, and resource-constrained environments.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-card__icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18.5 19.5h-13c-1.1 0-2-.9-2-2v-11c0-1.1.9-2 2-2h13c1.1 0 2 .9 2 2v11c0 1.1-.9 2-2 2Z"/><path d="M3.5 8.5h17M8.5 19.5v-11"/></svg></div>
+          <h3 class="feature-card__title">PicoClaw</h3>
+          <p class="feature-card__desc">Minimal runtime footprint. Only the essentials for quick prototypes, CLIs, and single-purpose agent scripts.</p>
         </div>
       </div>
     </div>
@@ -186,37 +201,52 @@
       <div class="section__header">
         <p class="section__label">Capabilities</p>
         <h2 class="section__title">Common Core, Explicit Differences</h2>
+        <p class="section__desc">
+          Every adapter shares the same API surface. What changes is what each runtime <em>can actually do</em>. ClawJS tells you upfront, not at 3 AM in production.
+        </p>
       </div>
 
       <div class="capabilities">
         <div class="capability">
+          <div class="capability__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.89 5.08 3.32 16.65c-.78.78-.78 2.05 0 2.83l1.2 1.2c.78.78 2.05.78 2.83 0L18.92 9.11"/><path d="M16.02 7.95 18.92 5.05l-1.2-1.2c-.78-.78-2.05-.78-2.83 0L12.22 6.52"/><path d="m19.98 4.01 1.7-1.7"/><path d="M14.89 5.08l4.03 4.03"/></svg></div>
           <div>
             <div class="capability__title">Runtime lifecycle</div>
-            <div class="capability__desc">`status`, `install`, `uninstall`, `repair`, `setup-workspace`</div>
+            <div class="capability__desc">Install, repair, or tear down any runtime with a single call. Health checks, status introspection, and workspace setup. All standardized across adapters.</div>
           </div>
         </div>
         <div class="capability">
+          <div class="capability__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11v6c0 4-1 5-5 5H7c-4 0-5-1-5-5V7c0-4 1-5 5-5h1.5c1.5 0 1.83.44 2.4 1.2l1.5 2c.38.5.6.8 1.6.8h3c4 0 5 1 5 5Z"/></svg></div>
           <div>
             <div class="capability__title">Workspace contracts</div>
-            <div class="capability__desc">Adapter-defined file layouts with one stable `.clawjs/` layer</div>
+            <div class="capability__desc">Each adapter defines its own file layout, but your app always reads from one stable <code>.clawjs/</code> layer. No more guessing where configs live.</div>
           </div>
         </div>
         <div class="capability">
+          <div class="capability__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5.54 11.12c0-4.44 2.1-6.12 6.46-6.12s6.46 1.68 6.46 6.12"/><path d="M12 14v3"/><path d="M2 16.5v-.64c0-1.25.84-2.36 2.04-2.68l1.6-.43c.5-.13.86-.58.86-1.1v-.53"/><path d="M22 16.5v-.64c0-1.25-.84-2.36-2.04-2.68l-1.6-.43a1.14 1.14 0 0 1-.86-1.1v-.53"/><circle cx="12" cy="18" r="2"/></svg></div>
           <div>
-            <div class="capability__title">Providers and models</div>
-            <div class="capability__desc">Catalogs, auth state, and adapter-driven default model handling</div>
+            <div class="capability__title">Providers & models</div>
+            <div class="capability__desc">Unified catalog for every LLM provider. Auth state, token rotation, and default model selection are handled by the adapter. You just pick a model.</div>
           </div>
         </div>
         <div class="capability">
+          <div class="capability__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 19H8c-4 0-6-1-6-6V8c0-4 2-6 6-6h8c4 0 6 2 6 6v5c0 4-2 6-6 6h-.5c-.31 0-.61.15-.8.4l-1.5 2c-.66.88-1.74.88-2.4 0l-1.5-2c-.16-.22-.53-.4-.8-.4Z"/><path d="M7 8h10M7 13h6"/></svg></div>
           <div>
             <div class="capability__title">Conversations</div>
-            <div class="capability__desc">CLI, HTTP, SSE, WebSocket, and hybrid fallback transports</div>
+            <div class="capability__desc">Stream via CLI, HTTP, SSE, or WebSocket. ClawJS negotiates the best transport available and falls back gracefully. Your streaming code stays the same.</div>
           </div>
         </div>
         <div class="capability">
+          <div class="capability__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12.98V15c0 5 2 7 7 7h6c5 0 7-2 7-7V9c0-5-2-7-7-7H9C4 2 2 4 2 9"/><path d="m7.33 14.49 2.38-3.09c.34-.44.97-.52 1.41-.18l1.83 1.44c.44.34 1.07.26 1.41-.17l2.31-2.98"/></svg></div>
           <div>
             <div class="capability__title">Operational state</div>
-            <div class="capability__desc">Compat, doctor, scheduler, memory, skills, and channels snapshots</div>
+            <div class="capability__desc">Scheduler, memory, skills, plugins, and channels. Query what's available, what's degraded, and what's missing. Built-in doctor mode diagnoses issues instantly.</div>
+          </div>
+        </div>
+        <div class="capability">
+          <div class="capability__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9.86V14c0 4 1.6 5.6 5.6 5.6h.8c4 0 5.6-1.6 5.6-5.6V9.86"/><path d="M12 2v8"/><path d="m15 6.5-3 3.5-3-3.5"/><path d="M2 13h3.2c.55 0 1.06.29 1.34.76l.72 1.24c.56.96 1.55 1.56 2.64 1.6h4.2c1.09-.04 2.08-.64 2.64-1.6l.72-1.24c.28-.47.79-.76 1.34-.76H22"/></svg></div>
+          <div>
+            <div class="capability__title">Graceful degradation</div>
+            <div class="capability__desc">Capabilities are declared, not assumed. When a feature isn't available, ClawJS tells your code at build time. No silent failures, no runtime surprises.</div>
           </div>
         </div>
       </div>
