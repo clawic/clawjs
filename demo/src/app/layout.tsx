@@ -48,11 +48,11 @@ export function generateMetadata(): Metadata {
       shortcut: ["/favicon.ico"],
     },
     openGraph: {
-      images: [{ url: "/og-image.png", width: 1200, height: 630 }],
+      images: [{ url: "https://clawjs.ai/og-image.png", width: 1200, height: 630 }],
     },
     twitter: {
       card: "summary_large_image",
-      images: ["/og-image.png"],
+      images: ["https://clawjs.ai/og-image.png"],
     },
   };
 }
