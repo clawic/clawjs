@@ -1,10 +1,22 @@
 import { defineConfig } from "vitepress";
 
+const SITE_URL = process.env.VITE_SITE_URL ?? "https://clawjs.ai";
+const DOCS_URL = process.env.VITE_DOCS_URL ?? "https://docs.clawjs.ai";
+const GITHUB_URL =
+  process.env.VITE_GITHUB_URL ?? "https://github.com/clawic/clawjs";
+
 export default defineConfig({
   title: "ClawJS",
   description: "The public ClawJS docs site, sourced from Markdown in docs/.",
   cleanUrls: true,
   outDir: "../website/dist",
+  vite: {
+    publicDir: "../public",
+    define: {
+      __SITE_URL__: JSON.stringify(SITE_URL),
+      __DOCS_URL__: JSON.stringify(DOCS_URL),
+    },
+  },
   head: [
     ["link", { rel: "icon", href: "/favicon.ico" }],
     ["link", { rel: "icon", type: "image/png", sizes: "192x192", href: "/icon-192.png" }],
@@ -16,10 +28,9 @@ export default defineConfig({
   themeConfig: {
     logo: "/logo.png",
     nav: [
-      { text: "Getting Started", link: "/getting-started" },
-      { text: "CLI", link: "/cli" },
-      { text: "API", link: "/api" },
-      { text: "GitHub", link: "https://github.com/clawic/clawjs" },
+      { text: "Getting Started", link: `${DOCS_URL}/getting-started` },
+      { text: "Docs", link: DOCS_URL },
+      { text: "GitHub", link: GITHUB_URL },
     ],
     search: {
       provider: "local",
@@ -80,7 +91,7 @@ export default defineConfig({
       },
     ],
     socialLinks: [
-      { icon: "github", link: "https://github.com/clawic/clawjs" },
+      { icon: "github", link: GITHUB_URL },
     ],
     footer: {
       message: "ClawJS documentation site sourced from docs/ Markdown.",
