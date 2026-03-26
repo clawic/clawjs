@@ -210,7 +210,135 @@ console<span class="punctuation">.</span><span class="function">log</span><span 
     </div>
   </section>
 
+  <!-- ═══════ INTERACTIVE PREVIEWS ═══════ -->
+
   <section class="section">
+    <div class="container">
+      <div class="section__header">
+        <p class="section__label">Settings Preview</p>
+        <h2 class="section__title">Built-in Runtime Management</h2>
+        <p class="section__desc">Select, install, and manage runtime adapters directly from your app. Everything is wired through the SDK.</p>
+      </div>
+      <div class="demo-stack">
+        <div class="demo-stack__layer demo-stack__layer--front" data-layer="front">
+          <div class="demo-panel" id="demo-openclaw"></div>
+        </div>
+        <div class="demo-stack__layer demo-stack__layer--back" data-layer="back">
+          <div class="code-block">
+            <div class="code-block__header">
+              <span class="code-block__dot"></span>
+              <span class="code-block__dot"></span>
+              <span class="code-block__dot"></span>
+              <span class="code-block__filename">runtime.ts</span>
+            </div>
+            <pre><code><span class="keyword">import</span> <span class="punctuation">{</span> <span class="function">Claw</span> <span class="punctuation">}</span> <span class="keyword">from</span> <span class="string">"@clawjs/claw"</span><span class="punctuation">;</span>
+
+<span class="keyword">const</span> claw <span class="punctuation">=</span> <span class="keyword">await</span> <span class="function">Claw</span><span class="punctuation">({</span>
+  <span class="property">runtime</span><span class="punctuation">:</span> <span class="punctuation">{</span> <span class="property">adapter</span><span class="punctuation">:</span> <span class="string">"openclaw"</span> <span class="punctuation">}</span>
+<span class="punctuation">});</span>
+
+<span class="keyword">const</span> status <span class="punctuation">=</span> <span class="keyword">await</span> claw<span class="punctuation">.</span><span class="property">runtime</span><span class="punctuation">.</span><span class="function">status</span><span class="punctuation">();</span>
+console<span class="punctuation">.</span><span class="function">log</span><span class="punctuation">(</span>status<span class="punctuation">.</span><span class="property">ready</span><span class="punctuation">,</span> status<span class="punctuation">.</span><span class="property">capabilityMap</span><span class="punctuation">);</span>
+
+<span class="keyword">await</span> claw<span class="punctuation">.</span><span class="property">runtime</span><span class="punctuation">.</span><span class="function">switchAdapter</span><span class="punctuation">(</span><span class="string">"zeroclaw"</span><span class="punctuation">);</span>
+
+<span class="keyword">for await</span> <span class="punctuation">(</span><span class="keyword">const</span> ev <span class="keyword">of</span> claw<span class="punctuation">.</span><span class="property">runtime</span><span class="punctuation">.</span><span class="function">install</span><span class="punctuation">(</span><span class="string">"picoclaw"</span><span class="punctuation">))</span> <span class="punctuation">{</span>
+  console<span class="punctuation">.</span><span class="function">log</span><span class="punctuation">(</span>ev<span class="punctuation">.</span><span class="property">percent</span><span class="punctuation">,</span> ev<span class="punctuation">.</span><span class="property">message</span><span class="punctuation">);</span>
+<span class="punctuation">}</span></code></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section--alt" id="section-ai">
+    <div class="container">
+      <div class="section__header">
+        <p class="section__label">Settings Preview</p>
+        <h2 class="section__title">Multi-Provider AI Models</h2>
+        <p class="section__desc">Connect to any AI provider via OAuth or API keys. Switch default models with one click.</p>
+      </div>
+      <div class="demo-stack">
+        <div class="demo-stack__layer demo-stack__layer--front" data-layer="front">
+          <div class="demo-panel" id="demo-ai"></div>
+        </div>
+        <div class="demo-stack__layer demo-stack__layer--back" data-layer="back">
+          <div class="code-block">
+            <div class="code-block__header">
+              <span class="code-block__dot"></span>
+              <span class="code-block__dot"></span>
+              <span class="code-block__dot"></span>
+              <span class="code-block__filename">providers.ts</span>
+            </div>
+            <pre><code><span class="comment">// Connect via OAuth</span>
+<span class="keyword">await</span> claw<span class="punctuation">.</span><span class="property">auth</span><span class="punctuation">.</span><span class="function">connectOAuth</span><span class="punctuation">(</span>
+  <span class="string">"openai-codex"</span>
+<span class="punctuation">);</span>
+
+<span class="comment">// Or set an API key</span>
+<span class="keyword">await</span> claw<span class="punctuation">.</span><span class="property">auth</span><span class="punctuation">.</span><span class="function">setApiKey</span><span class="punctuation">(</span>
+  <span class="string">"anthropic"</span><span class="punctuation">,</span> apiKey
+<span class="punctuation">);</span>
+
+<span class="comment">// Browse the model catalog</span>
+<span class="keyword">const</span> models <span class="punctuation">=</span>
+  <span class="keyword">await</span> claw<span class="punctuation">.</span><span class="property">models</span><span class="punctuation">.</span><span class="function">catalog</span><span class="punctuation">();</span>
+
+<span class="comment">// Pick your default model</span>
+<span class="keyword">await</span> claw<span class="punctuation">.</span><span class="property">models</span><span class="punctuation">.</span><span class="function">setDefault</span><span class="punctuation">(</span>
+  <span class="string">"anthropic/claude-sonnet-4-6"</span>
+<span class="punctuation">);</span>
+
+<span class="comment">// Check connection state</span>
+<span class="keyword">const</span> auth <span class="punctuation">=</span>
+  <span class="keyword">await</span> claw<span class="punctuation">.</span><span class="property">auth</span><span class="punctuation">.</span><span class="function">state</span><span class="punctuation">(</span><span class="string">"anthropic"</span><span class="punctuation">);</span>
+console<span class="punctuation">.</span><span class="function">log</span><span class="punctuation">(</span>auth<span class="punctuation">.</span><span class="property">connected</span><span class="punctuation">);</span></code></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="section__header">
+        <p class="section__label">Settings Preview</p>
+        <h2 class="section__title">Channel Integrations</h2>
+        <p class="section__desc">Connect messaging platforms, calendars, and contacts to your agent in seconds.</p>
+      </div>
+      <div class="demo-stack">
+        <div class="demo-stack__layer demo-stack__layer--front" data-layer="front">
+          <div class="demo-panel" id="demo-integrations"></div>
+        </div>
+        <div class="demo-stack__layer demo-stack__layer--back" data-layer="back">
+          <div class="code-block">
+            <div class="code-block__header">
+              <span class="code-block__dot"></span>
+              <span class="code-block__dot"></span>
+              <span class="code-block__dot"></span>
+              <span class="code-block__filename">channels.ts</span>
+            </div>
+            <pre><code><span class="keyword">await</span> claw<span class="punctuation">.</span><span class="property">channels</span><span class="punctuation">.</span><span class="function">enable</span><span class="punctuation">(</span><span class="string">"whatsapp"</span><span class="punctuation">);</span>
+
+<span class="keyword">const</span> s <span class="punctuation">=</span> <span class="keyword">await</span> claw<span class="punctuation">.</span><span class="property">channels</span><span class="punctuation">.</span><span class="function">status</span><span class="punctuation">(</span><span class="string">"whatsapp"</span><span class="punctuation">);</span>
+<span class="comment">// { state: "connected" }</span>
+
+<span class="keyword">await</span> claw<span class="punctuation">.</span><span class="property">channels</span><span class="punctuation">.</span><span class="function">configure</span><span class="punctuation">(</span><span class="string">"whatsapp"</span><span class="punctuation">,</span> <span class="punctuation">{</span>
+  <span class="property">excludeGroups</span><span class="punctuation">:</span> <span class="keyword">true</span><span class="punctuation">,</span>
+  <span class="property">autoTranscribe</span><span class="punctuation">:</span> <span class="keyword">true</span><span class="punctuation">,</span>
+<span class="punctuation">});</span>
+
+<span class="keyword">const</span> all <span class="punctuation">=</span> <span class="keyword">await</span> claw<span class="punctuation">.</span><span class="property">channels</span><span class="punctuation">.</span><span class="function">list</span><span class="punctuation">();</span>
+<span class="keyword">await</span> claw<span class="punctuation">.</span><span class="property">channels</span><span class="punctuation">.</span><span class="function">disable</span><span class="punctuation">(</span><span class="string">"telegram"</span><span class="punctuation">);</span></code></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════ LIVE DEMO CTA ═══════ -->
+
+  <section class="section section--alt">
     <div class="container">
       <div class="section__header">
         <p class="section__label">Demo</p>
@@ -230,5 +358,6 @@ console<span class="punctuation">.</span><span class="function">log</span><span 
   </section>
 
   <script type="module" src="/src/main.js"></script>
+  <script type="module" src="/src/demos.js"></script>
 </body>
 </html>
