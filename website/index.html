@@ -10,9 +10,14 @@
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   <meta property="og:title" content="ClawJS: Build AI Agent Apps with Any Runtime" />
   <meta property="og:description" content="The open-source Node.js SDK for building AI agent applications across multiple runtime adapters." />
-  <meta property="og:image" content="/logo.png" />
+  <meta property="og:image" content="/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
   <meta property="og:type" content="website" />
   <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="ClawJS: Build AI Agent Apps with Any Runtime" />
+  <meta name="twitter:description" content="The open-source Node.js SDK for building AI agent applications across multiple runtime adapters." />
+  <meta name="twitter:image" content="/og-image.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -118,53 +123,74 @@
     <div class="container">
       <div class="section__header">
         <p class="section__label">Capabilities</p>
-        <h2 class="section__title">Common Core, Explicit Differences</h2>
+        <h2 class="section__title">Everything You Need, Declared in One Place</h2>
         <p class="section__desc">
-          Every adapter shares the same API surface. What changes is what each runtime <em>can actually do</em>. ClawJS tells you upfront, not at 3 AM in production.
+          Skills, memory, channels, plugins. Every building block of your AI agent is <em>declarative and portable</em>. Define it once, run it on any adapter. No rewrites, no surprises.
         </p>
       </div>
 
       <div class="capabilities">
         <div class="capability">
-          <div class="capability__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.89 5.08 3.32 16.65c-.78.78-.78 2.05 0 2.83l1.2 1.2c.78.78 2.05.78 2.83 0L18.92 9.11"/><path d="M16.02 7.95 18.92 5.05l-1.2-1.2c-.78-.78-2.05-.78-2.83 0L12.22 6.52"/><path d="m19.98 4.01 1.7-1.7"/><path d="M14.89 5.08l4.03 4.03"/></svg></div>
+          <div class="capability__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m17.29 4.14-.07 3.79c-.01.52.32 1.21.74 1.52l2.48 1.88c1.59 1.2 1.33 2.67-.57 3.27l-3.23 1.01c-.54.17-1.11.76-1.25 1.31l-.77 2.94c-.61 2.32-2.13 2.55-3.39.51l-1.76-2.85c-.32-.52-1.08-.91-1.68-.88l-3.34.17c-2.39.12-3.07-1.26-1.51-3.08l1.98-2.3c.37-.43.54-1.23.37-1.77L4.28 6.43c-.59-1.9.47-2.95 2.36-2.33l2.95.97c.5.16 1.25.05 1.67-.26l3.08-2.22c1.66-1.2 2.99-.5 2.95 1.55ZM21.91 22l-3.03-3.03"/></svg></div>
           <div>
-            <div class="capability__title">Runtime lifecycle</div>
-            <div class="capability__desc">Install, repair, or tear down any runtime with a single call. Health checks, status introspection, and workspace setup. All standardized across adapters.</div>
+            <div class="capability__title">Skills</div>
+            <div class="capability__desc">Give your agent abilities. Define reusable skills as simple declarations, from web search to document parsing, and compose them like building blocks.</div>
           </div>
         </div>
         <div class="capability">
-          <div class="capability__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11v6c0 4-1 5-5 5H7c-4 0-5-1-5-5V7c0-4 1-5 5-5h1.5c1.5 0 1.83.44 2.4 1.2l1.5 2c.38.5.6.8 1.6.8h3c4 0 5 1 5 5Z"/></svg></div>
+          <div class="capability__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9.6 20h4.8c4 0 5.6-1.6 5.6-5.6V9.6c0-4-1.6-5.6-5.6-5.6H9.6C5.6 4 4 5.6 4 9.6v4.8c0 4 1.6 5.6 5.6 5.6Z"/><path d="M10.5 17h3c2.5 0 3.5-1 3.5-3.5v-3C17 8 16 7 13.5 7h-3C8 7 7 8 7 10.5v3C7 16 8 17 10.5 17ZM8.01 4V2M12 4V2M16 4V2M20 8h2M20 12h2M20 16h2M16 20v2M12.01 20v2M8.01 20v2M2 8h2M2 12h2M2 16h2"/></svg></div>
           <div>
-            <div class="capability__title">Workspace contracts</div>
-            <div class="capability__desc">Each adapter defines its own file layout, but your app always reads from one stable <code>.clawjs/</code> layer. No more guessing where configs live.</div>
-          </div>
-        </div>
-        <div class="capability">
-          <div class="capability__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5.54 11.12c0-4.44 2.1-6.12 6.46-6.12s6.46 1.68 6.46 6.12"/><path d="M12 14v3"/><path d="M2 16.5v-.64c0-1.25.84-2.36 2.04-2.68l1.6-.43c.5-.13.86-.58.86-1.1v-.53"/><path d="M22 16.5v-.64c0-1.25-.84-2.36-2.04-2.68l-1.6-.43a1.14 1.14 0 0 1-.86-1.1v-.53"/><circle cx="12" cy="18" r="2"/></svg></div>
-          <div>
-            <div class="capability__title">Providers & models</div>
-            <div class="capability__desc">Unified catalog for every LLM provider. Auth state, token rotation, and default model selection are handled by the adapter. You just pick a model.</div>
+            <div class="capability__title">Memory</div>
+            <div class="capability__desc">Your agent remembers. Short-term context, long-term knowledge, user preferences. All managed through a single declarative layer that persists across conversations.</div>
           </div>
         </div>
         <div class="capability">
           <div class="capability__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 19H8c-4 0-6-1-6-6V8c0-4 2-6 6-6h8c4 0 6 2 6 6v5c0 4-2 6-6 6h-.5c-.31 0-.61.15-.8.4l-1.5 2c-.66.88-1.74.88-2.4 0l-1.5-2c-.16-.22-.53-.4-.8-.4Z"/><path d="M7 8h10M7 13h6"/></svg></div>
           <div>
-            <div class="capability__title">Conversations</div>
-            <div class="capability__desc">Stream via CLI, HTTP, SSE, or WebSocket. ClawJS negotiates the best transport available and falls back gracefully. Your streaming code stays the same.</div>
+            <div class="capability__title">Channels</div>
+            <div class="capability__desc">Telegram, Slack, Discord, WhatsApp, or your own API. Declare which channels your agent speaks on and ClawJS handles the transport and message formatting.</div>
           </div>
         </div>
         <div class="capability">
-          <div class="capability__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12.98V15c0 5 2 7 7 7h6c5 0 7-2 7-7V9c0-5-2-7-7-7H9C4 2 2 4 2 9"/><path d="m7.33 14.49 2.38-3.09c.34-.44.97-.52 1.41-.18l1.83 1.44c.44.34 1.07.26 1.41-.17l2.31-2.98"/></svg></div>
+          <div class="capability__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.95 14.55l-6.39 6.39c-1.4 1.4-3.7 1.4-5.11 0l-6.39-6.39c-1.4-1.4-1.4-3.7 0-5.11l6.39-6.39c1.4-1.4 3.7-1.4 5.11 0l6.39 6.39c1.4 1.41 1.4 3.71 0 5.11z"/></svg></div>
           <div>
-            <div class="capability__title">Operational state</div>
-            <div class="capability__desc">Scheduler, memory, skills, plugins, and channels. Query what's available, what's degraded, and what's missing. Built-in doctor mode diagnoses issues instantly.</div>
+            <div class="capability__title">Plugins</div>
+            <div class="capability__desc">Extend your agent with community or custom plugins. Database connectors, payment gateways, CRMs. Plug them in declaratively without touching your core logic.</div>
+          </div>
+        </div>
+        <div class="capability">
+          <div class="capability__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5.54 11.12c0-4.44 2.1-6.12 6.46-6.12s6.46 1.68 6.46 6.12"/><path d="M12 14v3"/><path d="M2 16.5v-.64c0-1.25.84-2.36 2.04-2.68l1.6-.43c.5-.13.86-.58.86-1.1v-.53"/><path d="M22 16.5v-.64c0-1.25-.84-2.36-2.04-2.68l-1.6-.43a1.14 1.14 0 0 1-.86-1.1v-.53"/><circle cx="12" cy="18" r="2"/></svg></div>
+          <div>
+            <div class="capability__title">Providers & Models</div>
+            <div class="capability__desc">OpenAI, Anthropic, Gemini, Ollama. Pick any LLM provider. ClawJS handles auth, token rotation, and fallbacks. Switch models without changing a single line of code.</div>
+          </div>
+        </div>
+        <div class="capability">
+          <div class="capability__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m18.47 16.83.39 3.16c.1.83-.79 1.41-1.5.98l-4.19-2.49c-.46 0-.91-.03-1.35-.09A4.86 4.86 0 0 0 13 15.23c0-2.84-2.46-5.14-5.5-5.14-1.16 0-2.23.33-3.12.91-.03-.25-.04-.5-.04-.76C4.34 5.69 8.29 2 13.17 2S22 5.69 22 10.24c0 2.7-1.39 5.09-3.53 6.59Z"/><path d="M13 15.23c0 1.19-.44 2.29-1.18 3.16-.99 1.2-2.56 1.97-4.32 1.97l-2.61 1.55c-.44.27-1-.1-.94-.61l.25-1.97C2.86 18.4 2 16.91 2 15.23c0-1.76.94-3.31 2.38-4.23.89-.58 1.96-.91 3.12-.91 3.04 0 5.5 2.3 5.5 5.14Z"/></svg></div>
+          <div>
+            <div class="capability__title">Conversations</div>
+            <div class="capability__desc">Multi-turn, multi-user, multi-channel. Your agent holds natural conversations with context, streaming, and history. Across every channel you've declared.</div>
+          </div>
+        </div>
+        <div class="capability">
+          <div class="capability__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.75 13.25c0 4.83-3.92 8.75-8.75 8.75s-8.75-3.92-8.75-8.75S7.17 4.5 12 4.5s8.75 3.92 8.75 8.75ZM12 8v5"/><path d="M9 2h6" stroke-miterlimit="10"/></svg></div>
+          <div>
+            <div class="capability__title">Scheduler</div>
+            <div class="capability__desc">Automate recurring tasks with simple cron-like declarations. Your agent can send reminders, sync data, or run health checks. On autopilot, on schedule.</div>
+          </div>
+        </div>
+        <div class="capability">
+          <div class="capability__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.89 5.08 3.32 16.65c-.78.78-.78 2.05 0 2.83l1.2 1.2c.78.78 2.05.78 2.83 0L18.92 9.11"/><path d="M16.02 7.95 18.92 5.05l-1.2-1.2c-.78-.78-2.05-.78-2.83 0L12.22 6.52"/><path d="m19.98 4.01 1.7-1.7"/><path d="M14.89 5.08l4.03 4.03"/></svg></div>
+          <div>
+            <div class="capability__title">One-Command Setup</div>
+            <div class="capability__desc">Install, configure, and launch any runtime in a single command. ClawJS scaffolds your workspace, validates your config, and gets your agent running in seconds.</div>
           </div>
         </div>
         <div class="capability">
           <div class="capability__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9.86V14c0 4 1.6 5.6 5.6 5.6h.8c4 0 5.6-1.6 5.6-5.6V9.86"/><path d="M12 2v8"/><path d="m15 6.5-3 3.5-3-3.5"/><path d="M2 13h3.2c.55 0 1.06.29 1.34.76l.72 1.24c.56.96 1.55 1.56 2.64 1.6h4.2c1.09-.04 2.08-.64 2.64-1.6l.72-1.24c.28-.47.79-.76 1.34-.76H22"/></svg></div>
           <div>
-            <div class="capability__title">Graceful degradation</div>
-            <div class="capability__desc">Capabilities are declared, not assumed. When a feature isn't available, ClawJS tells your code at build time. No silent failures, no runtime surprises.</div>
+            <div class="capability__title">No Silent Failures</div>
+            <div class="capability__desc">Every capability is declared, not assumed. If something isn't available in your runtime, ClawJS tells you at build time, not at 3 AM in production.</div>
           </div>
         </div>
       </div>
