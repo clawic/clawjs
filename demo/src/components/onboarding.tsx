@@ -1129,10 +1129,6 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
               }}
             >
               <div className="mx-3 mb-3 rounded-xl bg-muted px-4 py-3 flex items-center gap-3">
-                <svg className="w-4 h-4 animate-spin text-muted-foreground flex-shrink-0" viewBox="0 0 24 24" fill="none">
-                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2.5" opacity="0.2" />
-                  <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-                </svg>
                 <p className="text-[12px] text-strong-foreground flex-1">
                   {openClawPhase === "downloading" ? m.engine.phaseDownloading
                     : openClawPhase === "verifying" ? m.engine.phaseVerifying
@@ -1275,10 +1271,6 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
                       }}
                     >
                       <div className="mx-3 mb-3 rounded-xl bg-muted px-4 py-3 flex items-center gap-3">
-                        <svg className="w-4 h-4 animate-spin text-muted-foreground flex-shrink-0" viewBox="0 0 24 24" fill="none">
-                          <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2.5" opacity="0.2" />
-                          <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-                        </svg>
                         <p className="text-[12px] text-strong-foreground flex-1">{m.aiProvider.openTerminal}</p>
                         <button
                           type="button"
@@ -1518,10 +1510,6 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
                 }}
               >
                 <div className="mx-3 mb-3 rounded-xl bg-muted px-4 py-3 flex items-center gap-3">
-                  <svg className="w-4 h-4 animate-spin text-muted-foreground flex-shrink-0" viewBox="0 0 24 24" fill="none">
-                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2.5" opacity="0.2" />
-                    <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-                  </svg>
                   <p className="text-[12px] text-strong-foreground flex-1">{wacliInstalling ? m.integrations.whatsappInstallingTools : m.integrations.whatsappConnecting}</p>
                 </div>
               </div>
