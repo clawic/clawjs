@@ -141,27 +141,13 @@
           <pre><code><span class="keyword">import</span> <span class="punctuation">{</span> <span class="function">Claw</span> <span class="punctuation">}</span> <span class="keyword">from</span> <span class="string">"@clawjs/claw"</span><span class="punctuation">;</span>
 
 <span class="keyword">const</span> claw <span class="punctuation">=</span> <span class="keyword">await</span> <span class="function">Claw</span><span class="punctuation">({</span>
-  <span class="property">runtime</span><span class="punctuation">:</span> <span class="punctuation">{</span> <span class="property">adapter</span><span class="punctuation">:</span> <span class="string">"zeroclaw"</span> <span class="punctuation">},</span>
-  <span class="property">workspace</span><span class="punctuation">:</span> <span class="punctuation">{</span>
-    <span class="property">appId</span><span class="punctuation">:</span> <span class="string">"my-app"</span><span class="punctuation">,</span>
-    <span class="property">workspaceId</span><span class="punctuation">:</span> <span class="string">"main"</span><span class="punctuation">,</span>
-    <span class="property">agentId</span><span class="punctuation">:</span> <span class="string">"assistant"</span><span class="punctuation">,</span>
-    <span class="property">rootDir</span><span class="punctuation">:</span> <span class="string">"./workspace"</span><span class="punctuation">,</span>
-  <span class="punctuation">},</span>
+  <span class="property">runtime</span><span class="punctuation">:</span> <span class="punctuation">{</span> <span class="property">adapter</span><span class="punctuation">:</span> <span class="string">"openclaw"</span> <span class="punctuation">},</span>
 <span class="punctuation">});</span>
 
-<span class="keyword">const</span> status <span class="punctuation">=</span> <span class="keyword">await</span> claw<span class="punctuation">.</span><span class="property">runtime</span><span class="punctuation">.</span><span class="function">status</span><span class="punctuation">();</span>
-console<span class="punctuation">.</span><span class="function">log</span><span class="punctuation">(</span>status<span class="punctuation">.</span><span class="property">capabilityMap</span><span class="punctuation">);</span>
-
-<span class="keyword">await</span> claw<span class="punctuation">.</span><span class="property">workspace</span><span class="punctuation">.</span><span class="function">init</span><span class="punctuation">();</span>
-
-<span class="keyword">const</span> providers <span class="punctuation">=</span> <span class="keyword">await</span> claw<span class="punctuation">.</span><span class="property">providers</span><span class="punctuation">.</span><span class="function">catalog</span><span class="punctuation">();</span>
-<span class="keyword">const</span> models <span class="punctuation">=</span> <span class="keyword">await</span> claw<span class="punctuation">.</span><span class="property">models</span><span class="punctuation">.</span><span class="function">catalog</span><span class="punctuation">();</span>
-
-<span class="keyword">for await</span> <span class="punctuation">(</span><span class="keyword">const</span> event <span class="keyword">of</span> claw<span class="punctuation">.</span><span class="property">conversations</span><span class="punctuation">.</span><span class="function">streamAssistantReplyEvents</span><span class="punctuation">({</span>
+<span class="keyword">for await</span> <span class="punctuation">(</span><span class="keyword">const</span> ev <span class="keyword">of</span> claw<span class="punctuation">.</span><span class="property">conversations</span><span class="punctuation">.</span><span class="function">stream</span><span class="punctuation">({</span>
   <span class="property">sessionId</span><span class="punctuation">:</span> <span class="string">"demo"</span><span class="punctuation">,</span>
 <span class="punctuation">}))</span> <span class="punctuation">{</span>
-  console<span class="punctuation">.</span><span class="function">log</span><span class="punctuation">(</span>event<span class="punctuation">);</span>
+  console<span class="punctuation">.</span><span class="function">log</span><span class="punctuation">(</span>ev<span class="punctuation">.</span><span class="property">text</span><span class="punctuation">);</span>
 <span class="punctuation">}</span></code></pre>
         </div>
       </div>
