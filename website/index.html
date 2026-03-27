@@ -59,7 +59,12 @@
     </div>
 
     <div class="container">
-      <img src="/logo.png" alt="ClawJS" class="hero__logo" />
+      <!-- Animated orchestration visual -->
+      <div class="hero__orbit" id="heroOrbit">
+        <div class="hero__orbit-hub" id="heroHub"><img src="/logo.png" alt="ClawJS" /></div>
+      </div>
+      <!-- Canvas lives at section level, no clipping -->
+      <canvas class="hero__trails-canvas" id="heroCanvas"></canvas>
 
       <h1 class="hero__title">
         Ship <span>AI Agents</span> Fast.<br/>Declarative. Portable.
@@ -545,6 +550,22 @@ console<span class="punctuation">.</span><span class="function">log</span><span 
       </div>
       <div class="chat-preview-wrap">
         <div class="demo-panel demo-panel--tasks" id="demo-tasks"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CRM / CONTACTS PREVIEW -->
+
+  <section class="section" id="section-crm">
+    <div class="section__aurora-orb" style="top: 20%; left: -5%;"></div>
+    <div class="container">
+      <div class="section__header">
+        <p class="section__label">Relationships</p>
+        <h2 class="section__title">Your Entire Network, Agent-Managed</h2>
+        <p class="section__desc">AI agents enrich profiles, schedule follow-ups, track deals, and keep every relationship warm. Personal and professional, all in one place.</p>
+      </div>
+      <div class="chat-preview-wrap">
+        <div class="demo-panel demo-panel--crm" id="demo-crm"></div>
       </div>
     </div>
   </section>
