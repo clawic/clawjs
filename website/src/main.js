@@ -191,3 +191,24 @@ document.querySelectorAll(".install-bar__copy").forEach((btn) => {
     }, 2000);
   });
 });
+
+// ── Scroll reveal for sections ──
+(function scrollReveal() {
+  const targets = document.querySelectorAll(
+    '.section__header, .capabilities, .features-grid, .cli-section__window, .chat-preview, .kanban-board, .cta'
+  );
+  if (!targets.length) return;
+
+  targets.forEach(el => el.classList.add('sr'));
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('sr--visible');
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+
+  targets.forEach(el => observer.observe(el));
+})();

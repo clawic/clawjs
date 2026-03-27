@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/src/style.css" />
 </head>
 <body>
-  <nav class="nav" id="mainNav">
+  <nav class="nav hero-nav-enter" id="mainNav">
     <div class="nav__inner">
       <div class="nav__left">
         <a href="/" class="nav__logo">
@@ -60,23 +60,23 @@
 
     <div class="container">
       <!-- Animated orchestration visual -->
-      <div class="hero__orbit" id="heroOrbit">
+      <div class="hero__orbit hero__enter hero__enter--1" id="heroOrbit">
         <div class="hero__orbit-hub" id="heroHub"><img src="/logo.png" alt="ClawJS" /></div>
       </div>
       <!-- Canvas lives at section level, no clipping -->
       <canvas class="hero__trails-canvas" id="heroCanvas"></canvas>
 
-      <h1 class="hero__title">
+      <h1 class="hero__title hero__enter hero__enter--2">
         Ship <span>AI Agents</span> Fast.<br/>Declarative. Portable.
       </h1>
 
-      <p class="hero__subtitle">
+      <p class="hero__subtitle hero__enter hero__enter--3">
         Skills, memory, channels, models. Declare what your agent does. ClawJS handles the rest across 9+ runtime adapters.
       </p>
 
-      <p class="hero__tagline">Open Source · MIT License</p>
+      <p class="hero__tagline hero__enter hero__enter--4">Open Source · MIT License</p>
 
-      <div class="hero__actions">
+      <div class="hero__actions hero__enter hero__enter--5">
         <a href="https://docs.clawjs.ai/getting-started" class="btn btn--primary" target="_blank" rel="noopener">
           Get Started
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -89,7 +89,7 @@
         </a>
       </div>
 
-      <div class="install-bar">
+      <div class="install-bar hero__enter hero__enter--6">
         <div class="install-bar__code">
           <span class="prompt">$</span>
           <span>npm install -g @clawjs/cli</span>
@@ -102,7 +102,7 @@
         </div>
       </div>
 
-      <div class="runtime-marquee">
+      <div class="runtime-marquee hero__enter hero__enter--7">
         <div class="runtime-marquee__label">Supported Runtimes</div>
         <div class="runtime-marquee__track">
           <div class="runtime-marquee__inner">

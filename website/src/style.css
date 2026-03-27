@@ -326,16 +326,93 @@ code {
 }
 
 /* ── Hero Orchestration Visual ── */
+/* ── Hero entrance stagger ── */
+
+/* Nav: slides down from above, keeps its translateX centering */
+.hero-nav-enter {
+  opacity: 0;
+  animation: hero-nav-in 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.05s forwards;
+}
+@keyframes hero-nav-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(-16px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/* Logo: scale up + fade (slower, prominent) */
+.hero__enter--1 {
+  opacity: 0;
+  animation: hero-scale-in 1.6s cubic-bezier(0.16, 1, 0.3, 1) 0.15s forwards;
+}
+@keyframes hero-scale-in {
+  from { opacity: 0; transform: scale(0.92); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* Title: fade up */
+.hero__enter--2 {
+  opacity: 0;
+  animation: hero-up 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards;
+}
+
+/* Subtitle: just fade in, no movement */
+.hero__enter--3 {
+  opacity: 0;
+  animation: hero-fade 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.5s forwards;
+}
+
+/* Tagline: fade in */
+.hero__enter--4 {
+  opacity: 0;
+  animation: hero-fade 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.65s forwards;
+}
+
+/* Buttons: fade up subtle */
+.hero__enter--5 {
+  opacity: 0;
+  animation: hero-up-sm 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.8s forwards;
+}
+
+/* Install bar: fade in */
+.hero__enter--6 {
+  opacity: 0;
+  animation: hero-fade 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.95s forwards;
+}
+
+/* Runtime marquee: fade in last */
+.hero__enter--7 {
+  opacity: 0;
+  animation: hero-fade 1s cubic-bezier(0.16, 1, 0.3, 1) 1.2s forwards;
+}
+
+@keyframes hero-up {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes hero-up-sm {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes hero-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ── Scroll reveal ── */
+.sr {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.sr--visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 .hero__orbit {
   position: relative;
   width: 100%;
   height: 420px;
   margin: 0 auto 24px;
-  animation: hero-orbit-up 1s cubic-bezier(.16, 1, .3, 1);
-}
-@keyframes hero-orbit-up {
-  from { opacity: 0; transform: translateY(16px); }
-  to { opacity: 1; transform: none; }
 }
 
 .hero__orbit-hub {
@@ -3209,7 +3286,7 @@ code {
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  min-width: 220px;
+  width: 220px;
   box-shadow: 0 8px 32px rgba(0,0,0,0.4);
 }
 
@@ -3262,8 +3339,7 @@ code {
 /* Email overlay */
 .crm-overlay__card--email {
   align-items: stretch;
-  min-width: 280px;
-  max-width: 320px;
+  width: 320px;
   padding: 16px 20px;
   gap: 6px;
 }
@@ -3297,7 +3373,7 @@ code {
 /* Meeting overlay */
 .crm-overlay__card--meeting {
   align-items: stretch;
-  min-width: 240px;
+  width: 260px;
   padding: 16px 20px;
   gap: 10px;
 }
