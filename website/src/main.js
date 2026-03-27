@@ -11,14 +11,11 @@ document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
   });
 });
 
-// Nav background on scroll
+// Nav floating pill: glass effect on scroll
 const nav = document.querySelector(".nav");
 if (nav) {
   window.addEventListener("scroll", () => {
-    nav.style.borderBottomColor =
-      window.scrollY > 10
-        ? "rgba(63, 63, 70, 0.5)"
-        : "rgba(39, 39, 42, 1)";
+    nav.classList.toggle("scrolled", window.scrollY > 20);
   });
 }
 
