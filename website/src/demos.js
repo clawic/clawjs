@@ -582,13 +582,200 @@ function mountIntegrations(container) {
   build();
 }
 
+// ─── CHAT DEMO ──────────────────────────────────────────────────────────────
+
+function mountChat(container) {
+  const sessions = [
+    { id: "s1", title: "Work-life balance", preview: "Setting boundaries at work...", time: "2m ago", active: true },
+    { id: "s2", title: "Morning reflection", preview: "I woke up feeling more centered...", time: "1h ago" },
+    { id: "s3", title: "Family conversation", preview: "We talked about setting limits...", time: "3h ago" },
+    { id: "s4", title: "Anxiety triggers", preview: "Noticed a pattern before meetings...", time: "Yesterday" },
+    { id: "s5", title: "Weekend plans", preview: "Spent time with Carlos and...", time: "Mar 22" },
+  ];
+
+  const conversation = [
+    { role: "user", text: "I've been feeling overwhelmed with work lately. Any advice?" },
+    { role: "assistant", text: "That's completely valid. Feeling overwhelmed usually means you're carrying more than you've had a chance to process.\n\nA few things that might help:\n\n- **Name the top 3 stressors**, just writing them down can reduce the mental load\n- **Set one boundary this week**, even a small one like no emails after 8pm\n- **Schedule one thing that's just for you**, not productive, just enjoyable\n\nWould you like to explore any of these together?" },
+    { role: "user", text: "The boundary one sounds good. I always feel guilty disconnecting though." },
+    { role: "assistant", text: "That guilt is really common, it often comes from equating availability with responsibility. But being always-on actually *decreases* the quality of what you give.\n\nThink of it this way: a boundary isn't a wall, it's a **recharge window**. The people around you benefit when you come back rested.\n\nWhat's one small boundary you could try this week without it feeling too drastic?" },
+  ];
+
+  // ── Root layout ──
+  const app = h("div", { className: "chat-app" });
+
+  // ── Sidebar ──
+  const sidebar = h("div", { className: "chat-sidebar" });
+
+  const sidebarHeader = h("div", { className: "chat-sidebar__header" });
+  const brand = h("div", { className: "chat-sidebar__brand" });
+  brand.innerHTML = `<img src="/logo.png" alt="" class="chat-sidebar__logo"><span>ClawJS</span>`;
+  const newBtn = h("button", { className: "chat-sidebar__new" });
+  newBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>`;
+  sidebarHeader.append(brand, newBtn);
+  sidebar.append(sidebarHeader);
+
+  const sidebarLabel = h("div", { className: "chat-sidebar__label" }, "Recent");
+  sidebar.append(sidebarLabel);
+
+  const sessionList = h("div", { className: "chat-sidebar__list" });
+  sessions.forEach((s) => {
+    const item = h("button", { className: `chat-session ${s.active ? "chat-session--active" : ""}` });
+    const title = h("div", { className: "chat-session__title" }, s.title);
+    const preview = h("div", { className: "chat-session__preview" }, s.preview);
+    const time = h("span", { className: "chat-session__time" }, s.time);
+    item.append(title, preview, time);
+    sessionList.append(item);
+  });
+  sidebar.append(sessionList);
+
+  // Sidebar footer with settings
+  const sidebarFooter = h("div", { className: "chat-sidebar__footer" });
+  sidebarFooter.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span>Settings</span>`;
+  sidebar.append(sidebarFooter);
+
+  app.append(sidebar);
+
+  // ── Main chat area ──
+  const main = h("div", { className: "chat-main" });
+
+  // Messages
+  const messagesArea = h("div", { className: "chat-messages" });
+  const messagesInner = h("div", { className: "chat-messages__inner" });
+  messagesArea.append(messagesInner);
+
+  let msgIndex = 0;
+  let typingIndicator = null;
+  const TYPING_SPEED = 16;
+  const PAUSE_AFTER_MSG = 600;
+  const PAUSE_BEFORE_ASSISTANT = 900;
+
+  function scrollDown() { messagesArea.scrollTop = messagesArea.scrollHeight; }
+
+  function addUserBubble(text) {
+    const wrap = h("div", { className: "chat-msg chat-msg--user" });
+    const bubble = h("div", { className: "chat-bubble chat-bubble--user" }, text);
+    wrap.append(bubble);
+    messagesInner.append(wrap);
+    scrollDown();
+  }
+
+  function showTypingIndicator() {
+    typingIndicator = h("div", { className: "chat-msg chat-msg--assistant" });
+    const dots = h("div", { className: "chat-typing" });
+    dots.innerHTML = '<span></span><span></span><span></span>';
+    typingIndicator.append(dots);
+    messagesInner.append(typingIndicator);
+    scrollDown();
+  }
+
+  function removeTypingIndicator() {
+    if (typingIndicator) { typingIndicator.remove(); typingIndicator = null; }
+  }
+
+  function renderMarkdown(text) {
+    let html = text
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+      .replace(/\*(.+?)\*/g, "<em>$1</em>");
+    const blocks = html.split(/\n\n/);
+    return blocks.map(block => {
+      const lines = block.split("\n");
+      const listItems = lines.filter(l => l.match(/^- /));
+      if (listItems.length > 0 && listItems.length === lines.length) {
+        return "<ul>" + listItems.map(l => `<li>${l.slice(2)}</li>`).join("") + "</ul>";
+      }
+      if (listItems.length > 0) {
+        let result = "";
+        let inList = false;
+        for (const line of lines) {
+          if (line.match(/^- /)) {
+            if (!inList) { result += "<ul>"; inList = true; }
+            result += `<li>${line.slice(2)}</li>`;
+          } else {
+            if (inList) { result += "</ul>"; inList = false; }
+            result += `<p>${line}</p>`;
+          }
+        }
+        if (inList) result += "</ul>";
+        return result;
+      }
+      return `<p>${block.replace(/\n/g, "<br>")}</p>`;
+    }).join("");
+  }
+
+  function typeAssistantMessage(text, onDone) {
+    const wrap = h("div", { className: "chat-msg chat-msg--assistant" });
+    const bubble = h("div", { className: "chat-bubble chat-bubble--assistant" });
+    wrap.append(bubble);
+    messagesInner.append(wrap);
+    scrollDown();
+    let i = 0;
+    function tick() {
+      if (i >= text.length) { bubble.innerHTML = renderMarkdown(text); scrollDown(); onDone?.(); return; }
+      const chunk = Math.min(2, text.length - i);
+      i += chunk;
+      bubble.innerHTML = renderMarkdown(text.slice(0, i));
+      scrollDown();
+      setTimeout(tick, TYPING_SPEED);
+    }
+    tick();
+  }
+
+  function playNext() {
+    if (msgIndex >= conversation.length) {
+      setTimeout(() => { messagesInner.innerHTML = ""; msgIndex = 0; playNext(); }, 4000);
+      return;
+    }
+    const msg = conversation[msgIndex];
+    msgIndex++;
+    if (msg.role === "user") {
+      addUserBubble(msg.text);
+      setTimeout(playNext, PAUSE_AFTER_MSG);
+    } else {
+      showTypingIndicator();
+      setTimeout(() => {
+        removeTypingIndicator();
+        typeAssistantMessage(msg.text, () => { setTimeout(playNext, PAUSE_AFTER_MSG); });
+      }, PAUSE_BEFORE_ASSISTANT);
+    }
+  }
+
+  main.append(messagesArea);
+
+  // ── Composer ──
+  const composer = h("div", { className: "chat-composer" });
+  const composerInner = h("div", { className: "chat-composer__inner" });
+
+  // Plus button
+  const plusBtn = h("button", { className: "chat-composer__plus" });
+  plusBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`;
+
+  // Input field
+  const inputField = h("div", { className: "chat-composer__input" }, "Type a message...");
+
+  // Mic button (idle state)
+  const micBtn = h("button", { className: "chat-composer__mic" });
+  micBtn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>`;
+
+  composerInner.append(plusBtn, inputField, micBtn);
+  composer.append(composerInner);
+  main.append(composer);
+
+  app.append(main);
+  container.append(app);
+
+  setTimeout(playNext, 800);
+}
+
 // ─── Mount all demos ─────────────────────────────────────────────────────────
 
 document.addEventListener("DOMContentLoaded", () => {
   const oc = document.getElementById("demo-openclaw");
   const ai = document.getElementById("demo-ai");
   const ig = document.getElementById("demo-integrations");
+  const ch = document.getElementById("demo-chat");
   if (oc) mountOpenClaw(oc);
   if (ai) mountAiModels(ai);
   if (ig) mountIntegrations(ig);
+  if (ch) mountChat(ch);
 });

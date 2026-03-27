@@ -1,7 +1,5 @@
 // ClawJS Website — Main JS
 
-const DEMO_URL = import.meta.env.VITE_DEMO_URL?.trim() || "";
-
 // Smooth scroll for anchor links
 document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
   anchor.addEventListener("click", (e) => {
@@ -12,40 +10,6 @@ document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
     }
   });
 });
-
-if (DEMO_URL) {
-  // Ensure the top navigation exposes the demo link on every page.
-  document.querySelectorAll(".nav__links").forEach((links) => {
-    const hasDemo = Array.from(links.querySelectorAll("a")).some((link) => link.textContent.trim() === "Demo");
-    if (hasDemo) return;
-
-    const item = document.createElement("li");
-    const anchor = document.createElement("a");
-    anchor.href = DEMO_URL;
-    anchor.textContent = "Demo";
-    item.appendChild(anchor);
-
-    const githubItem = links.querySelector(".nav__github")?.closest("li");
-    if (githubItem?.parentElement === links) {
-      links.insertBefore(item, githubItem);
-      return;
-    }
-    links.appendChild(item);
-  });
-
-  document.querySelectorAll("[data-demo-link]").forEach((link) => {
-    link.href = DEMO_URL;
-  });
-} else {
-  document.querySelectorAll("[data-demo-link]").forEach((link) => {
-    const container = link.closest("li, .feature-card");
-    if (container) {
-      container.remove();
-      return;
-    }
-    link.remove();
-  });
-}
 
 // Nav background on scroll
 const nav = document.querySelector(".nav");
