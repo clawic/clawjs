@@ -323,7 +323,7 @@ export const openclawAdapter: RuntimeAdapter = {
   },
   removeProvider(provider, options) {
     if (!options.agentDir) return 0;
-    return removeAuthProfilesForProvider(options.agentDir, provider, undefined, options.legacyAgentDirs);
+    return removeAuthProfilesForProvider(options.agentDir, provider);
   },
   async listSchedulers(_runner, options): Promise<SchedulerDescriptor[]> {
     return [{

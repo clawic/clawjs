@@ -28,7 +28,7 @@ function execOsa(args: string[]): Promise<string> {
 }
 
 function parseMockPayload(): CalendarMockPayload | null {
-  const raw = process.env.CLAWJS_LEGACY_CALENDAR_MOCK;
+  const raw = process.env.CLAWJS_CALENDAR_MOCK;
   if (!raw) return null;
 
   try {

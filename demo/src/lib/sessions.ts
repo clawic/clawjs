@@ -52,8 +52,6 @@ interface OpenClawTranscriptEvent {
 }
 
 const CLAWJS_SESSION_PREFIX = "clawjs-";
-const LEGACY_SESSION_PREFIX = "clawjs-legacy-";
-
 function summarizeTitle(text: string): string {
   const normalized = text.replace(/\s+/g, " ").trim();
   if (!normalized) return "New chat";
@@ -153,10 +151,6 @@ export function parseOpenClawTranscript(raw: string): SessionMessage[] {
   return parsed;
 }
 
-function legacyTranscriptPath(sessionId: string): string {
-  return path.join(resolveClawJSSessionsDir(), `${sessionId}.jsonl`);
-}
-
 function conversationsDir(): string {
   return resolveConversationsDir(resolveClawJSWorkspaceDir());
 }
@@ -165,33 +159,7 @@ function conversationPath(sessionId: string): string {
   return path.join(conversationsDir(), `${sessionId}.jsonl`);
 }
 
-function ensureLegacySessionsMigrated(): void {
-  const sourceDir = resolveClawJSSessionsDir();
-  const targetDir = conversationsDir();
-  if (!fs.existsSync(sourceDir)) return;
-  fs.mkdirSync(targetDir, { recursive: true });
-
-  for (const entry of fs.readdirSync(sourceDir)) {
-    if (!entry.endsWith(".jsonl")) continue;
-    const targetPath = path.join(targetDir, entry);
-    if (!fs.existsSync(targetPath)) {
-      fs.copyFileSync(path.join(sourceDir, entry), targetPath);
-    }
-  }
-}
-
-function ensureSessionAvailable(sessionId: string): void {
-  ensureLegacySessionsMigrated();
-  const targetPath = conversationPath(sessionId);
-  if (fs.existsSync(targetPath)) return;
-  const sourcePath = legacyTranscriptPath(sessionId);
-  if (!fs.existsSync(sourcePath)) return;
-  fs.mkdirSync(path.dirname(targetPath), { recursive: true });
-  fs.copyFileSync(sourcePath, targetPath);
-}
-
 function getConversationStore(): ConversationStore {
-  ensureLegacySessionsMigrated();
   return new ConversationStore(resolveClawJSWorkspaceDir());
 }
 
@@ -247,7 +215,6 @@ function normalizeSummary(summary: {
 }
 
 export function openClawSessionsDir(): string {
-  ensureLegacySessionsMigrated();
   return conversationsDir();
 }
 
@@ -264,7 +231,6 @@ export function searchSessions(query: string, limit?: number): SessionSummary[] 
 }
 
 export function getSession(sessionId: string): SessionRecord | null {
-  ensureSessionAvailable(sessionId);
   const session = getConversationStore().getSession(sessionId);
   return session ? normalizeRecord(session) : null;
 }
@@ -278,7 +244,6 @@ export function appendSessionMessage(
   sessionId: string,
   message: Omit<SessionMessage, "id" | "createdAt"> & { createdAt?: number },
 ): SessionRecord {
-  ensureSessionAvailable(sessionId);
   const store = getConversationStore();
   const createdAt = message.createdAt ?? Date.now();
   const session = store.appendMessage(sessionId, {
@@ -292,13 +257,12 @@ export function appendSessionMessage(
 }
 
 export function sessionExists(sessionId: string): boolean {
-  if (!sessionId.startsWith(CLAWJS_SESSION_PREFIX) && !sessionId.startsWith(LEGACY_SESSION_PREFIX) && !sessionId.startsWith("clawjs-")) {
+  if (!sessionId.startsWith(CLAWJS_SESSION_PREFIX) && !sessionId.startsWith("clawjs-")) {
     return false;
   }
   return getSession(sessionId) !== null;
 }
 
 export function updateSessionTitle(sessionId: string, newTitle: string): boolean {
-  ensureSessionAvailable(sessionId);
   return getConversationStore().updateSessionTitle(sessionId, newTitle);
 }

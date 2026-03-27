@@ -82,7 +82,7 @@ For E2E work:
 
 - The canonical browser suite lives in `tests/e2e/` and uses Playwright.
 - The blocking suite is hermetic and runs the demo against `next start`, not `next dev`.
-- If a change touches visible UI in the demo, add or update a Playwright test and capture a final settled screenshot under `artifacts/e2e/`.
+- If a change touches visible UI in the demo, add or update Playwright coverage and follow the artifact guidance in `tests/e2e/README.md`.
 - Reuse `tests/e2e/fixtures.ts` so console errors, page errors, failed requests, and unexpected `4xx` or `5xx` responses stay gated.
 - If a scenario depends on runtime or external services, add or extend hermetic fixture logic in `demo/src/lib/e2e.ts` and the relevant test-only API routes.
 
@@ -142,7 +142,7 @@ Pull request rules:
 
 - Never commit plaintext credentials, API keys, or `.env` files with real secrets.
 - Prefer provider login flows, environment injection, or external secret stores over hardcoded credentials.
-- For any real secret access, use `Secrets Vault` and the `secrets-proxy` wrapper instead of reading or printing raw secret values.
+- For any real secret access, use secure secret storage and avoid reading or printing raw secret values.
 - Do not log or print raw credentials. ClawJS masks some common secret fields, but callers still must avoid exposing secrets.
 - Do not open public issues for vulnerabilities that could expose credentials, workspace contents, or remote execution paths. Report them privately to maintainers first.
 - Workspace audit logs live under `.clawjs/audit/`; if you change audit or logging behavior, review redaction and retention expectations.
@@ -163,7 +163,7 @@ Pull request rules:
 - For every change, review the relevant docs, README files, examples, templates, and website content to confirm they still match the current behavior, APIs, and workflows; update them in the same patch whenever they are stale.
 - When you touch a package, verify whether corresponding docs, templates, smoke coverage, and repository surface checks also need updates.
 - When you add or rename public packages, commands, or scaffolding behavior, update docs and package-surface coverage.
-- If unsure about release or merge target, default to `main` for normal work and document the assumption.
+- If unsure about release or merge target, check `docs/git-workflow.md` and document any assumption you make.
 
 ## First Files To Read For Common Tasks
 

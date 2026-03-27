@@ -25,32 +25,16 @@ function resolveSettingsPath(rawPath: string): string {
   return rawPath;
 }
 
-export function legacyClawJSLocalSettingsPath(): string {
-  return path.join(os.homedir(), ".openclaw", "clawjs-legacy-settings.json");
-}
-
 export function getClawJSLocalSettingsPath(): string {
-  const configured = process.env.CLAWJS_LEGACY_LOCAL_SETTINGS_PATH?.trim();
+  const configured = process.env.OPENCLAW_LOCAL_SETTINGS_PATH?.trim();
   if (configured) {
     return resolveSettingsPath(configured);
   }
   return path.join(resolveClawJSWorkspaceDir(), "settings.json");
 }
 
-function ensureLocalSettingsMigrated(): void {
-  const targetPath = getClawJSLocalSettingsPath();
-  if (fs.existsSync(targetPath)) return;
-
-  const legacyPath = legacyClawJSLocalSettingsPath();
-  if (!fs.existsSync(legacyPath)) return;
-
-  fs.mkdirSync(path.dirname(targetPath), { recursive: true });
-  fs.copyFileSync(legacyPath, targetPath);
-}
-
 export function getClawJSLocalSettings(): ClawJSLocalSettings {
   try {
-    ensureLocalSettingsMigrated();
     const raw = fs.readFileSync(getClawJSLocalSettingsPath(), "utf8");
     const parsed = JSON.parse(raw) as Partial<ClawJSLocalSettings> & { locale?: string };
     return {
@@ -72,7 +56,6 @@ export function getClawJSLocalSettings(): ClawJSLocalSettings {
 export function saveClawJSLocalSettings(
   updates: Partial<Omit<ClawJSLocalSettings, "schemaVersion">>
 ): ClawJSLocalSettings {
-  ensureLocalSettingsMigrated();
   const next: ClawJSLocalSettings = {
     ...getClawJSLocalSettings(),
     schemaVersion: LOCAL_SETTINGS_SCHEMA_VERSION,

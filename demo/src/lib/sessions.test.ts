@@ -63,13 +63,13 @@ test("parseOpenClawTranscript recovers user and assistant messages", () => {
   );
 });
 
-test("sessions load directly from OpenClaw transcripts", { concurrency: false }, () => {
+test("sessions load directly from OpenClaw conversation transcripts", { concurrency: false }, () => {
   const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "clawjs-sessions-"));
   const previousStateDir = process.env.OPENCLAW_STATE_DIR;
   process.env.OPENCLAW_STATE_DIR = tempRoot;
 
   try {
-    const sessionId = "clawjs-legacy-session";
+    const sessionId = "clawjs-current-session";
     fs.mkdirSync(openClawSessionsDir(), { recursive: true });
     fs.writeFileSync(
       path.join(openClawSessionsDir(), `${sessionId}.jsonl`),

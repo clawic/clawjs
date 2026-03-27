@@ -1,5 +1,4 @@
 export const DEFAULT_CLAWJS_OPENCLAW_AGENT_ID = "clawjs-demo";
-export const LEGACY_CLAWJS_OPENCLAW_AGENT_ID = "clawjs-legacy";
 
 export function defaultClawJsWorkspacePath(
   agentId: string = DEFAULT_CLAWJS_OPENCLAW_AGENT_ID,
@@ -35,10 +34,4 @@ export function defaultClawJsLocalSettingsPath(
   agentId: string = DEFAULT_CLAWJS_OPENCLAW_AGENT_ID,
 ): string {
   return `${defaultClawJsWorkspacePath(agentId)}/settings.json`;
-}
-
-export function defaultLegacyClawJsWorkspacePath(
-  agentId: string = LEGACY_CLAWJS_OPENCLAW_AGENT_ID,
-): string {
-  return `~/.openclaw/workspaces/${agentId}`;
 }

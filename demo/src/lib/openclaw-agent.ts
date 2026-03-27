@@ -1,6 +1,5 @@
 import { execFileSync } from "child_process";
 import fs from "fs";
-import os from "os";
 import path from "path";
 
 import {
@@ -13,8 +12,6 @@ import {
   resolveClawJSSessionsDir,
   resolveClawJSWorkspaceDir,
   resolveHomePath as clawResolveHomePath,
-  resolveLegacyAgentDir,
-  resolveLegacyWorkspaceDir,
   resolveOpenClawStateDir as clawResolveOpenClawStateDir,
 } from "./claw.ts";
 
@@ -78,20 +75,11 @@ export function getClawJSOpenClawAgentId(): string {
 function getConfiguredAgent(agentId = getClawJSOpenClawAgentId()): OpenClawAgentConfig | null {
   const agents = readOpenClawConfig()?.agents?.list;
   if (!Array.isArray(agents)) return null;
-  return agents.find((agent) => agent?.id === agentId)
-    || (agentId === DEFAULT_CLAWJS_OPENCLAW_AGENT_ID
-      ? agents.find((agent) => agent?.id === "clawjs-legacy") || null
-      : null);
-}
-
-export function resolveLegacyDefaultOpenClawWorkspaceDir(): string {
-  const configured = readOpenClawConfig()?.agents?.defaults?.workspace?.trim();
-  if (configured) return resolveHomePath(configured);
-  return path.join(resolveOpenClawStateDir(), "workspace");
+  return agents.find((agent) => agent?.id === agentId) || null;
 }
 
 export function resolveClawJSTranscriptionDbPath(agentId = getClawJSOpenClawAgentId()): string {
-  const explicit = process.env.CLAWLEN_TRANSCRIPTION_DB_PATH?.trim() || process.env.CLAWJS_LEGACY_TRANSCRIPTION_DB_PATH?.trim();
+  const explicit = process.env.OPENCLAW_TRANSCRIPTION_DB_PATH?.trim();
   if (explicit) return resolveHomePath(explicit);
   return path.join(resolveClawJSWorkspaceDir(), "transcriptions.sqlite");
 }
@@ -246,14 +234,7 @@ export function normalizeClawJSTranscriptionDbPath(rawPath: string): string {
   if (!trimmed) return rawPath;
 
   const normalized = resolveHomePath(trimmed);
-  const legacyStateDirPath = path.join(resolveOpenClawStateDir(), "workspace", "transcriptions.sqlite");
-  const legacyHomePath = path.join(os.homedir(), ".openclaw", "workspace", "transcriptions.sqlite");
-  const legacyClawJSWorkspace = path.join(resolveLegacyWorkspaceDir(), "transcriptions.sqlite");
-  if (
-    normalized !== legacyStateDirPath
-    && normalized !== legacyHomePath
-    && normalized !== legacyClawJSWorkspace
-  ) {
+  if (normalized !== resolveClawJSTranscriptionDbPath()) {
     return rawPath;
   }
 
@@ -262,8 +243,4 @@ export function normalizeClawJSTranscriptionDbPath(rawPath: string): string {
   }
 
   return resolveClawJSTranscriptionDbPath();
-}
-
-export function resolveLegacyClawJSAgentDir(): string {
-  return resolveLegacyAgentDir();
 }

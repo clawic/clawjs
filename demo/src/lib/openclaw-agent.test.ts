@@ -11,7 +11,7 @@ function writeFakeOpenClawCli(binDir: string): void {
   const script = `#!/bin/sh
 set -eu
 
-agent_id="\${OPENCLAW_FAKE_AGENT_ID:-clawjs-legacy}"
+agent_id="\${OPENCLAW_FAKE_AGENT_ID:-clawjs-demo}"
 state_dir="\${OPENCLAW_STATE_DIR:?missing OPENCLAW_STATE_DIR}"
 
 if [ "$1" = "agents" ] && [ "$2" = "add" ]; then
@@ -59,7 +59,7 @@ async function withFakeOpenClaw<T>(modelStatus: string, run: () => Promise<T>): 
 
   // Pre-create the config so readOpenClawConfig() finds the agent.
   // getClawJSOpenClawStatus is read-only and does not call ensureClawJSOpenClawAgent().
-  const agentId = "clawjs-legacy";
+  const agentId = "clawjs-demo";
   const configPayload = {
     agents: {
       list: [
@@ -83,7 +83,7 @@ async function withFakeOpenClaw<T>(modelStatus: string, run: () => Promise<T>): 
   process.env.HOME = homeDir;
   process.env.OPENCLAW_STATE_DIR = stateDir;
   process.env.OPENCLAW_FAKE_MODEL_STATUS = modelStatus;
-  process.env.OPENCLAW_FAKE_AGENT_ID = "clawjs-legacy";
+  process.env.OPENCLAW_FAKE_AGENT_ID = "clawjs-demo";
 
   try {
     return await run();
@@ -125,21 +125,26 @@ test("getClawJSOpenClawStatus reports needs setup when the agent has no model", 
     assert.equal(status.installed, true);
     assert.equal(status.agentConfigured, true);
     assert.equal(status.modelConfigured, false);
+    assert.equal(status.authConfigured, false);
     assert.equal(status.ready, false);
-    assert.equal(status.needsSetup, true);
+    assert.equal(status.needsSetup, false);
+    assert.equal(status.needsAuth, true);
     assert.equal(status.lastError, null);
   });
 });
 
-test("getClawJSOpenClawStatus reports the configured model when one exists", { concurrency: false }, async () => {
+test("getClawJSOpenClawStatus reports model selection while auth is still pending", { concurrency: false }, async () => {
   await withFakeOpenClaw('{"defaultModel":"openai/gpt-5.4","auth":{"missingProvidersInUse":[],"providers":[{"provider":"openai","effective":{"kind":"apiKey"},"profiles":{"apiKey":1}}]}}', async () => {
     const status = await getClawJSOpenClawStatus();
 
     assert.equal(status.installed, true);
     assert.equal(status.agentConfigured, true);
     assert.equal(status.modelConfigured, true);
+    assert.equal(status.authConfigured, false);
     assert.equal(status.defaultModel, "openai/gpt-5.4");
+    assert.equal(status.ready, false);
     assert.equal(status.needsSetup, false);
+    assert.equal(status.needsAuth, true);
     assert.equal(status.lastError, null);
   });
 });

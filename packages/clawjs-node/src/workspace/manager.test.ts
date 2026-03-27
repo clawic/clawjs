@@ -112,11 +112,11 @@ test("resetWorkspace can fully clear managed state and repairWorkspace rebuilds 
   assert.equal(validateWorkspace(workspaceDir).ok, true);
 });
 
-test("repairWorkspace restores missing workspace layout and migrates compat snapshots", () => {
+test("repairWorkspace restores missing workspace layout and normalizes compat snapshots", () => {
   const workspaceDir = fs.mkdtempSync(path.join(os.tmpdir(), "clawjs-workspace-repair-"));
-  const legacySnapshotPath = path.join(workspaceDir, ".clawjs", "compat.json");
-  fs.mkdirSync(path.dirname(legacySnapshotPath), { recursive: true });
-  fs.writeFileSync(legacySnapshotPath, JSON.stringify({
+  const snapshotPath = path.join(workspaceDir, ".clawjs", "compat", "runtime-snapshot.json");
+  fs.mkdirSync(path.dirname(snapshotPath), { recursive: true });
+  fs.writeFileSync(snapshotPath, JSON.stringify({
     runtimeAdapter: "openclaw",
     runtimeVersion: "1.2.3",
     probedAt: "2026-03-20T00:00:00.000Z",
@@ -141,7 +141,7 @@ test("repairWorkspace restores missing workspace layout and migrates compat snap
   assert.equal(validateWorkspace(workspaceDir).ok, true);
   assert.equal(result.createdRuntimeFiles.length, 6);
   assert.equal(result.compatSnapshotMigrated, true);
-  assert.equal(result.compatSnapshotSourcePath, legacySnapshotPath);
+  assert.equal(result.compatSnapshotSourcePath, snapshotPath);
   assert.equal(fs.existsSync(resolveCompatSnapshotPath(workspaceDir)), true);
   assert.equal(readCompatSnapshot(workspaceDir)?.runtimeVersion, "1.2.3");
   assert.equal(result.createdDirectories.includes(path.join(workspaceDir, ".clawjs", "conversations")), true);

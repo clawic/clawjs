@@ -57,6 +57,9 @@ const same = await createClaw({
 |----|----|
 | `claw.runtime` | `context`, `status`, `gateway.*`, install/uninstall/repair/setup methods, command builders, plan builders, OpenClaw context helpers |
 | `claw.workspace` | `init`, `attach`, `validate`, `repair`, `previewReset`, `reset`, `listManagedFiles`, `canonicalPaths`, `inspect` |
+| `claw.intent` | `get`, `set`, `patch`, `plan`, `apply`, `diff` |
+| `claw.observed` | `read`, `refresh` |
+| `claw.features` | `describe` |
 | `claw.files` | template packs, binding sync, settings schema/value storage, workspace file read/write/preview/inspect, managed block helpers |
 | `claw.compat` | `refresh`, `read` |
 | `claw.doctor` | `run` |
@@ -65,9 +68,14 @@ const same = await createClaw({
 | `claw.auth` | `status`, `diagnostics`, `login`, `setApiKey`, `saveApiKey`, `removeProvider` |
 | `claw.scheduler` | `list`, `run`, `enable`, `disable` |
 | `claw.memory` | `list`, `search` |
-| `claw.skills` | `list`, `sync` |
+| `claw.skills` | `list`, `sync`, `sources`, `search`, `install` |
+| `claw.generations` | backend registry plus generic generation create/list/read/delete |
+| `claw.image`, `claw.audio`, `claw.video` | typed generation facades over the generic store |
+| `claw.tts` | synthesize, config helpers, provider catalog, text segmentation, playback planning |
 | `claw.channels` | `list` |
 | `claw.telegram` | secret provisioning, bot connection, webhook and polling control, commands, chat inspection, moderation, invite links, update sync |
+| `claw.slack` | bot connection, status, channel lookup, message send |
+| `claw.whatsapp` | connection lifecycle, status, send, disconnect |
 | `claw.inference` | `generateText` |
 | `claw.secrets` | `list`, `describe`, `doctorKeychain`, `ensureHttpReference`, `ensureTelegramBotReference` |
 | `claw.conversations` | session CRUD, title generation, structured reply streaming, chunk streaming |
@@ -105,6 +113,20 @@ claw.runtime.setupWorkspacePlan();
 For OpenClaw-specific app-state management, the same namespace exposes
 `discoverContext`, `migrateLegacyState`, and `detachWorkspace`.
 
+When the adapter is `openclaw`, `claw.runtime.plugins` also exposes the
+managed bridge workflow for the ClawJS plugin packages:
+
+```ts
+const pluginStatus = await claw.runtime.plugins.status();
+await claw.runtime.plugins.ensure();
+await claw.runtime.plugins.install("all");
+await claw.runtime.plugins.enable("all");
+const clawjsStatus = await claw.runtime.plugins.clawjs.status();
+```
+
+Use this namespace when you want to manage the OpenClaw bridge from app
+code without shelling out yourself.
+
 ## Workspace
 
 ```ts
@@ -135,6 +157,15 @@ await claw.observed.refresh({ domains: ["models", "providers", "channels"] });
 
 const features = claw.features.describe();
 ```
+
+The ownership model is the important bit:
+
+- `intent` stores desired SDK-owned state under `.clawjs/intents/`
+- `observed` stores rebuildable runtime-derived state under `.clawjs/observed/`
+- `features.describe()` tells you which domains are adapter-owned, SDK-owned, or mixed before you call `apply()`
+
+That keeps UI and automation code from guessing which side owns a given
+setting.
 ## Files
 
 The file surface is documented in depth in [Files & Templates](/files). The runtime-facing methods are:
@@ -186,6 +217,9 @@ These auth operations also update the canonical provider intent under
 `.clawjs/intents/providers.json`, while observed auth summaries stay
 rebuildable under `.clawjs/observed/providers.json`.
 
+For real secrets, prefer the `claw.secrets` helpers plus your
+provider-specific wrapper rather than hardcoding credentials in source.
+
 ## Speech / TTS
 
 ```ts
@@ -219,6 +253,40 @@ await claw.channels.list();
 ```
 Always check `status.capabilityMap` before assuming these subsystems are
 supported by the current adapter.
+
+## Generations And Typed Media Facades
+
+The generic generation store is useful when you want one API for image,
+audio, video, or document jobs, while the typed facades remove the need
+to pass `kind` repeatedly.
+
+```ts
+const backends = claw.generations.backends();
+await claw.generations.registerCommandBackend({
+  id: "local-imagen",
+  label: "Local Imagen",
+  supportedKinds: ["image"],
+  command: "node",
+  args: ["scripts/generate-image.mjs"],
+});
+
+const generic = await claw.generations.create({
+  kind: "image",
+  prompt: "Minimal line-art cat",
+});
+
+const image = await claw.image.generate({
+  prompt: "Minimal line-art cat",
+});
+
+const audio = await claw.audio.generate({
+  prompt: "Read the summary aloud",
+});
+```
+
+Records and generated files are stored under the workspace data layer,
+so the same app can browse prior outputs later with `list()`, `get()`,
+and `remove()`.
 
 ## Telegram and Secrets
 
@@ -262,6 +330,24 @@ await claw.secrets.ensureTelegramBotReference({
   apiBaseUrl: "https://api.telegram.org",
 });
 ```
+
+Slack and WhatsApp currently live on the same instance when the adapter
+supports them:
+
+```ts
+await claw.slack.connectBot({ secretName: "slack_bot" });
+await claw.slack.listChannels();
+
+await claw.whatsapp.connect({
+  mode: "business-api",
+  secretName: "wa_token",
+  phoneNumberId: "1234567890",
+});
+await claw.whatsapp.status();
+```
+
+The CLI does not expose these namespaces yet. Use the SDK when you need
+them.
 ## Inference and Conversations
 
 ```ts

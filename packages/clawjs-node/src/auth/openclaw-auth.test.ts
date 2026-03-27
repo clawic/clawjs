@@ -107,10 +107,9 @@ test("summarizeAuthProfiles and normalizeAuthSummaries are stable", () => {
   assert.equal(normalized.openai.authType, "oauth");
 });
 
-test("removeAuthProfilesForProvider deletes fallback auth files", () => {
+test("removeAuthProfilesForProvider deletes provider auth entries from the current agent dir", () => {
   const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "clawjs-auth-"));
   const agentDir = path.join(tempRoot, "agent");
-  const legacyDir = path.join(tempRoot, "legacy-agent");
 
   saveAuthStore(agentDir, {
     version: 1,
@@ -119,17 +118,10 @@ test("removeAuthProfilesForProvider deletes fallback auth files", () => {
       "openai:manual": { type: "api_key", provider: "openai", key: "sk-87654321" },
     },
   });
-  saveAuthStore(legacyDir, {
-    version: 1,
-    profiles: {
-      "anthropic:legacy": { type: "token", provider: "anthropic", token: "tok-1111" },
-    },
-  });
 
-  const removed = removeAuthProfilesForProvider(agentDir, "anthropic", undefined, [legacyDir]);
-  assert.equal(removed, 2);
+  const removed = removeAuthProfilesForProvider(agentDir, "anthropic");
+  assert.equal(removed, 1);
   assert.equal(Object.keys(loadAuthStore(agentDir).profiles).length, 1);
-  assert.equal(Object.keys(loadAuthStore(legacyDir).profiles).length, 0);
 });
 
 test("setDefaultModel forwards resolved command args", async () => {

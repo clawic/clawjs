@@ -140,13 +140,11 @@ import {
   callOpenClawGateway,
   discoverOpenClawAppContext,
   detachOpenClawAppContext,
-  migrateOpenClawAppState,
   runOpenClawMemorySearch,
   type OpenClawAppContext,
   resolveOpenClawContext,
   type DiscoverOpenClawAppContextOptions,
   type DetachOpenClawAppContextOptions,
-  type OpenClawLegacyMigrationOptions,
   type OpenClawRuntimeContext,
   type OpenClawGatewayStatus,
   type AuthDiagnostics,
@@ -347,7 +345,6 @@ export interface ClawInstance {
       repairPlan: () => RuntimeProgressPlan;
       setupWorkspacePlan: () => RuntimeProgressPlan;
       discoverContext: (options?: Omit<DiscoverOpenClawAppContextOptions, "configPath" | "stateDir" | "workspaceDir" | "agentDir" | "conversationsDir" | "env">) => OpenClawAppContext | null;
-      migrateLegacyState: (options?: OpenClawLegacyMigrationOptions) => ReturnType<typeof migrateOpenClawAppState> | null;
       detachWorkspace: (options?: Omit<DetachOpenClawAppContextOptions, "configPath" | "stateDir" | "workspaceDir" | "agentDir" | "conversationsDir" | "env">) => Promise<Awaited<ReturnType<typeof detachOpenClawAppContext>> | null>;
     };
   workspace: {
@@ -509,7 +506,7 @@ export interface ClawInstance {
         runtimeCommand?: RuntimeCommandSpec;
       },
     ) => Promise<SaveApiKeyResult>;
-    removeProvider: (provider: string, legacyAgentDirs?: string[]) => number;
+    removeProvider: (provider: string) => number;
   };
   scheduler: {
     list: () => Promise<SchedulerDescriptor[]>;
@@ -1950,7 +1947,6 @@ export async function createClaw(options: CreateClawOptions): Promise<ClawInstan
             if (config.enabled === false) {
               adapter.removeProvider(provider, {
                 ...resolvedRuntimeOptions,
-                legacyAgentDirs: [],
               });
             }
           }
@@ -2231,9 +2227,6 @@ export async function createClaw(options: CreateClawOptions): Promise<ClawInstan
           ...openClawContextDefaults(),
           ...discoverOptions,
         })
-        : null,
-      migrateLegacyState: (migrationOptions = {}) => adapter.id === "openclaw" && runtimeContext
-        ? migrateOpenClawAppState(runtimeContext, migrationOptions)
         : null,
       detachWorkspace: async (detachOptions = {}) => adapter.id === "openclaw"
         ? detachOpenClawAppContext({
@@ -2710,12 +2703,9 @@ export async function createClaw(options: CreateClawOptions): Promise<ClawInstan
           throw error;
         }
       },
-      removeProvider: (provider, legacyAgentDirs = []) => {
+      removeProvider: (provider) => {
         emitAuthProgress("auth.remove", "start", provider);
-        const removed = adapter.removeProvider(provider, {
-          ...resolvedRuntimeOptions,
-          legacyAgentDirs,
-        });
+        const removed = adapter.removeProvider(provider, resolvedRuntimeOptions);
         patchProviderIntent(provider, {
           enabled: false,
         });

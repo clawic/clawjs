@@ -21,50 +21,62 @@
   <meta name="twitter:image" content="https://clawjs.ai/og-image.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/src/style.css" />
 </head>
 <body>
-  <nav class="nav">
+  <nav class="nav hero-nav-enter" id="mainNav">
     <div class="nav__inner">
-      <a href="/" class="nav__logo">
-        <img src="/logo.png" alt="ClawJS logo" />
-        ClawJS
-      </a>
+      <div class="nav__left">
+        <a href="/" class="nav__logo">
+          <img src="/logo.png" alt="ClawJS logo" />
+          <span>ClawJS</span>
+        </a>
+        <ul class="nav__links">
+          <li><a href="https://docs.clawjs.ai" target="_blank" rel="noopener">Docs</a></li>
+          <li><a href="https://docs.clawjs.ai/api" target="_blank" rel="noopener">API</a></li>
+          <li><a href="https://demo.clawjs.ai" target="_blank" rel="noopener">Demo</a></li>
+          <li><a href="https://docs.clawjs.ai/getting-started" target="_blank" rel="noopener">Guides</a></li>
+        </ul>
+      </div>
       <button class="nav__toggle" aria-label="Toggle menu" onclick="document.querySelector('.nav__links').classList.toggle('open')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M3 12h18M3 6h18M3 18h18"/>
         </svg>
       </button>
-      <ul class="nav__links">
-        <li><a href="https://docs.clawjs.ai" target="_blank" rel="noopener">Docs</a></li>
-        <li><a href="https://docs.clawjs.ai/getting-started" target="_blank" rel="noopener">Get Started</a></li>
-        <li><a href="https://docs.clawjs.ai/api" target="_blank" rel="noopener">API</a></li>
-        <li>
-          <a href="https://github.com/clawic/clawjs" class="nav__github" target="_blank" rel="noopener">
-            <svg viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
-            GitHub
-          </a>
-        </li>
-      </ul>
+      <a href="https://github.com/clawic/clawjs" class="nav__github" target="_blank" rel="noopener" title="GitHub">
+        <svg viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+      </a>
     </div>
   </nav>
 
   <section class="hero">
-    <div class="container">
-      <img src="/logo.png" alt="ClawJS" class="hero__logo" />
+    <!-- AURORA: Animated floating orbs -->
+    <div class="hero__aurora">
+      <div class="hero__orb hero__orb--1"></div>
+      <div class="hero__orb hero__orb--2"></div>
+      <div class="hero__orb hero__orb--3"></div>
+    </div>
 
-      <h1 class="hero__title">
-        Build <span>AI Agent</span> Apps<br/>with Any Runtime
+    <div class="container">
+      <!-- Animated orchestration visual -->
+      <div class="hero__orbit hero__enter hero__enter--1" id="heroOrbit">
+        <div class="hero__orbit-hub" id="heroHub"><img src="/logo.png" alt="ClawJS" /></div>
+      </div>
+      <!-- Canvas lives at section level, no clipping -->
+      <canvas class="hero__trails-canvas" id="heroCanvas"></canvas>
+
+      <h1 class="hero__title hero__enter hero__enter--2">
+        Ship <span>AI Agents</span> Fast.<br/>Declarative. Portable.
       </h1>
 
-      <p class="hero__subtitle">
-        The open-source Node.js SDK that lets you build, ship, and manage AI agent applications. One API, one CLI. Works across multiple runtime adapters.
+      <p class="hero__subtitle hero__enter hero__enter--3">
+        Skills, memory, channels, models. Declare what your agent does. ClawJS handles the rest across 9+ runtime adapters.
       </p>
 
-      <p class="hero__tagline">Open Source · MIT License</p>
+      <p class="hero__tagline hero__enter hero__enter--4">Open Source · MIT License</p>
 
-      <div class="hero__actions">
+      <div class="hero__actions hero__enter hero__enter--5">
         <a href="https://docs.clawjs.ai/getting-started" class="btn btn--primary" target="_blank" rel="noopener">
           Get Started
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -77,7 +89,7 @@
         </a>
       </div>
 
-      <div class="install-bar">
+      <div class="install-bar hero__enter hero__enter--6">
         <div class="install-bar__code">
           <span class="prompt">$</span>
           <span>npm install -g @clawjs/cli</span>
@@ -90,7 +102,7 @@
         </div>
       </div>
 
-      <div class="runtime-marquee">
+      <div class="runtime-marquee hero__enter hero__enter--7">
         <div class="runtime-marquee__label">Supported Runtimes</div>
         <div class="runtime-marquee__track">
           <div class="runtime-marquee__inner">
@@ -121,6 +133,8 @@
   </section>
 
   <section class="section section--alt">
+    <!-- AURORA: Subtle background orb -->
+    <div class="section__aurora-orb" style="top: -10%; right: 10%;"></div>
     <div class="container">
       <div class="section__header">
         <p class="section__label">Capabilities</p>
@@ -132,63 +146,90 @@
 
       <div class="capabilities">
         <div class="capability">
-          <div class="capability__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m17.29 4.14-.07 3.79c-.01.52.32 1.21.74 1.52l2.48 1.88c1.59 1.2 1.33 2.67-.57 3.27l-3.23 1.01c-.54.17-1.11.76-1.25 1.31l-.77 2.94c-.61 2.32-2.13 2.55-3.39.51l-1.76-2.85c-.32-.52-1.08-.91-1.68-.88l-3.34.17c-2.39.12-3.07-1.26-1.51-3.08l1.98-2.3c.37-.43.54-1.23.37-1.77L4.28 6.43c-.59-1.9.47-2.95 2.36-2.33l2.95.97c.5.16 1.25.05 1.67-.26l3.08-2.22c1.66-1.2 2.99-.5 2.95 1.55ZM21.91 22l-3.03-3.03"/></svg></div>
+          <div class="capability__icon">
+            <!-- Heroicons solid: Star -->
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.562.562 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.562.562 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"/></svg>
+          </div>
           <div>
             <div class="capability__title">Skills</div>
             <div class="capability__desc">Give your agent abilities. Define reusable skills as simple declarations, from web search to document parsing, and compose them like building blocks.</div>
           </div>
         </div>
         <div class="capability">
-          <div class="capability__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9.6 20h4.8c4 0 5.6-1.6 5.6-5.6V9.6c0-4-1.6-5.6-5.6-5.6H9.6C5.6 4 4 5.6 4 9.6v4.8c0 4 1.6 5.6 5.6 5.6Z"/><path d="M10.5 17h3c2.5 0 3.5-1 3.5-3.5v-3C17 8 16 7 13.5 7h-3C8 7 7 8 7 10.5v3C7 16 8 17 10.5 17ZM8.01 4V2M12 4V2M16 4V2M20 8h2M20 12h2M20 16h2M16 20v2M12.01 20v2M8.01 20v2M2 8h2M2 12h2M2 16h2"/></svg></div>
+          <div class="capability__icon">
+            <!-- Heroicons solid: Light Bulb -->
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12 .75a8.25 8.25 0 00-4.135 15.39c.686.398 1.115 1.008 1.134 1.623a.75.75 0 00.577.706 7.998 7.998 0 004.848 0 .75.75 0 00.577-.706c.02-.615.448-1.225 1.134-1.623A8.25 8.25 0 0012 .75zm-2.25 16.5h4.5v1.5h-4.5v-1.5zm0 3h4.5a.75.75 0 010 1.5h-4.5a.75.75 0 010-1.5z"/></svg>
+          </div>
           <div>
             <div class="capability__title">Memory</div>
             <div class="capability__desc">Your agent remembers. Short-term context, long-term knowledge, user preferences. All managed through a single declarative layer that persists across conversations.</div>
           </div>
         </div>
         <div class="capability">
-          <div class="capability__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 19H8c-4 0-6-1-6-6V8c0-4 2-6 6-6h8c4 0 6 2 6 6v5c0 4-2 6-6 6h-.5c-.31 0-.61.15-.8.4l-1.5 2c-.66.88-1.74.88-2.4 0l-1.5-2c-.16-.22-.53-.4-.8-.4Z"/><path d="M7 8h10M7 13h6"/></svg></div>
+          <div class="capability__icon">
+            <!-- Heroicons solid: Chat Bubble Left Right -->
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M4.913 2.658c2.075-.27 4.19-.408 6.337-.408 2.147 0 4.262.139 6.337.408 1.922.25 3.291 1.861 3.405 3.727a4.403 4.403 0 00-1.032-.211 50.89 50.89 0 00-8.42 0c-2.358.196-4.04 2.19-4.04 4.434v4.286a4.47 4.47 0 002.433 3.984L7.28 21.53A.75.75 0 016 21v-4.03a48.527 48.527 0 01-1.087-.128C2.905 16.58 1.5 14.833 1.5 12.862V6.638c0-1.97 1.405-3.718 3.413-3.979z"/><path d="M15.75 7.5c-1.376 0-2.739.057-4.086.169C10.124 7.797 9 9.103 9 10.609v4.285c0 1.507 1.128 2.814 2.67 2.94 1.243.102 2.5.157 3.768.165l2.782 2.781a.75.75 0 001.28-.53v-2.39l.33-.026c1.542-.125 2.67-1.433 2.67-2.94v-4.286c0-1.505-1.125-2.811-2.664-2.94A49.392 49.392 0 0015.75 7.5z"/></svg>
+          </div>
           <div>
             <div class="capability__title">Channels</div>
             <div class="capability__desc">Telegram, Slack, Discord, WhatsApp, or your own API. Declare which channels your agent speaks on and ClawJS handles the transport and message formatting.</div>
           </div>
         </div>
         <div class="capability">
-          <div class="capability__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.95 14.55l-6.39 6.39c-1.4 1.4-3.7 1.4-5.11 0l-6.39-6.39c-1.4-1.4-1.4-3.7 0-5.11l6.39-6.39c1.4-1.4 3.7-1.4 5.11 0l6.39 6.39c1.4 1.41 1.4 3.71 0 5.11z"/></svg></div>
+          <div class="capability__icon">
+            <!-- Heroicons solid: Wrench Screwdriver -->
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path fill-rule="evenodd" d="M12 6.75a5.25 5.25 0 016.775-5.025.75.75 0 01.313 1.248l-3.32 3.319c.063.475.276.934.641 1.299.365.365.824.578 1.3.64l3.318-3.319a.75.75 0 011.248.313 5.25 5.25 0 01-5.472 6.756c-1.018-.086-1.87.1-2.309.634L7.344 21.3A3.298 3.298 0 112.7 16.657l8.684-7.151c.533-.44.72-1.291.634-2.309A5.342 5.342 0 0112 6.75zM4.117 19.125a.75.75 0 01.75-.75h.008a.75.75 0 01.75.75v.008a.75.75 0 01-.75.75h-.008a.75.75 0 01-.75-.75v-.008z" clip-rule="evenodd"/></svg>
+          </div>
           <div>
             <div class="capability__title">Plugins</div>
             <div class="capability__desc">Extend your agent with community or custom plugins. Database connectors, payment gateways, CRMs. Plug them in declaratively without touching your core logic.</div>
           </div>
         </div>
         <div class="capability">
-          <div class="capability__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5.54 11.12c0-4.44 2.1-6.12 6.46-6.12s6.46 1.68 6.46 6.12"/><path d="M12 14v3"/><path d="M2 16.5v-.64c0-1.25.84-2.36 2.04-2.68l1.6-.43c.5-.13.86-.58.86-1.1v-.53"/><path d="M22 16.5v-.64c0-1.25-.84-2.36-2.04-2.68l-1.6-.43a1.14 1.14 0 0 1-.86-1.1v-.53"/><circle cx="12" cy="18" r="2"/></svg></div>
+          <div class="capability__icon">
+            <!-- Heroicons solid: Cube -->
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12.378 1.602a.75.75 0 00-.756 0L3 6.632l9 5.25 9-5.25-8.622-5.03zM21.75 7.93l-9 5.25v9l8.628-5.032a.75.75 0 00.372-.648V7.93zm-10.5 14.25v-9l-9-5.25v8.57a.75.75 0 00.372.648l8.628 5.033z"/></svg>
+          </div>
           <div>
             <div class="capability__title">Providers & Models</div>
             <div class="capability__desc">OpenAI, Anthropic, Gemini, Ollama. Pick any LLM provider. ClawJS handles auth, token rotation, and fallbacks. Switch models without changing a single line of code.</div>
           </div>
         </div>
         <div class="capability">
-          <div class="capability__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m18.47 16.83.39 3.16c.1.83-.79 1.41-1.5.98l-4.19-2.49c-.46 0-.91-.03-1.35-.09A4.86 4.86 0 0 0 13 15.23c0-2.84-2.46-5.14-5.5-5.14-1.16 0-2.23.33-3.12.91-.03-.25-.04-.5-.04-.76C4.34 5.69 8.29 2 13.17 2S22 5.69 22 10.24c0 2.7-1.39 5.09-3.53 6.59Z"/><path d="M13 15.23c0 1.19-.44 2.29-1.18 3.16-.99 1.2-2.56 1.97-4.32 1.97l-2.61 1.55c-.44.27-1-.1-.94-.61l.25-1.97C2.86 18.4 2 16.91 2 15.23c0-1.76.94-3.31 2.38-4.23.89-.58 1.96-.91 3.12-.91 3.04 0 5.5 2.3 5.5 5.14Z"/></svg></div>
+          <div class="capability__icon">
+            <!-- Heroicons solid: Chat Bubble Oval Left Ellipsis -->
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path fill-rule="evenodd" d="M4.804 21.644A6.707 6.707 0 006 21.75a6.721 6.721 0 003.583-1.029c.774.182 1.584.279 2.417.279 5.322 0 9.75-3.97 9.75-9 0-5.03-4.428-9-9.75-9s-9.75 3.97-9.75 9c0 2.09.768 4.04 2.084 5.558a7.56 7.56 0 01-.47 3.086zM9.25 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm3.5 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm3.5 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" clip-rule="evenodd"/></svg>
+          </div>
           <div>
             <div class="capability__title">Conversations</div>
             <div class="capability__desc">Multi-turn, multi-user, multi-channel. Your agent holds natural conversations with context, streaming, and history. Across every channel you've declared.</div>
           </div>
         </div>
         <div class="capability">
-          <div class="capability__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.75 13.25c0 4.83-3.92 8.75-8.75 8.75s-8.75-3.92-8.75-8.75S7.17 4.5 12 4.5s8.75 3.92 8.75 8.75ZM12 8v5"/><path d="M9 2h6" stroke-miterlimit="10"/></svg></div>
+          <div class="capability__icon">
+            <!-- Heroicons solid: Clock -->
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path fill-rule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zM12.75 6a.75.75 0 00-1.5 0v6c0 .414.336.75.75.75h4.5a.75.75 0 000-1.5h-3.75V6z" clip-rule="evenodd"/></svg>
+          </div>
           <div>
             <div class="capability__title">Scheduler</div>
             <div class="capability__desc">Automate recurring tasks with simple cron-like declarations. Your agent can send reminders, sync data, or run health checks. On autopilot, on schedule.</div>
           </div>
         </div>
         <div class="capability">
-          <div class="capability__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.89 5.08 3.32 16.65c-.78.78-.78 2.05 0 2.83l1.2 1.2c.78.78 2.05.78 2.83 0L18.92 9.11"/><path d="M16.02 7.95 18.92 5.05l-1.2-1.2c-.78-.78-2.05-.78-2.83 0L12.22 6.52"/><path d="m19.98 4.01 1.7-1.7"/><path d="M14.89 5.08l4.03 4.03"/></svg></div>
+          <div class="capability__icon">
+            <!-- Heroicons solid: Bolt -->
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path fill-rule="evenodd" d="M14.615 1.595a.75.75 0 01.359.852L12.982 9.75h7.268a.75.75 0 01.548 1.262l-10.5 11.25a.75.75 0 01-1.272-.71l1.992-7.302H3.75a.75.75 0 01-.548-1.262l10.5-11.25a.75.75 0 01.913-.143z" clip-rule="evenodd"/></svg>
+          </div>
           <div>
             <div class="capability__title">One-Command Setup</div>
             <div class="capability__desc">Install, configure, and launch any runtime in a single command. ClawJS scaffolds your workspace, validates your config, and gets your agent running in seconds.</div>
           </div>
         </div>
         <div class="capability">
-          <div class="capability__icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9.86V14c0 4 1.6 5.6 5.6 5.6h.8c4 0 5.6-1.6 5.6-5.6V9.86"/><path d="M12 2v8"/><path d="m15 6.5-3 3.5-3-3.5"/><path d="M2 13h3.2c.55 0 1.06.29 1.34.76l.72 1.24c.56.96 1.55 1.56 2.64 1.6h4.2c1.09-.04 2.08-.64 2.64-1.6l.72-1.24c.28-.47.79-.76 1.34-.76H22"/></svg></div>
+          <div class="capability__icon">
+            <!-- Heroicons solid: Shield Check -->
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path fill-rule="evenodd" d="M12.516 2.17a.75.75 0 00-1.032 0 11.209 11.209 0 01-7.877 3.08.75.75 0 00-.722.515A12.74 12.74 0 002.25 9.75c0 5.942 4.064 10.933 9.563 12.348a.749.749 0 00.374 0c5.499-1.415 9.563-6.406 9.563-12.348 0-1.39-.223-2.73-.635-3.985a.75.75 0 00-.722-.516l-.143.001c-2.996 0-5.717-1.17-7.734-3.08zm3.094 8.016a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clip-rule="evenodd"/></svg>
+          </div>
           <div>
             <div class="capability__title">No Silent Failures</div>
             <div class="capability__desc">Every capability is declared, not assumed. If something isn't available in your runtime, ClawJS tells you at build time, not at 3 AM in production.</div>
@@ -210,6 +251,20 @@
           <p>
             Capabilities such as scheduler, memory, skills, channels, sandbox, and plugins are declared explicitly per adapter.
           </p>
+          <div class="quickstart__highlights">
+            <div class="quickstart__highlight">
+              <div class="quickstart__highlight-icon"><svg viewBox="0 0 20 20" width="14" height="14" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd"/></svg></div>
+              <span>Runtime adapters with typed capability contracts</span>
+            </div>
+            <div class="quickstart__highlight">
+              <div class="quickstart__highlight-icon"><svg viewBox="0 0 20 20" width="14" height="14" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd"/></svg></div>
+              <span>Streaming conversations across any transport</span>
+            </div>
+            <div class="quickstart__highlight">
+              <div class="quickstart__highlight-icon"><svg viewBox="0 0 20 20" width="14" height="14" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd"/></svg></div>
+              <span>Hot-swap adapters without restarting</span>
+            </div>
+          </div>
         </div>
 
         <div class="code-block">
@@ -236,6 +291,7 @@
   </section>
 
   <section class="section section--alt">
+    <div class="section__aurora-orb" style="top: 20%; left: 50%; transform: translateX(-50%);"></div>
     <div class="container">
       <div class="section__header">
         <p class="section__label">Supported Adapters</p>
@@ -247,34 +303,76 @@
 
       <div class="features-grid">
         <div class="feature-card">
-          <h3 class="feature-card__title">OpenClaw</h3>
+          <div class="feature-card__header">
+            <div class="feature-card__icon-wrap">
+              <!-- Heroicons solid: Cube -->
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12.378 1.602a.75.75 0 00-.756 0L3 6.632l9 5.25 9-5.25-8.622-5.03zM21.75 7.93l-9 5.25v9l8.628-5.032a.75.75 0 00.372-.648V7.93zm-10.5 14.25v-9l-9-5.25v8.57a.75.75 0 00.372.648l8.628 5.033z"/></svg>
+            </div>
+            <h3 class="feature-card__title">OpenClaw</h3>
+            <span class="feature-card__tag">Full</span>
+          </div>
           <p class="feature-card__desc">Full-featured open-source runtime. Complete capability coverage for production stacks with no proprietary dependencies.</p>
         </div>
         <div class="feature-card">
-          <h3 class="feature-card__title">ZeroClaw</h3>
+          <div class="feature-card__header">
+            <div class="feature-card__icon-wrap">
+              <!-- Heroicons solid: Bolt -->
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path fill-rule="evenodd" d="M14.615 1.595a.75.75 0 01.359.852L12.982 9.75h7.268a.75.75 0 01.548 1.262l-10.5 11.25a.75.75 0 01-1.272-.71l1.992-7.302H3.75a.75.75 0 01-.548-1.262l10.5-11.25a.75.75 0 01.913-.143z" clip-rule="evenodd"/></svg>
+            </div>
+            <h3 class="feature-card__title">ZeroClaw</h3>
+            <span class="feature-card__tag">Zero-config</span>
+          </div>
           <p class="feature-card__desc">Zero-config setup. Sensible defaults for every setting so you can go from install to streaming in under a minute.</p>
         </div>
         <div class="feature-card">
-          <h3 class="feature-card__title">IronClaw</h3>
+          <div class="feature-card__header">
+            <div class="feature-card__icon-wrap">
+              <!-- Heroicons solid: Shield Check -->
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path fill-rule="evenodd" d="M12.516 2.17a.75.75 0 00-1.032 0 11.209 11.209 0 01-7.877 3.08.75.75 0 00-.722.515A12.74 12.74 0 002.25 9.75c0 5.942 4.064 10.933 9.563 12.348a.749.749 0 00.374 0c5.499-1.415 9.563-6.406 9.563-12.348 0-1.39-.223-2.73-.635-3.985a.75.75 0 00-.722-.516l-.143.001c-2.996 0-5.717-1.17-7.734-3.08zm3.094 8.016a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clip-rule="evenodd"/></svg>
+            </div>
+            <h3 class="feature-card__title">IronClaw</h3>
+            <span class="feature-card__tag">Enterprise</span>
+          </div>
           <p class="feature-card__desc">Hardened for enterprise. Stricter sandboxing, audit logging, and compliance-ready defaults for regulated environments.</p>
         </div>
         <div class="feature-card">
-          <h3 class="feature-card__title">Hermes</h3>
+          <div class="feature-card__header">
+            <div class="feature-card__icon-wrap">
+              <!-- Heroicons solid: Arrows Right Left -->
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path fill-rule="evenodd" d="M15.97 2.47a.75.75 0 011.06 0l4.5 4.5a.75.75 0 010 1.06l-4.5 4.5a.75.75 0 11-1.06-1.06l3.22-3.22H7.5a.75.75 0 010-1.5h11.69l-3.22-3.22a.75.75 0 010-1.06zm-7.94 9a.75.75 0 010 1.06L4.81 15.75H16.5a.75.75 0 010 1.5H4.81l3.22 3.22a.75.75 0 11-1.06 1.06l-4.5-4.5a.75.75 0 010-1.06l4.5-4.5a.75.75 0 011.06 0z" clip-rule="evenodd"/></svg>
+            </div>
+            <h3 class="feature-card__title">Hermes</h3>
+            <span class="feature-card__tag">Bridge</span>
+          </div>
           <p class="feature-card__desc">Bridge to external APIs. Routes requests through third-party providers while keeping the same SDK interface.</p>
         </div>
         <div class="feature-card">
-          <h3 class="feature-card__title">NanoClaw</h3>
+          <div class="feature-card__header">
+            <div class="feature-card__icon-wrap">
+              <!-- Heroicons solid: Cpu Chip -->
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M16.5 7.5h-9v9h9v-9z"/><path fill-rule="evenodd" d="M8.25 2.25A.75.75 0 019 3v.75h2.25V3a.75.75 0 011.5 0v.75H15V3a.75.75 0 011.5 0v.75h.75a3 3 0 013 3v.75H21A.75.75 0 0121 9h-.75v2.25H21a.75.75 0 010 1.5h-.75V15H21a.75.75 0 010 1.5h-.75v.75a3 3 0 01-3 3h-.75V21a.75.75 0 01-1.5 0v-.75h-2.25V21a.75.75 0 01-1.5 0v-.75H9V21a.75.75 0 01-1.5 0v-.75h-.75a3 3 0 01-3-3v-.75H3A.75.75 0 013 15h.75v-2.25H3a.75.75 0 010-1.5h.75V9H3a.75.75 0 010-1.5h.75v-.75a3 3 0 013-3h.75V3a.75.75 0 01.75-.75zM6 6.75A.75.75 0 016.75 6h10.5a.75.75 0 01.75.75v10.5a.75.75 0 01-.75.75H6.75a.75.75 0 01-.75-.75V6.75z" clip-rule="evenodd"/></svg>
+            </div>
+            <h3 class="feature-card__title">NanoClaw</h3>
+            <span class="feature-card__tag">Edge</span>
+          </div>
           <p class="feature-card__desc">Lightweight embedded agents. Minimal memory footprint for edge devices, IoT, and resource-constrained environments.</p>
         </div>
         <div class="feature-card">
-          <h3 class="feature-card__title">PicoClaw</h3>
+          <div class="feature-card__header">
+            <div class="feature-card__icon-wrap">
+              <!-- Heroicons solid: Command Line -->
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path fill-rule="evenodd" d="M2.25 6a3 3 0 013-3h13.5a3 3 0 013 3v12a3 3 0 01-3 3H5.25a3 3 0 01-3-3V6zm3.97.97a.75.75 0 011.06 0l2.25 2.25a.75.75 0 010 1.06l-2.25 2.25a.75.75 0 01-1.06-1.06l1.72-1.72-1.72-1.72a.75.75 0 010-1.06zm4.28 4.28a.75.75 0 000 1.5h3a.75.75 0 000-1.5h-3z" clip-rule="evenodd"/></svg>
+            </div>
+            <h3 class="feature-card__title">PicoClaw</h3>
+            <span class="feature-card__tag">Minimal</span>
+          </div>
           <p class="feature-card__desc">Minimal runtime footprint. Only the essentials for quick prototypes, CLIs, and single-purpose agent scripts.</p>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- ═══════ INTERACTIVE PREVIEWS ═══════ -->
+  <!-- INTERACTIVE PREVIEWS -->
 
   <section class="section">
     <div class="container">
@@ -316,6 +414,7 @@ console<span class="punctuation">.</span><span class="function">log</span><span 
   </section>
 
   <section class="section section--alt" id="section-ai">
+    <div class="section__aurora-orb" style="bottom: 5%; left: 5%;"></div>
     <div class="container">
       <div class="section__header">
         <p class="section__label">Settings Preview</p>
@@ -400,26 +499,155 @@ console<span class="punctuation">.</span><span class="function">log</span><span 
     </div>
   </section>
 
-  <!-- ═══════ LIVE DEMO CTA ═══════ -->
-
-  <section class="section section--alt">
+  <section class="section" id="section-cli">
+    <div class="section__aurora-orb" style="top: 10%; right: 5%;"></div>
     <div class="container">
-      <div class="section__header">
-        <p class="section__label">Demo</p>
-        <h2 class="section__title">See It in Action</h2>
-        <p class="section__desc">
-          A full local-first assistant built with ClawJS — chat, onboarding, settings, and integrations with WhatsApp, email, and calendar.
-        </p>
-      </div>
+      <div class="code-section">
+        <div class="code-section__text">
+          <p class="section__label">Command Line</p>
+          <h3>Your agent, one command away</h3>
+          <p>
+            Scaffold projects, connect channels, run diagnostics, stream conversations. The <code>claw</code> CLI handles everything from your terminal.
+          </p>
+          <div class="quickstart__highlights">
+            <div class="quickstart__highlight">
+              <div class="quickstart__highlight-icon"><svg viewBox="0 0 20 20" width="14" height="14" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd"/></svg></div>
+              <span>Create, build and deploy from the CLI</span>
+            </div>
+            <div class="quickstart__highlight">
+              <div class="quickstart__highlight-icon"><svg viewBox="0 0 20 20" width="14" height="14" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd"/></svg></div>
+              <span>Built-in diagnostics with <code>claw doctor</code></span>
+            </div>
+            <div class="quickstart__highlight">
+              <div class="quickstart__highlight-icon"><svg viewBox="0 0 20 20" width="14" height="14" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd"/></svg></div>
+              <span>Stream agent conversations in your terminal</span>
+            </div>
+          </div>
+        </div>
 
-      <div class="features-grid">
-        <a class="feature-card" href="#" data-demo-link>
-          <h3 class="feature-card__title">Live Demo</h3>
-          <p class="feature-card__desc">Explore the complete ClawJS demo app: chat with streaming, workspace setup, provider onboarding, channels, and integration management.</p>
-        </a>
+        <div class="cli-terminal" id="cli-terminal">
+          <div class="cli-terminal__bar">
+            <span class="cli-terminal__dot"></span>
+            <span class="cli-terminal__dot"></span>
+            <span class="cli-terminal__dot"></span>
+            <span class="cli-terminal__title">Terminal</span>
+          </div>
+          <div class="cli-terminal__body" id="cli-terminal-body"></div>
+        </div>
       </div>
     </div>
   </section>
+
+  <!-- TASKS / KANBAN PREVIEW -->
+
+  <section class="section section--alt" id="section-tasks">
+    <div class="section__aurora-orb" style="top: 30%; right: -5%;"></div>
+    <div class="container">
+      <div class="section__header">
+        <p class="section__label">Productivity</p>
+        <h2 class="section__title">AI Agents Running Your Operations</h2>
+        <p class="section__desc">Specialized agents pick up tasks, execute them, and report back. Like handing your company's ops to a team of AI workers.</p>
+      </div>
+      <div class="chat-preview-wrap">
+        <div class="demo-panel demo-panel--tasks" id="demo-tasks"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CRM / CONTACTS PREVIEW -->
+
+  <section class="section" id="section-crm">
+    <div class="section__aurora-orb" style="top: 20%; left: -5%;"></div>
+    <div class="container">
+      <div class="section__header">
+        <p class="section__label">Relationships</p>
+        <h2 class="section__title">Your Entire Network, Agent-Managed</h2>
+        <p class="section__desc">AI agents enrich profiles, schedule follow-ups, track deals, and keep every relationship warm. Personal and professional, all in one place.</p>
+      </div>
+      <div class="chat-preview-wrap">
+        <div class="demo-panel demo-panel--crm" id="demo-crm"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CHAT PREVIEW -->
+
+  <section class="section section--alt" id="section-chat">
+    <div class="section__aurora-orb" style="bottom: 10%; left: 10%;"></div>
+    <div class="container">
+      <div class="section__header">
+        <p class="section__label">Chat Preview</p>
+        <h2 class="section__title">Built-in Conversational UI</h2>
+        <p class="section__desc">A full streaming chat interface out of the box. Markdown, voice notes, context chips, and multi-session support.</p>
+      </div>
+      <div class="chat-preview-wrap">
+        <div class="demo-panel demo-panel--chat" id="demo-chat"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LIVE DEMO CTA -->
+
+  <section class="demo-cta" id="demo">
+    <!-- AURORA: Floating orbs background -->
+    <div class="demo-cta__aurora"></div>
+    <div class="container">
+      <div class="demo-cta__card">
+        <div class="demo-cta__glow"></div>
+        <div class="demo-cta__content">
+          <!-- AURORA: Large icon -->
+          <div class="demo-cta__icon">
+            <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor"><path d="M4.5 5.653c0-1.427 1.529-2.33 2.779-1.643l11.54 6.347c1.295.712 1.295 2.573 0 3.286L7.28 19.99c-1.25.687-2.779-.217-2.779-1.643V5.653Z"/></svg>
+          </div>
+          <span class="demo-cta__badge">Live Demo</span>
+          <h2 class="demo-cta__title">See It in Action</h2>
+          <p class="demo-cta__desc">
+            A complete AI assistant built with ClawJS: real-time chat, workspace setup, provider onboarding, channel integrations and full settings management.
+          </p>
+          <a href="https://demo.clawjs.ai" class="demo-cta__btn" target="_blank" rel="noopener">
+            Explore the Demo
+            <svg viewBox="0 0 20 20" width="20" height="20" fill="currentColor"><path fill-rule="evenodd" d="M3 10a.75.75 0 01.75-.75h10.638L10.23 5.29a.75.75 0 111.04-1.08l5.5 5.25a.75.75 0 010 1.08l-5.5 5.25a.75.75 0 11-1.04-1.08l4.158-3.96H3.75A.75.75 0 013 10z" clip-rule="evenodd"/></svg>
+          </a>
+          <!-- AURORA: Stats row with dividers instead of feature chips -->
+          <div class="demo-cta__features">
+            <span class="demo-cta__feature">
+              <svg viewBox="0 0 20 20" width="16" height="16" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd"/></svg>
+              Streaming Chat
+            </span>
+            <span class="demo-cta__feature">
+              <svg viewBox="0 0 20 20" width="16" height="16" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd"/></svg>
+              WhatsApp &amp; Email
+            </span>
+            <span class="demo-cta__feature">
+              <svg viewBox="0 0 20 20" width="16" height="16" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd"/></svg>
+              Multi-Provider AI
+            </span>
+            <span class="demo-cta__feature">
+              <svg viewBox="0 0 20 20" width="16" height="16" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd"/></svg>
+              Calendar Sync
+            </span>
+          </div>
+          <div class="demo-cta__stats">
+            <div class="demo-cta__stat">
+              <span class="demo-cta__stat-value">4</span>
+              <span class="demo-cta__stat-label">Channels</span>
+            </div>
+            <div class="demo-cta__divider"></div>
+            <div class="demo-cta__stat">
+              <span class="demo-cta__stat-value">3+</span>
+              <span class="demo-cta__stat-label">AI Providers</span>
+            </div>
+            <div class="demo-cta__divider"></div>
+            <div class="demo-cta__stat">
+              <span class="demo-cta__stat-value">Real-time</span>
+              <span class="demo-cta__stat-label">Streaming</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
 
   <script type="module" src="/src/main.js"></script>
   <script type="module" src="/src/demos.js"></script>

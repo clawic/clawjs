@@ -221,7 +221,7 @@ export interface RuntimeAdapter {
     profileId?: string;
     runtimeCommand?: RuntimeCommandSpec;
   }): Promise<SaveApiKeyResult>;
-  removeProvider(provider: string, options: RuntimeAdapterOptions & { legacyAgentDirs?: string[] }): number;
+  removeProvider(provider: string, options: RuntimeAdapterOptions): number;
   listSchedulers(runner: CommandRunner, options: RuntimeAdapterOptions): Promise<SchedulerDescriptor[]>;
   runScheduler(id: string, runner: CommandRunner, options: RuntimeAdapterOptions): Promise<void>;
   setSchedulerEnabled(id: string, enabled: boolean, runner: CommandRunner, options: RuntimeAdapterOptions): Promise<void>;

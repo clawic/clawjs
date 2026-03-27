@@ -59,6 +59,38 @@ Generated repositories include a root `claw.project.json` file. That is
 how `generate`, `add`, and `info` know where to write and register
 resources.
 
+## Productivity Commands
+
+When the project includes the workspace productivity companion, the CLI
+also exposes entity CRUD and cross-domain search commands:
+
+```bash
+claw tasks list
+claw tasks create --title "Triage docs drift"
+claw tasks complete --id task-123
+
+claw notes list
+claw notes create --title "Release notes" --content "Draft"
+
+claw people list
+claw people upsert "John Doe"
+
+claw inbox list
+claw inbox read --id thread-123
+claw inbox draft --channel email --content "Thanks"
+claw inbox archive --id thread-123
+
+claw events list
+claw events create --title "Release sync" --starts-at 2026-03-27T09:00:00Z
+
+claw workspace-search query "release" --domains tasks,notes,inbox
+claw workspace-index rebuild
+```
+
+Use `--json` when you want the raw records back. `workspace-search
+query` also accepts `--strategy auto|keyword|semantic|hybrid`,
+`--limit`, and `--include-archived`.
+
 ## Advanced Runtime Commands
 
 ```bash
@@ -151,6 +183,9 @@ claw memory search --query incident
 claw skills list
 claw skills inspect
 claw skills sync
+claw skills sources
+claw skills search --query support
+claw skills install support-triage --source clawhub
 
 claw channels list
 claw channels status
@@ -192,6 +227,41 @@ claw sessions stream --session-id clawjs-123 --events
 `sessions stream` supports `--transport`, `--system-prompt`,
 `--context`, `--chunk-size`, and `--gateway-retries`. With `--events`,
 the command emits the structured event stream used by the SDK.
+
+## Media And Generations
+
+```bash
+claw generations backends
+claw generations register-command --id local-imagen --command node --kinds image --args-json '["scripts/generate-image.mjs"]'
+claw generations create --kind image --prompt "Minimal line-art cat"
+claw generations list --kind image
+claw generations read --id gen_123
+claw generations delete --id gen_123
+
+claw image backends
+claw image generate --prompt "Minimal line-art cat"
+claw image list
+
+claw audio generate --prompt "Read the release summary aloud" --voice nova
+claw video generate --prompt "Animate the dashboard hero"
+```
+
+The typed `image`, `audio`, and `video` groups are convenience facades
+over the generic generation store. `generate` also accepts `--backend`,
+`--model`, `--title`, `--metadata-json`, `--command`, `--args-json`,
+`--cwd`, `--env-json`, `--ext`, and `--mime-type`.
+
+## SDK-Only Namespaces
+
+Some public SDK surfaces do not have first-class CLI commands yet:
+
+- `claw.runtime.plugins`
+- `claw.slack`
+- `claw.whatsapp`
+- `claw.secrets`
+- `claw.watch`
+
+Use the Node API for those flows today.
 
 ## Exit Codes
 

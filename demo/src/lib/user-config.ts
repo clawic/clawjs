@@ -1,7 +1,6 @@
 /**
  * User configuration loader.
- * The source of truth lives in the OpenClaw workspace, with legacy project-config
- * files only used as a one-time migration source.
+ * The source of truth lives in the OpenClaw workspace.
  */
 import fs from "fs";
 import os from "os";
@@ -330,10 +329,6 @@ function buildBlankUserConfig(): UserConfig {
   } as UserConfig);
 }
 
-function projectConfigDir(): string {
-  return path.join(process.cwd(), "config");
-}
-
 function resolveFlexiblePath(rawPath: string): string {
   if (!rawPath.trim()) return rawPath;
   const homeResolved = resolveHomePath(rawPath);
@@ -342,7 +337,7 @@ function resolveFlexiblePath(rawPath: string): string {
 }
 
 export function getClawJSConfigDir(): string {
-  const configured = process.env.CLAWJS_LEGACY_CONFIG_DIR?.trim();
+  const configured = process.env.OPENCLAW_CONFIG_DIR?.trim();
   if (configured) return resolveFlexiblePath(configured);
   return path.join(resolveClawJSWorkspaceDir(), "config");
 }
@@ -361,37 +356,6 @@ export function getClawJSContextFilesDir(): string {
 
 function workspaceDataDir(): string {
   return path.join(resolveClawJSWorkspaceDir(), "data");
-}
-
-function migrateDirectoryContentsIfMissing(sourceDir: string, targetDir: string): void {
-  if (!fs.existsSync(sourceDir)) return;
-  fs.mkdirSync(targetDir, { recursive: true });
-
-  for (const entry of fs.readdirSync(sourceDir, { withFileTypes: true })) {
-    const sourcePath = path.join(sourceDir, entry.name);
-    const targetPath = path.join(targetDir, entry.name);
-
-    if (entry.isDirectory()) {
-      migrateDirectoryContentsIfMissing(sourcePath, targetPath);
-      continue;
-    }
-
-    if (!fs.existsSync(targetPath)) {
-      fs.copyFileSync(sourcePath, targetPath);
-    }
-  }
-}
-
-function migrateFileIfMissing(sourcePath: string, targetPath: string): void {
-  if (fs.existsSync(targetPath) || !fs.existsSync(sourcePath)) return;
-  fs.mkdirSync(path.dirname(targetPath), { recursive: true });
-  fs.copyFileSync(sourcePath, targetPath);
-}
-
-function moveFileIfMissing(sourcePath: string, targetPath: string): void {
-  if (!fs.existsSync(sourcePath) || fs.existsSync(targetPath)) return;
-  fs.mkdirSync(path.dirname(targetPath), { recursive: true });
-  fs.renameSync(sourcePath, targetPath);
 }
 
 function migrateFocusTopicsToHotTopics(config: UserConfig): void {
@@ -440,41 +404,11 @@ function ensureWorkspaceConfigLayout(): void {
   if (_workspaceConfigEnsured) return;
 
   const workspaceConfigDir = getClawJSConfigDir();
-  const legacyConfigDir = projectConfigDir();
   fs.mkdirSync(workspaceConfigDir, { recursive: true });
   fs.mkdirSync(getClawJSProfileSectionsDir(), { recursive: true });
   fs.mkdirSync(getClawJSContextFilesDir(), { recursive: true });
   fs.mkdirSync(workspaceDataDir(), { recursive: true });
   fs.mkdirSync(path.join(workspaceConfigDir, "contacts"), { recursive: true });
-
-  migrateFileIfMissing(
-    path.join(legacyConfigDir, "user-config.json"),
-    getClawJSUserConfigPath()
-  );
-  migrateFileIfMissing(
-    path.join(legacyConfigDir, "user-config.example.json"),
-    getClawJSUserConfigPath()
-  );
-  migrateFileIfMissing(
-    path.join(legacyConfigDir, "profile.md"),
-    path.join(workspaceConfigDir, "profile.md")
-  );
-  migrateFileIfMissing(
-    path.join(legacyConfigDir, "profile.example.md"),
-    path.join(workspaceConfigDir, "profile.md")
-  );
-  migrateDirectoryContentsIfMissing(
-    path.join(legacyConfigDir, "profile"),
-    getClawJSProfileSectionsDir()
-  );
-  migrateDirectoryContentsIfMissing(
-    path.join(legacyConfigDir, "context-files"),
-    getClawJSContextFilesDir()
-  );
-  migrateFileIfMissing(
-    path.join(legacyConfigDir, "context-amendments.jsonl"),
-    path.join(workspaceConfigDir, "context-amendments.jsonl")
-  );
 
   if (!fs.existsSync(path.join(getClawJSContextFilesDir(), "relationships-notes.md"))) {
     fs.writeFileSync(
@@ -485,8 +419,7 @@ function ensureWorkspaceConfigLayout(): void {
 
   const configPath = getClawJSUserConfigPath();
 
-  // Fresh install: no config file exists and no legacy file to migrate from.
-  // Write a minimal default so the app can boot into onboarding.
+  // Fresh install: write a minimal default so the app can boot into onboarding.
   if (!fs.existsSync(configPath)) {
     const defaultConfig = buildBlankUserConfig();
     fs.writeFileSync(configPath, JSON.stringify(defaultConfig, null, 2) + "\n", { mode: 0o600 });

@@ -1,5 +1,3 @@
-import path from "path";
-
 import { NextRequest, NextResponse } from "next/server";
 
 import { invalidateOpenClawAvailabilityCache } from "@/app/api/chat/route";
@@ -15,8 +13,6 @@ import {
 } from "@/lib/e2e";
 import {
   getClawJSOpenClawAgentId,
-  resolveLegacyClawJSAgentDir,
-  resolveOpenClawStateDir,
 } from "@/lib/openclaw-agent";
 import { findCommand } from "@/lib/platform";
 
@@ -221,10 +217,7 @@ async function handleAuthRemove(provider: string): Promise<NextResponse> {
   }
 
   const claw = await getClaw();
-  const removed = claw.auth.removeProvider(provider.trim(), [
-    resolveLegacyClawJSAgentDir(),
-    path.join(resolveOpenClawStateDir(), "agents", "main", "agent"),
-  ]);
+  const removed = claw.auth.removeProvider(provider.trim());
 
   if (removed > 0) {
     invalidateOpenClawAvailabilityCache();
