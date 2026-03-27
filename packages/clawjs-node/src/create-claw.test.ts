@@ -1574,10 +1574,10 @@ test("createClaw exposes intent, observed, and feature APIs for declarative mode
   assert.equal(fs.existsSync(inspected.observedPaths.models), true);
 });
 
-test("createClaw can repair workspace layout and migrate legacy compat", async () => {
+test("createClaw can repair workspace layout and normalize compat snapshots", async () => {
   const workspaceDir = fs.mkdtempSync(path.join(os.tmpdir(), "clawjs-instance-repair-"));
-  fs.mkdirSync(path.join(workspaceDir, ".clawjs"), { recursive: true });
-  fs.writeFileSync(path.join(workspaceDir, ".clawjs", "compat.json"), JSON.stringify({
+  fs.mkdirSync(path.join(workspaceDir, ".clawjs", "compat"), { recursive: true });
+  fs.writeFileSync(path.join(workspaceDir, ".clawjs", "compat", "runtime-snapshot.json"), JSON.stringify({
     runtimeAdapter: "openclaw",
     runtimeVersion: "1.2.3",
     probedAt: "2026-03-20T00:00:00.000Z",

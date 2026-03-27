@@ -3,10 +3,7 @@ import path from "path";
 import type { BindingDefinition } from "@clawjs/core";
 import { syncBinding } from "@clawjs/node";
 
-import {
-  resolveLegacyDefaultOpenClawWorkspaceDir,
-  resolveClawJSWorkspaceDir,
-} from "./openclaw-agent.ts";
+import { resolveClawJSWorkspaceDir } from "./openclaw-agent.ts";
 import {
   getClawJSConfigDir,
   getClawJSProfileSectionsDir,
@@ -679,16 +676,8 @@ function syncOpenClawMemoryFiles(config: UserConfig, sections: ProfileSection[])
 
   const userPath = path.join(workspaceDir, "USER.md");
   const soulPath = path.join(workspaceDir, "SOUL.md");
-  const legacyWorkspaceDir = resolveLegacyDefaultOpenClawWorkspaceDir();
-  const legacyUserPath = path.join(legacyWorkspaceDir, "USER.md");
-  const legacySoulPath = path.join(legacyWorkspaceDir, "SOUL.md");
-
-  const existingUser = readFileIfExists(userPath)
-    || (legacyWorkspaceDir !== workspaceDir ? readFileIfExists(legacyUserPath) : "")
-    || DEFAULT_USER_TEMPLATE;
-  const existingSoul = readFileIfExists(soulPath)
-    || (legacyWorkspaceDir !== workspaceDir ? readFileIfExists(legacySoulPath) : "")
-    || DEFAULT_SOUL_TEMPLATE;
+  const existingUser = readFileIfExists(userPath) || DEFAULT_USER_TEMPLATE;
+  const existingSoul = readFileIfExists(soulPath) || DEFAULT_SOUL_TEMPLATE;
 
   fs.writeFileSync(userPath, stripLegacyManagedBlock(existingUser, USER_MANAGED_START, USER_MANAGED_END));
   fs.writeFileSync(soulPath, stripLegacyManagedBlock(existingSoul, SOUL_MANAGED_START, SOUL_MANAGED_END));
@@ -707,38 +696,6 @@ function syncOpenClawMemoryFiles(config: UserConfig, sections: ProfileSection[])
   });
 }
 
-function resolveLegacyContent(sectionId: string, dir: string): string {
-  const sources: Record<string, Array<{ fileName: string; label?: string }>> = {
-    overview: [
-      { fileName: "your-story.md", label: "Story" },
-      { fileName: "current-context.md", label: "Current Context" },
-    ],
-    relationships: [
-      { fileName: "relationships.md" },
-    ],
-    health: [
-      { fileName: "wellbeing-patterns.md", label: "Wellbeing" },
-    ],
-    chat: [
-      { fileName: "chat-preferences.md", label: "Assistant Preferences" },
-    ],
-  };
-
-  const matches = (sources[sectionId] || [])
-    .map((source) => {
-      const sourcePath = path.join(dir, source.fileName);
-      if (!fs.existsSync(sourcePath)) return "";
-      const content = normalizeContent(readFileIfExists(sourcePath));
-      if (!content) return "";
-      return source.label && sources[sectionId].length > 1
-        ? `### ${source.label}\n${content}`
-        : content;
-    })
-    .filter(Boolean);
-
-  return matches.join("\n\n");
-}
-
 function loadProfileSections(config: UserConfig): ProfileSection[] {
   const dir = profileSectionsDir();
   fs.mkdirSync(dir, { recursive: true });
@@ -754,9 +711,7 @@ function loadProfileSections(config: UserConfig): ProfileSection[] {
   return PROFILE_SECTION_DEFINITIONS.map((section) => {
     const filePath = path.join(dir, section.fileName);
     if (!fs.existsSync(filePath)) {
-      const migratedContent = resolveLegacyContent(section.id, dir);
-      const initialContent = migratedContent
-        || (shouldSeedOverview && section.id === "overview" ? `${legacyProfile}\n` : "");
+      const initialContent = shouldSeedOverview && section.id === "overview" ? `${legacyProfile}\n` : "";
       fs.writeFileSync(filePath, initialContent);
     }
 

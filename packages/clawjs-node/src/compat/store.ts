@@ -179,13 +179,6 @@ export function resolveCompatSnapshotPath(workspaceDir: string): string {
   return path.join(workspaceDir, ".clawjs", "compat", COMPAT_SNAPSHOT_FILE);
 }
 
-function resolveLegacyCompatSnapshotPaths(workspaceDir: string): string[] {
-  return [
-    path.join(workspaceDir, ".clawjs", "compat.json"),
-    path.join(workspaceDir, ".clawjs", "runtime-snapshot.json"),
-  ];
-}
-
 function serializeCompatSnapshot(snapshot: CompatSnapshot): string {
   return `${JSON.stringify(snapshot, null, 2)}\n`;
 }
@@ -239,25 +232,6 @@ export function migrateCompatSnapshot(workspaceDir: string, filesystem = new Nod
       targetPath,
       migrated: false,
     };
-  }
-
-  for (const sourcePath of resolveLegacyCompatSnapshotPaths(workspaceDir)) {
-    if (!filesystem.exists(sourcePath)) continue;
-
-    try {
-      const snapshot = normalizeCompatSnapshot(JSON.parse(filesystem.readText(sourcePath)));
-      if (!snapshot) continue;
-
-      filesystem.withLockRetry(resolveFileLockPath(targetPath), () => filesystem.writeTextAtomic(targetPath, serializeCompatSnapshot(snapshot)));
-      return {
-        snapshot,
-        sourcePath,
-        targetPath,
-        migrated: true,
-      };
-    } catch {
-      continue;
-    }
   }
 
   return {

@@ -1,6 +1,7 @@
 import { test, expect, resetDemoState } from "./fixtures";
 
 test("demo API contracts stay deterministic in hermetic mode", async ({ request }) => {
+  const retiredAgentAlias = ["CLAW", "LEN"].join("");
   await resetDemoState(request, "seeded");
 
   const statusResponse = await request.get("/api/e2e/status");
@@ -8,6 +9,16 @@ test("demo API contracts stay deterministic in hermetic mode", async ({ request 
   const statusPayload = await statusResponse.json();
   expect(statusPayload.enabled).toBe(true);
   expect(statusPayload.fixtureMode).toBe("hermetic");
+  expect(statusPayload.paths.stateDir).toContain("/.tmp/e2e/openclaw-state");
+  expect(statusPayload.paths.workspaceDir).toContain("/.tmp/e2e/workspace");
+  expect(statusPayload.paths.agentDir).toContain("/.tmp/e2e/agent");
+  expect(statusPayload.paths.conversationsDir).toContain("/.tmp/e2e/sessions");
+  expect(statusPayload.paths.configDir).toContain("/.tmp/e2e/workspace/config");
+  expect(statusPayload.paths.localSettingsPath).toContain("/.tmp/e2e/workspace/settings.json");
+  for (const value of Object.values(statusPayload.paths)) {
+    expect(String(value)).not.toContain("clawjs-legacy");
+    expect(String(value)).not.toContain(retiredAgentAlias);
+  }
 
   const integrationsResponse = await request.get("/api/integrations/status");
   expect(integrationsResponse.ok()).toBeTruthy();

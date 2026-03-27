@@ -14,7 +14,7 @@ import {
   saveUserConfig,
 } from "./user-config.ts";
 
-test("workspace config is migrated from legacy project files and legacy local settings", { concurrency: false }, () => {
+test("workspace config initializes from the current OpenClaw workspace only", { concurrency: false }, () => {
   const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "clawjs-config-"));
   const projectDir = path.join(tempRoot, "project");
   const stateDir = path.join(tempRoot, "openclaw-state");
@@ -26,65 +26,41 @@ test("workspace config is migrated from legacy project files and legacy local se
   const previousHome = process.env.HOME;
   const previousStateDir = process.env.OPENCLAW_STATE_DIR;
   const previousWorkspaceDir = process.env.OPENCLAW_WORKSPACE_DIR;
-  const previousConfigDir = process.env.CLAWJS_LEGACY_CONFIG_DIR;
-  const previousLocalSettingsPath = process.env.CLAWJS_LEGACY_LOCAL_SETTINGS_PATH;
+  const previousConfigDir = process.env.OPENCLAW_CONFIG_DIR;
+  const previousLocalSettingsPath = process.env.OPENCLAW_LOCAL_SETTINGS_PATH;
 
-  fs.mkdirSync(legacyConfigDir, { recursive: true });
   fs.mkdirSync(path.join(legacyConfigDir, "context-files"), { recursive: true });
   fs.mkdirSync(path.join(legacyConfigDir, "profile"), { recursive: true });
   fs.mkdirSync(path.dirname(legacyLocalSettingsPath), { recursive: true });
-
-  fs.writeFileSync(
-    path.join(legacyConfigDir, "user-config.json"),
-    `${JSON.stringify({
-      schemaVersion: 2,
-      locale: "en",
-      displayName: "Legacy Name",
-      profileNameKey: "legacy_name",
-      profileBasics: {
-        age: "29",
-        gender: "",
-        location: "Madrid",
-        occupation: "Founder",
-      },
-      dataSources: {
-        wacliDbPath: "",
-        transcriptionDbPath: "~/.openclaw/workspace/transcriptions.sqlite",
-        activityStoreDbPath: "data/activity-store.sqlite",
-      },
-      emailAccounts: [],
-      calendarAccounts: [],
-      closeRelationMatchers: { patterns: [] },
-      workRelationMatchers: { patterns: [] },
-      excludedChats: [],
-      excludeGroups: false,
-      priorityContacts: { patterns: [], exactNames: [] },
-      profileFile: "profile.md",
-      contextFiles: {
-        relationships: {
-          file: "relationships-notes.md",
-          label: "Relationships",
-          shortLabel: "Rel",
-          lastUpdated: "2026-01-01T00:00:00Z",
-          staleAfterDays: 14,
-          relevanceKeywords: ["relationships"],
-          relevanceChatPatterns: [],
-          promptHeader: "RELATIONSHIP CONTEXT",
-        },
-      },
-      chat: {
-        roles: [{ title: "Personal Assistant", description: "Helps with patterns and priorities." }],
-        greeting: "Hi",
-        suggestedTopics: ["Stress"],
-        focusTopics: [],
-        neverMention: [],
-        additionalGuidelines: [],
-        expertSupportUrl: "",
-      },
-    }, null, 2)}\n`
-  );
+  fs.writeFileSync(path.join(legacyConfigDir, "user-config.json"), `${JSON.stringify({
+    schemaVersion: 2,
+    locale: "en",
+    displayName: "Legacy Name",
+    profileNameKey: "legacy_name",
+    dataSources: {
+      wacliDbPath: "",
+      transcriptionDbPath: "transcriptions.sqlite",
+      activityStoreDbPath: "data/activity-store.sqlite",
+    },
+    emailAccounts: [],
+    calendarAccounts: [],
+    closeRelationMatchers: { patterns: [] },
+    workRelationMatchers: { patterns: [] },
+    excludedChats: [],
+    excludeGroups: false,
+    priorityContacts: { patterns: [], exactNames: [] },
+    profileFile: "profile.md",
+    contextFiles: {},
+    chat: {
+      roles: [],
+      greeting: "Legacy greeting",
+      suggestedTopics: [],
+      focusTopics: [],
+      neverMention: [],
+      additionalGuidelines: [],
+    },
+  }, null, 2)}\n`);
   fs.writeFileSync(path.join(legacyConfigDir, "profile.md"), "# Legacy Profile\n");
-  fs.writeFileSync(path.join(legacyConfigDir, "context-files", "relationships-notes.md"), "Legacy context\n");
   fs.writeFileSync(
     legacyLocalSettingsPath,
     `${JSON.stringify({ schemaVersion: 1, onboardingCompleted: true, sidebarOpen: true }, null, 2)}\n`
@@ -94,34 +70,24 @@ test("workspace config is migrated from legacy project files and legacy local se
   process.env.HOME = homeDir;
   process.env.OPENCLAW_STATE_DIR = stateDir;
   delete process.env.OPENCLAW_WORKSPACE_DIR;
-  delete process.env.CLAWJS_LEGACY_CONFIG_DIR;
-  delete process.env.CLAWJS_LEGACY_LOCAL_SETTINGS_PATH;
+  delete process.env.OPENCLAW_CONFIG_DIR;
+  delete process.env.OPENCLAW_LOCAL_SETTINGS_PATH;
   clearConfigCache();
 
   try {
     const config = getUserConfig();
     const workspaceConfigPath = getClawJSUserConfigPath();
     const workspaceLocalSettingsPath = getClawJSLocalSettingsPath();
-    const saved = JSON.parse(fs.readFileSync(workspaceConfigPath, "utf8")) as {
-      dataSources: Record<string, string>;
-    };
 
-    assert.equal(config.displayName, "Legacy Name");
+    assert.equal(config.displayName, "");
+    assert.equal(config.profileNameKey, "");
     assert.equal(workspaceConfigPath, path.join(stateDir, "workspaces", "clawjs-demo", "config", "user-config.json"));
     assert.equal(fs.existsSync(workspaceConfigPath), true);
-    assert.equal(
-      workspaceLocalSettingsPath,
-      path.join(stateDir, "workspaces", "clawjs-demo", "settings.json")
-    );
-    assert.equal(getClawJSLocalSettings().onboardingCompleted, true);
-    assert.equal(getClawJSLocalSettings().sidebarOpen, true);
-    assert.equal(fs.existsSync(workspaceLocalSettingsPath), true);
-    assert.equal(config.dataSources.activityStoreDbPath, "data/activity-store.sqlite");
-    assert.deepEqual(Object.keys(saved.dataSources).sort(), [
-      "activityStoreDbPath",
-      "transcriptionDbPath",
-      "wacliDbPath",
-    ]);
+    assert.equal(workspaceLocalSettingsPath, path.join(stateDir, "workspaces", "clawjs-demo", "settings.json"));
+    assert.equal(getClawJSLocalSettings().onboardingCompleted, undefined);
+    assert.equal(getClawJSLocalSettings().sidebarOpen, undefined);
+    assert.equal(fs.existsSync(workspaceLocalSettingsPath), false);
+    assert.equal(fs.existsSync(legacyLocalSettingsPath), true);
   } finally {
     process.chdir(previousCwd);
     clearConfigCache();
@@ -142,14 +108,14 @@ test("workspace config is migrated from legacy project files and legacy local se
       process.env.OPENCLAW_WORKSPACE_DIR = previousWorkspaceDir;
     }
     if (previousConfigDir === undefined) {
-      delete process.env.CLAWJS_LEGACY_CONFIG_DIR;
+      delete process.env.OPENCLAW_CONFIG_DIR;
     } else {
-      process.env.CLAWJS_LEGACY_CONFIG_DIR = previousConfigDir;
+      process.env.OPENCLAW_CONFIG_DIR = previousConfigDir;
     }
     if (previousLocalSettingsPath === undefined) {
-      delete process.env.CLAWJS_LEGACY_LOCAL_SETTINGS_PATH;
+      delete process.env.OPENCLAW_LOCAL_SETTINGS_PATH;
     } else {
-      process.env.CLAWJS_LEGACY_LOCAL_SETTINGS_PATH = previousLocalSettingsPath;
+      process.env.OPENCLAW_LOCAL_SETTINGS_PATH = previousLocalSettingsPath;
     }
 
     fs.rmSync(tempRoot, { recursive: true, force: true });
@@ -159,9 +125,9 @@ test("workspace config is migrated from legacy project files and legacy local se
 test("saveClawJSLocalSettings persists sidebar preference", { concurrency: false }, () => {
   const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "clawjs-local-settings-"));
   const localSettingsPath = path.join(tempRoot, "settings.json");
-  const previousLocalSettingsPath = process.env.CLAWJS_LEGACY_LOCAL_SETTINGS_PATH;
+  const previousLocalSettingsPath = process.env.OPENCLAW_LOCAL_SETTINGS_PATH;
 
-  process.env.CLAWJS_LEGACY_LOCAL_SETTINGS_PATH = localSettingsPath;
+  process.env.OPENCLAW_LOCAL_SETTINGS_PATH = localSettingsPath;
 
   try {
     const saved = saveClawJSLocalSettings({ onboardingCompleted: true, sidebarOpen: false });
@@ -171,9 +137,9 @@ test("saveClawJSLocalSettings persists sidebar preference", { concurrency: false
     assert.equal(getClawJSLocalSettings().sidebarOpen, false);
   } finally {
     if (previousLocalSettingsPath === undefined) {
-      delete process.env.CLAWJS_LEGACY_LOCAL_SETTINGS_PATH;
+      delete process.env.OPENCLAW_LOCAL_SETTINGS_PATH;
     } else {
-      process.env.CLAWJS_LEGACY_LOCAL_SETTINGS_PATH = previousLocalSettingsPath;
+      process.env.OPENCLAW_LOCAL_SETTINGS_PATH = previousLocalSettingsPath;
     }
 
     fs.rmSync(tempRoot, { recursive: true, force: true });
@@ -186,7 +152,7 @@ test("saveUserConfig normalizes TTS config using SDK defaults", { concurrency: f
   const configDir = path.join(workspaceDir, "config");
   const configPath = path.join(configDir, "user-config.json");
   const previousWorkspaceDir = process.env.OPENCLAW_WORKSPACE_DIR;
-  const previousConfigDir = process.env.CLAWJS_LEGACY_CONFIG_DIR;
+  const previousConfigDir = process.env.OPENCLAW_CONFIG_DIR;
 
   fs.mkdirSync(path.join(configDir, "context-files"), { recursive: true });
   fs.mkdirSync(path.join(configDir, "profile"), { recursive: true });
@@ -194,7 +160,7 @@ test("saveUserConfig normalizes TTS config using SDK defaults", { concurrency: f
   fs.writeFileSync(path.join(configDir, "profile.md"), "");
 
   process.env.OPENCLAW_WORKSPACE_DIR = workspaceDir;
-  process.env.CLAWJS_LEGACY_CONFIG_DIR = configDir;
+  process.env.OPENCLAW_CONFIG_DIR = configDir;
   clearConfigCache();
 
   try {
@@ -256,9 +222,9 @@ test("saveUserConfig normalizes TTS config using SDK defaults", { concurrency: f
       process.env.OPENCLAW_WORKSPACE_DIR = previousWorkspaceDir;
     }
     if (previousConfigDir === undefined) {
-      delete process.env.CLAWJS_LEGACY_CONFIG_DIR;
+      delete process.env.OPENCLAW_CONFIG_DIR;
     } else {
-      process.env.CLAWJS_LEGACY_CONFIG_DIR = previousConfigDir;
+      process.env.OPENCLAW_CONFIG_DIR = previousConfigDir;
     }
 
     fs.rmSync(tempRoot, { recursive: true, force: true });
@@ -271,7 +237,7 @@ test("saveUserConfig strips persisted integration bot tokens from disk", { concu
   const configDir = path.join(workspaceDir, "config");
   const configPath = path.join(configDir, "user-config.json");
   const previousWorkspaceDir = process.env.OPENCLAW_WORKSPACE_DIR;
-  const previousConfigDir = process.env.CLAWJS_LEGACY_CONFIG_DIR;
+  const previousConfigDir = process.env.OPENCLAW_CONFIG_DIR;
 
   fs.mkdirSync(path.join(configDir, "context-files"), { recursive: true });
   fs.mkdirSync(path.join(configDir, "profile"), { recursive: true });
@@ -279,7 +245,7 @@ test("saveUserConfig strips persisted integration bot tokens from disk", { concu
   fs.writeFileSync(path.join(configDir, "profile.md"), "");
 
   process.env.OPENCLAW_WORKSPACE_DIR = workspaceDir;
-  process.env.CLAWJS_LEGACY_CONFIG_DIR = configDir;
+  process.env.OPENCLAW_CONFIG_DIR = configDir;
   clearConfigCache();
 
   try {
@@ -346,9 +312,9 @@ test("saveUserConfig strips persisted integration bot tokens from disk", { concu
       process.env.OPENCLAW_WORKSPACE_DIR = previousWorkspaceDir;
     }
     if (previousConfigDir === undefined) {
-      delete process.env.CLAWJS_LEGACY_CONFIG_DIR;
+      delete process.env.OPENCLAW_CONFIG_DIR;
     } else {
-      process.env.CLAWJS_LEGACY_CONFIG_DIR = previousConfigDir;
+      process.env.OPENCLAW_CONFIG_DIR = previousConfigDir;
     }
 
     fs.rmSync(tempRoot, { recursive: true, force: true });

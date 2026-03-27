@@ -27,7 +27,7 @@ function execOsa(lines: string[]): Promise<string> {
 }
 
 function parseMockPayload(): EmailMockPayload | null {
-  const raw = process.env.CLAWJS_LEGACY_EMAIL_MOCK;
+  const raw = process.env.CLAWJS_EMAIL_MOCK;
   if (!raw) return null;
 
   try {

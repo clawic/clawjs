@@ -13,22 +13,17 @@ test("resetClawJSWorkspace clears workspace state and forces onboarding again", 
   const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "clawjs-reset-"));
   const projectDir = path.join(tempRoot, "project");
   const stateDir = path.join(tempRoot, "openclaw-state");
-  const homeDir = path.join(tempRoot, "home");
   const workspaceDir = path.join(stateDir, "workspaces", "clawjs-demo");
-  const sessionsDir = path.join(stateDir, "agents", "clawjs-demo", "sessions");
   const canonicalSessionsDir = path.join(workspaceDir, ".clawjs", "conversations");
-  const legacyLocalSettingsPath = path.join(homeDir, ".openclaw", "clawjs-legacy-settings.json");
 
   const previousCwd = process.cwd();
-  const previousHome = process.env.HOME;
   const previousStateDir = process.env.OPENCLAW_STATE_DIR;
 
   fs.mkdirSync(path.join(projectDir, "config"), { recursive: true });
   fs.mkdirSync(path.join(workspaceDir, "config", "context-files"), { recursive: true });
   fs.mkdirSync(path.join(workspaceDir, "config", "profile"), { recursive: true });
   fs.mkdirSync(path.join(workspaceDir, "data"), { recursive: true });
-  fs.mkdirSync(sessionsDir, { recursive: true });
-  fs.mkdirSync(path.dirname(legacyLocalSettingsPath), { recursive: true });
+  fs.mkdirSync(canonicalSessionsDir, { recursive: true });
 
   fs.writeFileSync(
     path.join(projectDir, "config", "user-config.json"),
@@ -104,7 +99,7 @@ test("resetClawJSWorkspace clears workspace state and forces onboarding again", 
   fs.writeFileSync(path.join(workspaceDir, "USER.md"), "Legacy Name\n");
   fs.writeFileSync(path.join(workspaceDir, "SOUL.md"), "Legacy Soul\n");
   fs.writeFileSync(path.join(workspaceDir, "data", "activity-store.sqlite"), "legacy-db");
-  fs.writeFileSync(path.join(sessionsDir, "clawjs-legacy-test.jsonl"), `${JSON.stringify({
+  fs.writeFileSync(path.join(canonicalSessionsDir, "clawjs-reset-test.jsonl"), `${JSON.stringify({
     type: "message",
     timestamp: "2026-03-17T12:00:00.000Z",
     message: {
@@ -112,10 +107,8 @@ test("resetClawJSWorkspace clears workspace state and forces onboarding again", 
       content: [{ type: "text", text: "USER: Legacy session" }],
     },
   })}\n`);
-  fs.writeFileSync(legacyLocalSettingsPath, `${JSON.stringify({ schemaVersion: 1, onboardingCompleted: true }, null, 2)}\n`);
 
   process.chdir(projectDir);
-  process.env.HOME = homeDir;
   process.env.OPENCLAW_STATE_DIR = stateDir;
   clearConfigCache();
 
@@ -140,9 +133,8 @@ test("resetClawJSWorkspace clears workspace state and forces onboarding again", 
     assert.equal(config.calendarAccounts.length, 0);
     assert.equal(localSettings.onboardingCompleted, undefined);
     assert.equal(localSettings.locale, undefined);
-    assert.equal(fs.existsSync(legacyLocalSettingsPath), false);
     assert.equal(listSessions().length, 0);
-    assert.equal(getSession("clawjs-legacy-test"), null);
+    assert.equal(getSession("clawjs-reset-test"), null);
     assert.equal(userMemory.includes("Legacy Name"), false);
     assert.equal(userMemory.includes("ClawJS Managed Context"), true);
     assert.equal(generatedProfile.includes("Repo User"), false);
@@ -152,11 +144,6 @@ test("resetClawJSWorkspace clears workspace state and forces onboarding again", 
     process.chdir(previousCwd);
     clearConfigCache();
 
-    if (previousHome === undefined) {
-      delete process.env.HOME;
-    } else {
-      process.env.HOME = previousHome;
-    }
     if (previousStateDir === undefined) {
       delete process.env.OPENCLAW_STATE_DIR;
     } else {

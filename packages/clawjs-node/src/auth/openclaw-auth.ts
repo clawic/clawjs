@@ -303,22 +303,21 @@ export function removeAuthProfilesForProvider(
   agentDir: string,
   provider: string,
   filesystem: AuthStoreFilesystem = new NodeFileSystemHost(),
-  legacyAgentDirs: string[] = [],
 ): number {
   let removed = 0;
-  for (const currentAgentDir of [agentDir, ...legacyAgentDirs]) {
-    const filePath = resolveAuthStorePath(currentAgentDir);
-    if (!filesystem.exists(filePath)) continue;
+  const filePath = resolveAuthStorePath(agentDir);
+  if (!filesystem.exists(filePath)) {
+    return 0;
+  }
 
-    const store = loadAuthStore(currentAgentDir, filesystem);
-    const before = Object.keys(store.profiles).length;
-    store.profiles = Object.fromEntries(
-      Object.entries(store.profiles).filter(([, credential]) => credential.provider !== provider)
-    );
-    if (Object.keys(store.profiles).length !== before) {
-      saveAuthStore(currentAgentDir, store, filesystem);
-      removed += before - Object.keys(store.profiles).length;
-    }
+  const store = loadAuthStore(agentDir, filesystem);
+  const before = Object.keys(store.profiles).length;
+  store.profiles = Object.fromEntries(
+    Object.entries(store.profiles).filter(([, credential]) => credential.provider !== provider)
+  );
+  if (Object.keys(store.profiles).length !== before) {
+    saveAuthStore(agentDir, store, filesystem);
+    removed += before - Object.keys(store.profiles).length;
   }
 
   return removed;

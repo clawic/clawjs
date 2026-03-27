@@ -85,11 +85,11 @@ test("compat snapshots preserve non-openclaw adapter families", () => {
   assert.equal(readCompatSnapshot(workspaceDir)?.runtimeAdapter, "proto-claw");
 });
 
-test("compat snapshot migration normalizes legacy payloads", () => {
+test("compat snapshot migration normalizes current-path payloads", () => {
   const workspaceDir = fs.mkdtempSync(path.join(os.tmpdir(), "clawjs-compat-migrate-"));
-  const legacySnapshotPath = path.join(workspaceDir, ".clawjs", "compat.json");
-  fs.mkdirSync(path.dirname(legacySnapshotPath), { recursive: true });
-  fs.writeFileSync(legacySnapshotPath, JSON.stringify({
+  const currentSnapshotPath = resolveCompatSnapshotPath(workspaceDir);
+  fs.mkdirSync(path.dirname(currentSnapshotPath), { recursive: true });
+  fs.writeFileSync(currentSnapshotPath, JSON.stringify({
     runtimeAdapter: "openclaw",
     runtimeVersion: "1.2.3",
     probedAt: "2026-03-20T00:00:00.000Z",
@@ -107,17 +107,17 @@ test("compat snapshot migration normalizes legacy payloads", () => {
   const migrated = migrateCompatSnapshot(workspaceDir);
 
   assert.equal(migrated.migrated, true);
-  assert.equal(migrated.sourcePath, legacySnapshotPath);
+  assert.equal(migrated.sourcePath, currentSnapshotPath);
   assert.equal(fs.existsSync(resolveCompatSnapshotPath(workspaceDir)), true);
   assert.equal(readCompatSnapshot(workspaceDir)?.runtimeVersion, "1.2.3");
   assert.equal(readCompatSnapshot(workspaceDir)?.schemaVersion, 1);
 });
 
-test("compat snapshot migration repairs wrapper-based legacy payloads and capability drift", () => {
+test("compat snapshot migration repairs wrapper payloads and capability drift", () => {
   const workspaceDir = fs.mkdtempSync(path.join(os.tmpdir(), "clawjs-compat-wrapper-"));
-  const legacySnapshotPath = path.join(workspaceDir, ".clawjs", "runtime-snapshot.json");
-  fs.mkdirSync(path.dirname(legacySnapshotPath), { recursive: true });
-  fs.writeFileSync(legacySnapshotPath, JSON.stringify({
+  const currentSnapshotPath = resolveCompatSnapshotPath(workspaceDir);
+  fs.mkdirSync(path.dirname(currentSnapshotPath), { recursive: true });
+  fs.writeFileSync(currentSnapshotPath, JSON.stringify({
     snapshot: {
       runtime: {
         adapter: "openclaw",
@@ -141,7 +141,7 @@ test("compat snapshot migration repairs wrapper-based legacy payloads and capabi
   const migrated = migrateCompatSnapshot(workspaceDir);
 
   assert.equal(migrated.migrated, true);
-  assert.equal(migrated.sourcePath, legacySnapshotPath);
+  assert.equal(migrated.sourcePath, currentSnapshotPath);
   assert.equal(migrated.snapshot?.runtimeAdapter, "openclaw");
   assert.equal(migrated.snapshot?.runtimeVersion, "0.9.0");
   assert.deepEqual(migrated.snapshot?.capabilities, {
@@ -188,11 +188,11 @@ test("compat snapshot migration fills gaps in current-path snapshots", () => {
   assert.equal(fs.existsSync(resolveCompatSnapshotPath(workspaceDir)), true);
 });
 
-test("compat snapshot migration keeps adapter identity for non-openclaw legacy snapshots", () => {
+test("compat snapshot migration keeps adapter identity for non-openclaw snapshots", () => {
   const workspaceDir = fs.mkdtempSync(path.join(os.tmpdir(), "clawjs-compat-other-adapter-"));
-  const legacySnapshotPath = path.join(workspaceDir, ".clawjs", "compat.json");
-  fs.mkdirSync(path.dirname(legacySnapshotPath), { recursive: true });
-  fs.writeFileSync(legacySnapshotPath, JSON.stringify({
+  const currentSnapshotPath = resolveCompatSnapshotPath(workspaceDir);
+  fs.mkdirSync(path.dirname(currentSnapshotPath), { recursive: true });
+  fs.writeFileSync(currentSnapshotPath, JSON.stringify({
     runtimeAdapter: "proto-claw",
     runtimeVersion: "3.4.5",
     probedAt: "2026-03-20T00:00:00.000Z",
@@ -216,12 +216,12 @@ test("compat snapshot migration stays isolated across sibling workspaces", () =>
   const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "clawjs-compat-isolation-"));
   const workspaceA = path.join(tempRoot, "workspace-a");
   const workspaceB = path.join(tempRoot, "workspace-b");
-  const legacySnapshotA = path.join(workspaceA, ".clawjs", "compat.json");
-  const legacySnapshotB = path.join(workspaceB, ".clawjs", "compat.json");
+  const snapshotA = resolveCompatSnapshotPath(workspaceA);
+  const snapshotB = resolveCompatSnapshotPath(workspaceB);
 
-  fs.mkdirSync(path.dirname(legacySnapshotA), { recursive: true });
-  fs.mkdirSync(path.dirname(legacySnapshotB), { recursive: true });
-  fs.writeFileSync(legacySnapshotA, JSON.stringify({
+  fs.mkdirSync(path.dirname(snapshotA), { recursive: true });
+  fs.mkdirSync(path.dirname(snapshotB), { recursive: true });
+  fs.writeFileSync(snapshotA, JSON.stringify({
     runtimeAdapter: "openclaw",
     runtimeVersion: "1.2.3",
     probedAt: "2026-03-20T00:00:00.000Z",
@@ -232,7 +232,7 @@ test("compat snapshot migration stays isolated across sibling workspaces", () =>
       gatewayCall: true,
     },
   }, null, 2));
-  fs.writeFileSync(legacySnapshotB, JSON.stringify({
+  fs.writeFileSync(snapshotB, JSON.stringify({
     runtimeAdapter: "openclaw",
     runtimeVersion: "9.9.9",
     probedAt: "2026-03-20T00:00:00.000Z",

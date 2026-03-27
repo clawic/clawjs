@@ -9,24 +9,14 @@ import {
   discoverOpenClawAppContext,
 } from "./openclaw-app.ts";
 
-test("discoverOpenClawAppContext resolves the first configured alias and migrates legacy paths", () => {
+test("discoverOpenClawAppContext resolves the first configured alias", () => {
   const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "clawjs-openclaw-app-"));
   const configPath = path.join(stateDir, "openclaw.json");
-  const legacyWorkspaceDir = path.join(stateDir, "legacy-workspace");
-  const legacyAgentDir = path.join(stateDir, "legacy-agent");
-  const legacyConversationsDir = path.join(stateDir, "legacy-conversations");
-
-  fs.mkdirSync(legacyWorkspaceDir, { recursive: true });
-  fs.mkdirSync(legacyAgentDir, { recursive: true });
-  fs.mkdirSync(legacyConversationsDir, { recursive: true });
-  fs.writeFileSync(path.join(legacyWorkspaceDir, "USER.md"), "legacy-user\n");
-  fs.writeFileSync(path.join(legacyAgentDir, "auth-profiles.json"), "{}\n");
-  fs.writeFileSync(path.join(legacyConversationsDir, "session.jsonl"), "{}\n");
 
   fs.writeFileSync(configPath, JSON.stringify({
     agents: {
       list: [{
-        id: "clawlen",
+        id: "clawjs-demo",
       }],
     },
   }, null, 2));
@@ -34,28 +24,19 @@ test("discoverOpenClawAppContext resolves the first configured alias and migrate
   const context = discoverOpenClawAppContext({
     configPath,
     stateDir,
-    agentIds: ["clawjs-legacy", "clawlen"],
-    migrateLegacy: {
-      workspaceDirCandidates: [legacyWorkspaceDir],
-      agentDirCandidates: [legacyAgentDir],
-      conversationsDirCandidates: [legacyConversationsDir],
-    },
+    agentIds: ["demo-alias", "clawjs-demo"],
   });
 
-  assert.equal(context.agentId, "clawlen");
-  assert.equal(context.matchedAgentId, "clawlen");
-  assert.equal(context.requestedAgentIds[0], "clawjs-legacy");
-  assert.equal(fs.existsSync(path.join(context.workspaceDir, "USER.md")), true);
-  assert.equal(fs.existsSync(path.join(context.agentDir, "auth-profiles.json")), true);
-  assert.equal(fs.existsSync(path.join(context.conversationsDir, "session.jsonl")), true);
-  assert.equal(context.migration?.actions.filter((action) => action.performed).length, 3);
+  assert.equal(context.agentId, "clawjs-demo");
+  assert.equal(context.matchedAgentId, "clawjs-demo");
+  assert.equal(context.requestedAgentIds[0], "demo-alias");
 });
 
 test("detachOpenClawAppContext unregisters agent ids and removes requested paths", () => {
   const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "clawjs-openclaw-detach-"));
   const configPath = path.join(stateDir, "openclaw.json");
-  const workspaceDir = path.join(stateDir, "workspaces", "clawlen");
-  const agentDir = path.join(stateDir, "agents", "clawlen", "agent");
+  const workspaceDir = path.join(stateDir, "workspaces", "clawjs-demo");
+  const agentDir = path.join(stateDir, "agents", "clawjs-demo", "agent");
   const conversationsDir = path.join(workspaceDir, ".clawjs", "conversations");
 
   fs.mkdirSync(workspaceDir, { recursive: true });
@@ -67,12 +48,12 @@ test("detachOpenClawAppContext unregisters agent ids and removes requested paths
         workspace: workspaceDir,
       },
       list: [{
-        id: "clawlen",
+        id: "clawjs-demo",
         workspace: workspaceDir,
         agentDir,
       }, {
-        id: "clawjs-legacy",
-        workspace: path.join(stateDir, "workspaces", "clawjs-legacy"),
+        id: "demo-alias",
+        workspace: path.join(stateDir, "workspaces", "demo-alias"),
       }],
     },
   }, null, 2));
@@ -80,8 +61,8 @@ test("detachOpenClawAppContext unregisters agent ids and removes requested paths
   const result = detachOpenClawAppContext({
     configPath,
     stateDir,
-    agentId: "clawlen",
-    agentIds: ["clawjs-legacy"],
+    agentId: "clawjs-demo",
+    agentIds: ["demo-alias"],
     workspaceDir,
     agentDir,
     conversationsDir,
@@ -90,7 +71,7 @@ test("detachOpenClawAppContext unregisters agent ids and removes requested paths
     removeConversationsDir: true,
   });
 
-  assert.deepEqual(result.removedAgentIds.sort(), ["clawjs-legacy", "clawlen"]);
+  assert.deepEqual(result.removedAgentIds.sort(), ["clawjs-demo", "demo-alias"]);
   assert.equal(result.updatedConfig, true);
   assert.equal(fs.existsSync(workspaceDir), false);
   assert.equal(fs.existsSync(agentDir), false);

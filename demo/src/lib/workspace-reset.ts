@@ -1,10 +1,11 @@
 import crypto from "crypto";
 import fs from "fs";
+import os from "os";
 import path from "path";
 import { readOpenClawRuntimeConfig, writeOpenClawRuntimeConfig } from "@clawjs/node";
 
 import { defaultLocale } from "./i18n/messages.ts";
-import { LOCAL_SETTINGS_SCHEMA_VERSION, legacyClawJSLocalSettingsPath } from "./local-settings.ts";
+import { LOCAL_SETTINGS_SCHEMA_VERSION } from "./local-settings.ts";
 import {
   DEFAULT_SOUL_TEMPLATE,
   DEFAULT_USER_TEMPLATE,
@@ -22,7 +23,6 @@ import {
   openClawConfigPath,
   getClawJSOpenClawAgentId,
 } from "./openclaw-agent.ts";
-import os from "os";
 
 const WACLI_STORE_DIR = path.join(os.homedir(), ".wacli");
 
@@ -212,15 +212,10 @@ function secureDeleteFile(filePath: string): void {
 }
 
 /**
- * Remove the ClawJS agent directory (auth-profiles.json, models.json, etc.)
- * and legacy auth tokens stored under the "main" agent.
+ * Remove the ClawJS agent directory (auth-profiles.json, models.json, etc.).
  */
 export function resetOpenClawAgentData(): void {
   secureDeleteDir(resolveClawJSAgentDir());
-
-  // Also clean legacy auth tokens that may exist under the default "main" agent
-  const mainAuthProfiles = path.join(resolveOpenClawStateDir(), "agents", "main", "agent", "auth-profiles.json");
-  secureDeleteFile(mainAuthProfiles);
 }
 
 /**
@@ -265,7 +260,6 @@ export function resetClawJSWorkspace(options: ResetOptions = ALL_RESET_OPTIONS):
     // Full reset: wipe everything and rebuild
     secureDeleteDir(workspaceDir);
     secureDeleteDir(sessionsDir);
-    secureDeleteFile(legacyClawJSLocalSettingsPath());
     ensureBlankWorkspaceSkeleton();
     syncGeneratedProfile();
   } else {
@@ -298,7 +292,6 @@ export function resetClawJSWorkspace(options: ResetOptions = ALL_RESET_OPTIONS):
     if (options.settings) {
       const blankConfig = buildBlankUserConfig();
       fs.writeFileSync(getClawJSUserConfigPath(), `${JSON.stringify(blankConfig, null, 2)}\n`);
-      secureDeleteFile(legacyClawJSLocalSettingsPath());
       const settingsPath = path.join(workspaceDir, "settings.json");
       fs.writeFileSync(settingsPath, `${JSON.stringify({ schemaVersion: LOCAL_SETTINGS_SCHEMA_VERSION }, null, 2)}\n`);
     }

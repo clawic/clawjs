@@ -1155,10 +1155,10 @@ test("runCli supports auth login dry-run and workspace validate", async () => {
   assert.match(loginStdout.getOutput(), /openai-codex/);
 });
 
-test("runCli can repair a workspace and migrate legacy compat", async () => {
+test("runCli can repair a workspace and normalize compat snapshots", async () => {
   const workspaceRoot = fs.mkdtempSync(path.join(os.tmpdir(), "clawjs-cli-repair-"));
-  fs.mkdirSync(path.join(workspaceRoot, ".clawjs"), { recursive: true });
-  fs.writeFileSync(path.join(workspaceRoot, ".clawjs", "compat.json"), JSON.stringify({
+  fs.mkdirSync(path.join(workspaceRoot, ".clawjs", "compat"), { recursive: true });
+  fs.writeFileSync(path.join(workspaceRoot, ".clawjs", "compat", "runtime-snapshot.json"), JSON.stringify({
     runtimeAdapter: "openclaw",
     runtimeVersion: "1.2.3",
     probedAt: "2026-03-20T00:00:00.000Z",
