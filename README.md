@@ -18,15 +18,18 @@ Repository ownership, issue tracking, and package publishing live under [`@clawi
 
 ## Packages
 
+- `@clawjs/cli`: official CLI
 - `@clawjs/claw`: official SDK
 - `@clawjs/workspace`: local-first workspace productivity companion
-- `@clawjs/cli`: official CLI
 - `@clawjs/node`: compatibility wrapper for existing integrations
 - `@clawjs/core`: shared contracts and schemas
+- `@clawjs/openclaw-plugin`: OpenClaw bridge plugin
+- `@clawjs/openclaw-context-engine`: experimental OpenClaw context engine
 - `create-claw-app`: Next.js starter scaffold
 - `create-claw-agent`: agent-first repository scaffold
 - `create-claw-server`: headless Node.js server scaffold
 - `create-claw-plugin`: distributed plugin package scaffold
+- `eslint-config-claw`: shared ESLint flat config
 
 ## Install
 
@@ -132,6 +135,16 @@ Supported v1 project types:
 - `claw new agent`
 - `claw new server`
 - `claw new workspace`
+- `claw new skill`
+- `claw new plugin`
+
+Inside a generated project, the main productivity flow is:
+
+- `claw generate skill|plugin|provider|channel|command`
+- `claw add provider|channel|telegram|scheduler|memory`
+- `claw info`
+
+`create-claw-app` still exists for teams that want a `create-*` style workflow, but it is no longer the primary path in the docs.
 
 ## Workspace productivity companion
 
@@ -146,16 +159,13 @@ Or add it inside an existing Claw project through the CLI:
 ```bash
 claw add workspace
 ```
-- `claw new skill`
-- `claw new plugin`
 
-Inside a generated project, the main productivity flow is:
+The productivity package extends the base SDK with:
 
-- `claw generate skill|plugin|provider|channel|command`
-- `claw add provider|channel|telegram|scheduler|memory`
-- `claw info`
-
-`create-claw-app` still exists for teams that want a `create-*` style workflow, but it is no longer the primary path in the docs.
+- `tasks`, `notes`, `people`, `inbox`, and `events` CRUD
+- workspace-wide search and context bundles
+- UI metadata for surfaces and tools
+- local JSON and asset storage under `.clawjs/data`
 
 ## Next.js starter
 
@@ -216,13 +226,21 @@ ClawJS does not pretend unsupported subsystems exist.
 
 ## Docs
 
+- [Getting started](docs/getting-started.md)
+- [CLI reference](docs/cli.md)
+- [API reference](docs/api.md)
+- [Workspace model and productivity layer](docs/workspace.md)
 - [Terminology](docs/terminology.md)
-- [Setup and first workspace](docs/setup.md)
+- [Setup and first workspace checklist](docs/setup.md)
+- [Files and templates](docs/files.md)
+- [Conversations and streaming](docs/conversations.md)
+- [Authentication](docs/authentication.md)
+- [Diagnostics and repair](docs/diagnostics.md)
 - [Template packs and bindings](docs/template-packs-and-bindings.md)
 - [Auth, compat, and doctor](docs/auth-compat-and-doctor.md)
-- [Sessions and streaming](docs/sessions-and-streaming.md)
 - [Runtime migration notes](docs/runtime-migration-notes.md)
 - [Support matrix](docs/support-matrix.md)
+- [Public surface](docs/surface.md)
 - [E2E and smoke tests](tests/e2e/README.md)
 - [Demo terminology note](docs/demo-terminology-note.md)
 

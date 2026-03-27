@@ -23,7 +23,10 @@ ClawJS gives you one place to solve the hard parts that show up across runtimes:
 - Workspace initialization with adapter-specific file layouts.
 - Auth, provider catalogs, and model catalogs.
 - Normalized streaming and transport fallback.
-- State snapshots for scheduler, memory, skills, and channels.
+- Intent, observed-state, and feature planning for adapter-owned settings.
+- State snapshots for scheduler, memory, skills, channels, and speech config.
+- A local-first productivity layer for tasks, notes, people, inbox, events, and search.
+- File-backed media generation and asset storage for image, audio, and video workflows.
 
 <div class="callout">
   <p><strong>Support note:</strong> Adapter maturity differs. Check the support matrix before picking a runtime for production use.</p>
@@ -34,9 +37,14 @@ ClawJS gives you one place to solve the hard parts that show up across runtimes:
 | Package | Description |
 | --- | --- |
 | `@clawjs/core` | Shared types, schemas, capability maps, manifests, and snapshot shapes. |
-| `@clawjs/claw` | Runtime adapters, workspace management, conversations, auth, compat, doctor, and state persistence. |
-| `@clawjs/node` | Compatibility wrapper that reexports the primary SDK surface for existing integrations. |
-| `@clawjs/cli` | The official CLI package with the `claw` and `clawjs` binaries for adapter-aware runtime, workspace, auth, models, sessions, memory, skills, scheduler, and channels commands. |
+| `@clawjs/claw` | Runtime adapters, workspace management, conversations, auth, compat, doctor, media generation, secrets, watchers, and state persistence. |
+| `@clawjs/workspace` | Productivity extension for tasks, notes, people, inbox, events, search, context, and UI descriptors on top of the base SDK. |
+| `@clawjs/node` | Compatibility wrapper that reexports the primary SDK surface for existing integrations that still import `@clawjs/node`. |
+| `@clawjs/cli` | Official CLI with `claw` and `clawjs` binaries for scaffolding, runtime management, workspace ops, productivity commands, sessions, media, and package-aware project generation. |
+| `@clawjs/openclaw-plugin` | OpenClaw bridge plugin for gateway RPC methods, observability hooks, and managed tooling. |
+| `@clawjs/openclaw-context-engine` | Experimental OpenClaw context engine package for runtime-side context selection. |
+| `create-claw-*` packages | Compatibility wrappers around the same scaffolding engine used by `claw new`. |
+| `eslint-config-claw` | Shared flat-config ESLint preset for ClawJS repositories. |
 
 ## Core Concepts
 
@@ -61,7 +69,12 @@ ClawJS keeps a stable internal layer under `.clawjs/` even when runtimes disagre
 ## Start Here
 
 - [Getting Started](/getting-started) for the official scaffold and workspace flow.
+- [CLI](/cli) for the current command surface, including productivity and media commands.
 - [Terminology](/terminology) for the canonical product vocabulary.
 - [Runtime](/runtime) for the adapter contract and capability model.
+- [Workspace](/workspace) for the stable `.clawjs` layout and the `@clawjs/workspace` productivity layer.
+- [Files & Templates](/files) for template packs, bindings, and managed blocks.
+- [Conversations](/conversations) for session storage and stream events.
+- [Diagnostics & Repair](/diagnostics) for compat refresh and doctor flows.
 - [API Reference](/api) for the instance namespaces and runtime-facing methods.
 - [Public Surface](/surface) for the exhaustive package export inventory.
