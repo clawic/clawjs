@@ -6,7 +6,8 @@ Instructions for humans and coding agents working in this repository.
 
 - Treat this file as the operational entrypoint for the repo.
 - Treat `README.md`, `CONTRIBUTING.md`, `SECURITY.md`, `RELEASING.md`, `docs/git-workflow.md`, and `tests/e2e/README.md` as source-of-truth references for deeper detail.
-- For host-dependent OpenClaw work, read `OPENCLAW_LEARNINGS.md` before changing runtime detection, installation, auth, or onboarding flows.
+- For agent-specific operational knowledge, review `agents/wiki/README.md` and the relevant pages under `agents/wiki/` before changing behavior or debugging repeated issues.
+- For host-dependent OpenClaw work, read `agents/wiki/openclaw.md` before changing runtime detection, installation, auth, or onboarding flows.
 - If a change affects public behavior, docs, examples, templates, or package surface, update the relevant docs and tests in the same patch.
 
 ## Repository Shape
@@ -184,4 +185,5 @@ Pull request rules:
 - Security-sensitive work: `SECURITY.md`
 - E2E or demo changes: `tests/e2e/README.md`
 - Runtime and workspace behavior: `docs/setup.md`, `docs/support-matrix.md`, `docs/runtime-migration-notes.md`
-- OpenClaw host-dependent debugging: `OPENCLAW_LEARNINGS.md`
+- Agent operational wiki: `agents/wiki/README.md`
+- OpenClaw host-dependent debugging: `agents/wiki/openclaw.md`
