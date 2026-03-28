@@ -192,6 +192,21 @@ document.querySelectorAll(".install-bar__copy").forEach((btn) => {
   });
 });
 
+// ── Demo stack tabs (mobile) ──
+document.querySelectorAll('.demo-stack__tabs').forEach(tabs => {
+  tabs.addEventListener('click', e => {
+    const btn = e.target.closest('.demo-stack__tab');
+    if (!btn) return;
+    const stack = tabs.closest('.demo-stack');
+    const target = btn.dataset.target;
+    tabs.querySelectorAll('.demo-stack__tab').forEach(t => t.classList.remove('demo-stack__tab--active'));
+    btn.classList.add('demo-stack__tab--active');
+    stack.querySelectorAll('.demo-stack__layer').forEach(l => {
+      l.classList.toggle('demo-stack__layer--visible', l.dataset.layer === target);
+    });
+  });
+});
+
 // ── Scroll reveal for sections ──
 (function scrollReveal() {
   const targets = document.querySelectorAll(
