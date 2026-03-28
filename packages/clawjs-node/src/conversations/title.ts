@@ -81,8 +81,9 @@ async function generateTitleViaCli(
     timeoutMs: invocation.timeoutMs ?? 65_000,
   });
 
+  const combinedOutput = [result.stdout, result.stderr].filter((value) => value && value.trim()).join("\n");
   const text = invocation.parser === "json-payloads"
-    ? extractJsonPayloadText(result.stdout)
+    ? extractJsonPayloadText(combinedOutput)
     : result.stdout.trim();
   return summarizeTitle(text);
 }

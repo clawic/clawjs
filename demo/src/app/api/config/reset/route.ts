@@ -5,21 +5,14 @@ import { resetClawJSWorkspace, resetOpenClawAgentData, removeClawJSFromOpenClawC
 import { invalidateOpenClawAvailabilityCache } from "@/app/api/chat/route";
 import { isE2EEnabled, resetE2EState, seedE2EState } from "@/lib/e2e";
 import { getClawJSLocalSettings, saveClawJSLocalSettings } from "@/lib/local-settings";
-import { findCommand } from "@/lib/platform";
+import { findCommand, findCommandFresh } from "@/lib/platform";
 import { stopWacliAuth } from "@/lib/wacli-runtime";
+import { uninstallAdapter } from "@/lib/runtime-adapters";
 
 interface ExtendedResetOptions extends ResetOptions {
   whatsappCli: boolean;
   openClawWorkspace: boolean;
   openClawUninstall: boolean;
-}
-
-function npmUninstallOpenClaw(npmBinary: string): Promise<boolean> {
-  return new Promise((resolve) => {
-    execFile(npmBinary, ["uninstall", "-g", "openclaw"], { timeout: 60_000 }, (err) => {
-      resolve(!err);
-    });
-  });
 }
 
 async function brewUninstallWacli(): Promise<boolean> {
@@ -33,34 +26,40 @@ async function brewUninstallWacli(): Promise<boolean> {
 }
 
 export async function POST(request: NextRequest) {
+  let parsedBody: Partial<ExtendedResetOptions> | null = null;
+  try {
+    const body = await request.json() as Partial<ExtendedResetOptions>;
+    if (body && typeof body === "object") {
+      parsedBody = body;
+    }
+  } catch {
+    parsedBody = null;
+  }
+
   if (isE2EEnabled()) {
     resetE2EState();
-    seedE2EState("fresh");
-    return NextResponse.json({ ok: true, reset: "e2e-fresh" });
+    const mode = parsedBody?.openClawUninstall ? "clean" : "fresh";
+    seedE2EState(mode);
+    return NextResponse.json({ ok: true, reset: `e2e-${mode}` });
   }
 
   try {
     let options: ExtendedResetOptions = { ...ALL_RESET_OPTIONS, whatsappCli: true, openClawWorkspace: true, openClawUninstall: false };
 
-    try {
-      const body = await request.json() as Partial<ExtendedResetOptions>;
-      if (body && typeof body === "object") {
-        options = {
-          conversations: body.conversations ?? true,
-          profile: body.profile ?? true,
-          contextFiles: body.contextFiles ?? true,
-          transcriptions: body.transcriptions ?? true,
-          settings: body.settings ?? true,
-          whatsappData: body.whatsappData ?? true,
-          whatsappCli: body.whatsappCli ?? true,
-          emailAccounts: body.emailAccounts ?? true,
-          calendarAccounts: body.calendarAccounts ?? true,
-          openClawWorkspace: body.openClawWorkspace ?? true,
-          openClawUninstall: body.openClawUninstall ?? false,
-        };
-      }
-    } catch {
-      // No body or invalid JSON, use defaults (delete all)
+    if (parsedBody) {
+      options = {
+        conversations: parsedBody.conversations ?? true,
+        profile: parsedBody.profile ?? true,
+        contextFiles: parsedBody.contextFiles ?? true,
+        transcriptions: parsedBody.transcriptions ?? true,
+        settings: parsedBody.settings ?? true,
+        whatsappData: parsedBody.whatsappData ?? true,
+        whatsappCli: parsedBody.whatsappCli ?? true,
+        emailAccounts: parsedBody.emailAccounts ?? true,
+        calendarAccounts: parsedBody.calendarAccounts ?? true,
+        openClawWorkspace: parsedBody.openClawWorkspace ?? true,
+        openClawUninstall: parsedBody.openClawUninstall ?? false,
+      };
     }
 
     // Stop wacli auth if we're cleaning up WhatsApp
@@ -91,16 +90,24 @@ export async function POST(request: NextRequest) {
       } catch { /* best effort */ }
     }
 
-    // Uninstall OpenClaw globally via npm
+    // Uninstall OpenClaw globally via the runtime adapter and verify it is gone.
     if (options.openClawUninstall) {
       try {
         resetOpenClawAgentData();
         removeClawJSFromOpenClawConfig();
         invalidateOpenClawAvailabilityCache();
       } catch { /* best effort */ }
-      const npmBinary = await findCommand("npm");
-      if (npmBinary) {
-        await npmUninstallOpenClaw(npmBinary);
+      const uninstallResult = await uninstallAdapter("openclaw");
+      if (!uninstallResult.success) {
+        return NextResponse.json({
+          error: uninstallResult.error || "Failed to uninstall OpenClaw",
+        }, { status: 500 });
+      }
+      const openClawStillPresent = await findCommandFresh("openclaw");
+      if (openClawStillPresent) {
+        return NextResponse.json({
+          error: `OpenClaw uninstall reported success, but the binary is still present at ${openClawStillPresent}.`,
+        }, { status: 500 });
       }
     }
 

@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { useLocale } from "@/components/locale-provider";
 import { useAppBootstrap } from "@/components/app-bootstrap-provider";
 import type { IntegrationStatus } from "@/lib/app-bootstrap";
+import { hasConfirmedOAuthSubscription, type AiAuthSummary } from "@/lib/ai-auth";
 import { localeMetadata, locales, type Locale, type Messages } from "@/lib/i18n/messages";
 import { Check, ChevronRight, ChevronLeft, ChevronDown, MessageCircle, Calendar, Mail, Loader2, AlertCircle, RotateCcw, Bug, HeartPulse, Code2, Database, Users, Mic, Volume2, Brain, Sparkles, Briefcase, Activity } from "lucide-react";
 
@@ -41,6 +42,8 @@ function terminalQrToDataUri(qrText: string): string {
 
 type ConcernCategory = "emotional" | "relationships" | "growth" | "work" | "health";
 type ConcernKey = keyof Messages["onboarding"]["concerns"]["items"];
+type AuthState = "idle" | "launching" | "polling" | "done";
+type AuthLaunchMode = "browser" | "terminal" | null;
 
 const CONCERN_CATEGORIES: Array<{ id: ConcernCategory; items: ConcernKey[] }> = [
   { id: "emotional", items: ["anxiety", "overthinking", "stress", "moodSwings", "loneliness"] },
@@ -168,16 +171,18 @@ function CardAction({
 
 /* ── Toggle switch (matching settings design) ────────────────────── */
 
-function Toggle({ enabled, onChange, disabled = false }: {
+function Toggle({ enabled, onChange, disabled = false, testId }: {
   enabled: boolean;
   onChange: (v: boolean) => void;
   disabled?: boolean;
+  testId?: string;
 }) {
   return (
     <button
       type="button"
       onClick={() => onChange(!enabled)}
       disabled={disabled}
+      data-testid={testId}
       className={`relative w-10 h-[22px] rounded-full transition-colors flex-shrink-0 ${
         enabled ? "bg-foreground" : "bg-border-hover"
       }`}
@@ -192,14 +197,22 @@ function Toggle({ enabled, onChange, disabled = false }: {
 
 /* ── Status badge ─────────────────────────────────────────────────── */
 
-function StatusBadge({ label, variant }: { label: string; variant: "success" | "muted" | "warning" }) {
+function StatusBadge({
+  label,
+  variant,
+  testId,
+}: {
+  label: string;
+  variant: "success" | "muted" | "warning";
+  testId?: string;
+}) {
   const colors = {
     success: "text-emerald-600",
     muted: "text-muted-foreground",
     warning: "text-amber-600",
   };
   return (
-    <div className={`shrink-0 flex items-center gap-1 text-xs ${colors[variant]}`}>
+    <div data-testid={testId} className={`shrink-0 flex items-center gap-1 text-xs ${colors[variant]}`}>
       {variant === "success" && <Check className="w-3.5 h-3.5" />}
       {variant === "warning" && <AlertCircle className="w-3.5 h-3.5" />}
       {label}
@@ -324,6 +337,10 @@ function defaultToolStatus(): IntegrationStatus {
   };
 }
 
+function isOpenClawEngineConfigured(status: IntegrationStatus["openClaw"] | undefined): boolean {
+  return !!status?.agentConfigured && !status?.needsSetup;
+}
+
 /* ── Main onboarding flow ────────────────────────────────────────── */
 /*
  * Steps:
@@ -363,12 +380,14 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
   const setupTriggeredRef = useRef(false);
 
   // AI provider auth states (generic for all providers)
-  const [oauthStates, setOauthStates] = useState<Record<string, "idle" | "launching" | "polling" | "done">>({});
+  const [oauthStates, setOauthStates] = useState<Record<string, AuthState>>({});
+  const [oauthLaunchModes, setOauthLaunchModes] = useState<Record<string, AuthLaunchMode>>({});
   const [apiKeyValues, setApiKeyValues] = useState<Record<string, string>>({});
   const [apiKeySaved, setApiKeySaved] = useState<Record<string, boolean>>({});
   const [apiKeyModalProvider, setApiKeyModalProvider] = useState<string | null>(null);
   const [hasAnyBackendAuth, setHasAnyBackendAuth] = useState(false);
   const [authCheckLoading, setAuthCheckLoading] = useState(true);
+  const [authLaunchError, setAuthLaunchError] = useState<string | null>(null);
   const authPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Data integration states
@@ -412,7 +431,7 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
     const toolStatus = bootstrapData?.toolStatus;
     if (!toolStatus) return;
 
-    const engineReady = toolStatus.openClaw.agentConfigured && toolStatus.openClaw.modelConfigured;
+    const engineReady = isOpenClawEngineConfigured(toolStatus.openClaw);
     if (engineReady) {
       setOpenClawSetupState("done");
       setupTriggeredRef.current = true;
@@ -423,12 +442,12 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
   useEffect(() => {
     if (step !== 5) return;
     setAuthCheckLoading(true);
-    fetch("/api/integrations/auth")
+    fetch("/api/integrations/auth", { cache: "no-store" })
       .then((r) => r.json())
       .then((data) => {
         const newOauth: Record<string, "done"> = {};
-        if (data.providers?.anthropic?.hasSubscription) newOauth.anthropic = "done";
-        if (data.providers?.["openai-codex"]?.hasSubscription) newOauth["openai-codex"] = "done";
+        if (hasConfirmedOAuthSubscription(data.providers as Record<string, AiAuthSummary> | undefined, "anthropic")) newOauth.anthropic = "done";
+        if (hasConfirmedOAuthSubscription(data.providers as Record<string, AiAuthSummary> | undefined, "openai-codex")) newOauth["openai-codex"] = "done";
         if (Object.keys(newOauth).length) setOauthStates(prev => ({ ...prev, ...newOauth }));
 
         const savedKeys: Record<string, boolean> = {};
@@ -437,7 +456,8 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
         }
         if (Object.keys(savedKeys).length) setApiKeySaved(prev => ({ ...prev, ...savedKeys }));
 
-        const anyAuth = Object.values(data.providers ?? {}).some((p: any) => p.hasAuth);
+        const anyAuth = hasConfirmedOAuthSubscription(data.providers as Record<string, AiAuthSummary> | undefined, "openai-codex")
+          || Object.values(data.providers ?? {}).some((p: any) => p.hasProfileApiKey);
         setHasAnyBackendAuth(anyAuth);
         setAuthCheckLoading(false);
       })
@@ -465,7 +485,7 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
       const res = await fetch("/api/integrations/install", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ package: pkg }),
+        body: JSON.stringify(pkg === "openclaw" ? { adapter: "openclaw" } : { package: pkg }),
       });
 
       if (!res.ok) {
@@ -479,13 +499,20 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
         throw new Error(data.output || data.error || "Installation failed");
       }
 
-      if (pkg === "openclaw") setOpenClawPhase("verifying");
-
-      const statusRes = await fetch("/api/integrations/status");
-      const status = await statusRes.json();
-      updateBootstrapData((current) => ({ ...current, toolStatus: status }));
-
       if (pkg === "openclaw") {
+        setOpenClawPhase("verifying");
+        updateBootstrapData((current) => ({
+          ...current,
+          toolStatus: {
+            ...current.toolStatus,
+            openClaw: {
+              ...current.toolStatus.openClaw,
+              installed: true,
+              cliAvailable: true,
+              lastError: null,
+            },
+          },
+        }));
         setInstalling(false);
         setOpenClawPhase("configuring");
         setOpenClawSetupState("running");
@@ -498,7 +525,7 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
               ...current,
               toolStatus: { ...current.toolStatus, openClaw: setupData.openClaw },
             }));
-            const ok = setupData.openClaw.agentConfigured && setupData.openClaw.modelConfigured;
+            const ok = isOpenClawEngineConfigured(setupData.openClaw);
             setOpenClawSetupState(ok ? "done" : "failed");
             if (!ok) setOpenClawError(setupData.openClaw.lastError || null);
           } else {
@@ -511,6 +538,10 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
         }
         return;
       }
+
+      const statusRes = await fetch("/api/integrations/status");
+      const status = await statusRes.json();
+      updateBootstrapData((current) => ({ ...current, toolStatus: status }));
     } catch (e) {
       if (pkg === "openclaw") {
         setOpenClawError(e instanceof Error ? e.message : "Installation failed");
@@ -533,7 +564,7 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
           ...current,
           toolStatus: { ...current.toolStatus, openClaw: setupData.openClaw },
         }));
-        const ok = setupData.openClaw.agentConfigured && setupData.openClaw.modelConfigured;
+        const ok = isOpenClawEngineConfigured(setupData.openClaw);
         setOpenClawSetupState(ok ? "done" : "failed");
         if (!ok) setOpenClawError(setupData.openClaw.lastError || null);
       } else {
@@ -548,7 +579,9 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
 
   // ── OAuth launch handler ──
   const launchOAuth = useCallback(async (provider: string) => {
+    setAuthLaunchError(null);
     setOauthStates(prev => ({ ...prev, [provider]: "launching" }));
+    setOauthLaunchModes(prev => ({ ...prev, [provider]: null }));
 
     try {
       const res = await fetch("/api/integrations/auth", {
@@ -557,11 +590,25 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
         body: JSON.stringify({ action: "oauth", provider }),
       });
       const data = await res.json();
-      if (!data.ok) {
+      if (!res.ok || !data.ok) {
+        setAuthLaunchError(typeof data.error === "string" ? data.error : "Could not start the sign-in flow.");
         setOauthStates(prev => ({ ...prev, [provider]: "idle" }));
+        setOauthLaunchModes(prev => ({ ...prev, [provider]: null }));
         return;
       }
 
+      if (data.connected) {
+        setAuthLaunchError(null);
+        setHasAnyBackendAuth(true);
+        setOauthStates(prev => ({ ...prev, [provider]: "done" }));
+        setOauthLaunchModes(prev => ({ ...prev, [provider]: null }));
+        const fullStatus = await fetch("/api/integrations/status");
+        const fullData = await fullStatus.json();
+        updateBootstrapData((current) => ({ ...current, toolStatus: fullData }));
+        return;
+      }
+
+      setOauthLaunchModes(prev => ({ ...prev, [provider]: data.launchMode === "terminal" ? "terminal" : "browser" }));
       setOauthStates(prev => ({ ...prev, [provider]: "polling" }));
 
       // Poll for auth completion with a 60s timeout
@@ -572,17 +619,21 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
         if (pollCount > 20) { // ~60s at 3s intervals
           if (authPollRef.current) clearInterval(authPollRef.current);
           authPollRef.current = null;
+          setAuthLaunchError(messages.onboarding.aiProvider.waitingForAuth);
           setOauthStates(prev => ({ ...prev, [provider]: "idle" }));
+          setOauthLaunchModes(prev => ({ ...prev, [provider]: null }));
           return;
         }
         try {
-          const statusRes = await fetch("/api/integrations/auth");
+          const statusRes = await fetch("/api/integrations/auth", { cache: "no-store" });
           const statusData = await statusRes.json();
-          const providerKey = provider === "openai-codex" ? "openai-codex" : provider;
-          if (statusData.providers?.[providerKey]?.hasSubscription) {
+          if (hasConfirmedOAuthSubscription(statusData.providers as Record<string, AiAuthSummary> | undefined, provider)) {
             if (authPollRef.current) clearInterval(authPollRef.current);
             authPollRef.current = null;
+            setAuthLaunchError(null);
+            setHasAnyBackendAuth(true);
             setOauthStates(prev => ({ ...prev, [provider]: "done" }));
+            setOauthLaunchModes(prev => ({ ...prev, [provider]: null }));
             // Auto-set as default (onboarding is first setup)
             try {
               await fetch("/api/integrations/auth", {
@@ -598,9 +649,11 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
         } catch { /* ignore */ }
       }, 3000);
     } catch {
+      setAuthLaunchError("Could not start the sign-in flow.");
       setOauthStates(prev => ({ ...prev, [provider]: "idle" }));
+      setOauthLaunchModes(prev => ({ ...prev, [provider]: null }));
     }
-  }, [updateBootstrapData]);
+  }, [messages.onboarding.aiProvider.waitingForAuth, updateBootstrapData]);
 
   // ── API key save handler ──
   const saveApiKey = useCallback(async (provider: string, key: string) => {
@@ -613,6 +666,7 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
       const data = await res.json();
       if (data.ok) {
         setApiKeySaved(prev => ({ ...prev, [provider]: true }));
+        setHasAnyBackendAuth(true);
         // Auto-set as default (onboarding is first setup)
         try {
           await fetch("/api/integrations/auth", {
@@ -641,6 +695,8 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
         setApiKeySaved(prev => ({ ...prev, [provider]: false }));
         setApiKeyValues(prev => ({ ...prev, [provider]: "" }));
         setOauthStates(prev => ({ ...prev, [provider]: "idle" }));
+        setOauthLaunchModes(prev => ({ ...prev, [provider]: null }));
+        setHasAnyBackendAuth(false);
         const fullStatus = await fetch("/api/integrations/status");
         const fullData = await fullStatus.json();
         updateBootstrapData((current) => ({ ...current, toolStatus: fullData }));
@@ -837,7 +893,7 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
   const toolStatus = bootstrapData?.toolStatus ?? defaultToolStatus();
 
   // Derived states
-  const engineReady = (toolStatus.openClaw.agentConfigured && toolStatus.openClaw.modelConfigured) || openClawSetupState === "done";
+  const engineReady = isOpenClawEngineConfigured(toolStatus.openClaw) || openClawSetupState === "done";
   const openClawInstalled = toolStatus.openClaw.installed || toolStatus.openClaw.cliAvailable;
   const anyAuthConnected = hasAnyBackendAuth || Object.values(oauthStates).some(s => s === "done") || Object.values(apiKeySaved).some(Boolean);
   const wacliInstalled = toolStatus.whatsapp.installed || !!toolStatus.whatsapp.wacliAvailable;
@@ -1092,7 +1148,12 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
                 <span className="text-[13px] font-medium text-foreground">{m.engine.openClaw}</span>
                 <p className="text-[11px] text-muted-foreground mt-0.5">{m.engine.openClawHint}</p>
               </div>
-              {engineReady ? (
+              {(openClawInstalling || openClawSetupState === "running") ? (
+                <svg className="w-4 h-4 animate-spin text-muted-foreground flex-shrink-0" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2.5" opacity="0.2" />
+                  <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                </svg>
+              ) : engineReady ? (
                 <Check className="w-4 h-4 text-emerald-500 flex-shrink-0" />
               ) : openClawError ? (
                 <ErrorBadge
@@ -1105,7 +1166,7 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
                     if (openClawInstalled) setupOpenClaw(); else installPackage("openclaw");
                   }}
                 />
-              ) : (openClawInstalling || openClawSetupState === "running") ? null : !openClawInstalled ? (
+              ) : !openClawInstalled ? (
                 <CardAction
                   label={m.engine.install}
                   onClick={() => installPackage("openclaw")}
@@ -1197,7 +1258,18 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
               openrouter: { test: (k) => k.startsWith("sk-or-"), placeholder: "sk-or-v1-..." },
             };
 
-            const isAnyPolling = Object.values(oauthStates).some(s => s === "polling");
+            const activeOauthActivity =
+              Object.entries(oauthStates).find(([, s]) => s === "launching")
+              ?? Object.entries(oauthStates).find(([, s]) => s === "polling");
+            const isAnyPolling = !!activeOauthActivity;
+            const activeOauthProvider = activeOauthActivity?.[0] ?? null;
+            const activeOauthState = activeOauthActivity?.[1] ?? null;
+            const activeOauthLaunchMode = activeOauthProvider ? (oauthLaunchModes[activeOauthProvider] ?? null) : null;
+            const oauthProgressMessage = activeOauthState === "launching"
+              ? m.aiProvider.checkingForExistingAuth
+              : activeOauthLaunchMode === "terminal"
+                ? m.aiProvider.completeSignInInTerminal
+                : m.aiProvider.completeSignInInBrowser;
 
             const modalProvider = apiKeyModalProvider
               ? apiKeyProviders.find((p) => p.id === apiKeyModalProvider)
@@ -1236,6 +1308,13 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
                             <span className={`text-[13px] font-medium ${isConnected ? "text-foreground" : "text-strong-foreground"}`}>{label}</span>
                             <p className="text-[11px] text-muted-foreground mt-0.5">{hint}</p>
                           </div>
+                          {isConnected && (
+                            <StatusBadge
+                              label={m.aiProvider.connected}
+                              variant="success"
+                              testId={`onboarding-oauth-status-${oauthId}`}
+                            />
+                          )}
                           {isLoading && (
                             <svg className="w-4 h-4 animate-spin text-muted-foreground flex-shrink-0" viewBox="0 0 24 24" fill="none">
                               <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2.5" opacity="0.2" />
@@ -1246,12 +1325,11 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
                             <Toggle
                               enabled={isConnected}
                               disabled={isLoading}
+                              testId={`onboarding-oauth-toggle-${oauthId}`}
                               onChange={(v) => {
                                 if (v) {
                                   launchOAuth(oauthId);
                                 } else {
-                                  const baseProvider = oauthId.replace("openai-codex", "openai").replace("google-gemini-cli", "google").replace("kimi-coding", "kimi");
-                                  removeAuth(baseProvider);
                                   removeAuth(oauthId);
                                   setOauthStates(prev => ({ ...prev, [oauthId]: "idle" }));
                                 }
@@ -1271,14 +1349,17 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
                       }}
                     >
                       <div className="mx-3 mb-3 rounded-xl bg-muted px-4 py-3 flex items-center gap-3">
-                        <p className="text-[12px] text-strong-foreground flex-1">{m.aiProvider.openTerminal}</p>
+                        <p className="text-[12px] text-strong-foreground flex-1">{oauthProgressMessage}</p>
                         <button
                           type="button"
                           onClick={() => {
                             if (authPollRef.current) { clearInterval(authPollRef.current); authPollRef.current = null; }
-                            const pollingProvider = Object.entries(oauthStates).find(([, s]) => s === "polling")?.[0];
+                            const pollingProvider =
+                              Object.entries(oauthStates).find(([, s]) => s === "launching")?.[0]
+                              ?? Object.entries(oauthStates).find(([, s]) => s === "polling")?.[0];
                             if (pollingProvider) {
                               setOauthStates(prev => ({ ...prev, [pollingProvider]: "idle" }));
+                              setOauthLaunchModes(prev => ({ ...prev, [pollingProvider]: null }));
                             }
                           }}
                           className="flex-shrink-0 px-3 py-1 rounded-lg text-[11px] font-medium text-strong-foreground bg-card border border-border hover:bg-background transition-colors"
@@ -1340,6 +1421,11 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
                 {!authCheckLoading && !anyAuthConnected && (
                   <p className="text-xs text-amber-600 text-center">
                     {m.aiProvider.needsAuth}
+                  </p>
+                )}
+                {authLaunchError && (
+                  <p className="text-xs text-amber-600 text-center" data-testid="onboarding-auth-launch-error">
+                    {authLaunchError}
                   </p>
                 )}
 

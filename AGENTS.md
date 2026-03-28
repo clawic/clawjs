@@ -6,6 +6,7 @@ Instructions for humans and coding agents working in this repository.
 
 - Treat this file as the operational entrypoint for the repo.
 - Treat `README.md`, `CONTRIBUTING.md`, `SECURITY.md`, `RELEASING.md`, `docs/git-workflow.md`, and `tests/e2e/README.md` as source-of-truth references for deeper detail.
+- For host-dependent OpenClaw work, read `OPENCLAW_LEARNINGS.md` before changing runtime detection, installation, auth, or onboarding flows.
 - If a change affects public behavior, docs, examples, templates, or package surface, update the relevant docs and tests in the same patch.
 
 ## Repository Shape
@@ -85,6 +86,15 @@ For E2E work:
 - If a change touches visible UI in the demo, add or update Playwright coverage and follow the artifact guidance in `tests/e2e/README.md`.
 - Reuse `tests/e2e/fixtures.ts` so console errors, page errors, failed requests, and unexpected `4xx` or `5xx` responses stay gated.
 - If a scenario depends on runtime or external services, add or extend hermetic fixture logic in `demo/src/lib/e2e.ts` and the relevant test-only API routes.
+
+Validation fidelity rules:
+
+- Hermetic Playwright coverage is required, but it is not sufficient for host-dependent bugs.
+- Host-dependent bugs include installation or uninstall flows, OAuth and login flows, PATH or binary resolution, filesystem state under the user home, local process management, SDK or CLI detection, and polling or UI state driven by the local runtime.
+- If the user reports a bug on a specific localhost mode such as `localhost:4300`, the fix must also be validated in that same mode before closing the task.
+- Do not claim a host-dependent bug is fixed if only the hermetic E2E passed. Treat that as partial validation until the real localhost or host-equivalent validation also passes.
+- If fixtures, interceptors, or `CLAWJS_E2E` short-circuit the real runtime behavior, that only validates the UI flow. It does not prove the real bug is fixed.
+- Final screenshots for host-dependent fixes must come from the same mode that was actually validated, not only from the hermetic test server.
 
 Never run real smoke coverage automatically:
 
@@ -174,3 +184,4 @@ Pull request rules:
 - Security-sensitive work: `SECURITY.md`
 - E2E or demo changes: `tests/e2e/README.md`
 - Runtime and workspace behavior: `docs/setup.md`, `docs/support-matrix.md`, `docs/runtime-migration-notes.md`
+- OpenClaw host-dependent debugging: `OPENCLAW_LEARNINGS.md`

@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 
-import type { TtsCatalog } from "@clawjs/node";
+import type { TtsCatalog } from "@clawjs/claw";
 
 import type { IntegrationStatus } from "@/lib/app-bootstrap";
 import { getClawJSLocalSettingsPath, saveClawJSLocalSettings } from "@/lib/local-settings";
@@ -48,6 +48,7 @@ export interface E2EAiAuthProviderInfo {
   hasProfileApiKey: boolean;
   hasEnvKey: boolean;
   authType: "oauth" | "token" | "api_key" | "env" | null;
+  enabledForAgent?: boolean;
 }
 
 export interface E2EAiAuthStatus {
@@ -277,6 +278,7 @@ function defaultAuthProviders(): Record<string, E2EAiAuthProviderInfo> {
         hasProfileApiKey: provider === "openai",
         hasEnvKey: false,
         authType: provider === "openai-codex" ? "oauth" : provider === "openai" ? "api_key" : null,
+        enabledForAgent: provider === "openai-codex" || provider === "openai",
       },
     ]),
   );
@@ -287,6 +289,34 @@ function buildDefaultAuthStatus(): E2EAiAuthStatus {
     cliAvailable: true,
     defaultModel: "openai-codex/gpt-5.4",
     providers: defaultAuthProviders(),
+  };
+}
+
+function buildFreshAuthStatus(): E2EAiAuthStatus {
+  return {
+    cliAvailable: true,
+    providers: Object.fromEntries(
+      DEFAULT_PROVIDER_IDS.map((provider) => [
+        provider,
+        {
+          provider,
+          hasAuth: false,
+          hasSubscription: false,
+          hasApiKey: false,
+          hasProfileApiKey: false,
+          hasEnvKey: false,
+          authType: null,
+          enabledForAgent: provider === "openai"
+            || provider === "anthropic"
+            || provider === "google"
+            || provider === "deepseek"
+            || provider === "mistral"
+            || provider === "xai"
+            || provider === "groq"
+            || provider === "openrouter",
+        },
+      ]),
+    ),
   };
 }
 
@@ -400,6 +430,48 @@ function buildDefaultIntegrationStatus(): IntegrationStatus {
       botUsername: "clawjs_demo_bot",
       teamName: "ClawJS Demo Team",
       lastError: null,
+    },
+  };
+}
+
+function buildFreshIntegrationStatus(): IntegrationStatus {
+  return {
+    ...buildDefaultIntegrationStatus(),
+    openClaw: {
+      installed: true,
+      cliAvailable: true,
+      agentConfigured: false,
+      modelConfigured: false,
+      authConfigured: false,
+      ready: false,
+      needsSetup: true,
+      needsAuth: false,
+      lastError: null,
+      version: "0.0.0-e2e",
+      latestVersion: "0.0.0-e2e",
+      defaultModel: null,
+      context: undefined,
+    },
+  };
+}
+
+function buildCleanIntegrationStatus(): IntegrationStatus {
+  return {
+    ...buildDefaultIntegrationStatus(),
+    openClaw: {
+      installed: false,
+      cliAvailable: false,
+      agentConfigured: false,
+      modelConfigured: false,
+      authConfigured: false,
+      ready: false,
+      needsSetup: true,
+      needsAuth: false,
+      lastError: null,
+      version: null,
+      latestVersion: null,
+      defaultModel: null,
+      context: undefined,
     },
   };
 }
@@ -958,14 +1030,15 @@ export function updateProviderAuth(
 
 export function syncAuthIntoIntegrationStatus(auth: E2EAiAuthStatus): IntegrationStatus {
   const status = getE2EIntegrationStatus();
+  const hasEnabledAuth = Object.values(auth.providers).some((provider) => provider.hasAuth && provider.enabledForAgent !== false);
   const next: IntegrationStatus = {
     ...status,
     openClaw: {
       ...status.openClaw,
-      authConfigured: Object.values(auth.providers).some((provider) => provider.hasAuth),
+      authConfigured: hasEnabledAuth,
       defaultModel: auth.defaultModel ?? status.openClaw.defaultModel,
-      ready: true,
-      needsAuth: false,
+      ready: hasEnabledAuth,
+      needsAuth: !hasEnabledAuth,
       lastError: null,
     },
   };
@@ -1146,8 +1219,30 @@ function writeFreshCollections(): void {
   setE2ESkills([]);
   writeDocument(SKILL_SOURCES_DOC, DEFAULT_SKILL_SOURCES);
   setE2EImages([]);
-  setE2EAiAuthStatus(buildDefaultAuthStatus());
-  setE2EIntegrationStatus(buildDefaultIntegrationStatus());
+  setE2EAiAuthStatus(buildFreshAuthStatus());
+  setE2EIntegrationStatus(buildFreshIntegrationStatus());
+  setE2EWorkspaceFiles(buildSeededWorkspaceFiles());
+}
+
+function writeCleanCollections(): void {
+  writeCollection(CONTACTS_COLLECTION, buildSeededContacts());
+  writeCollection<Note>("notes", []);
+  writeCollection<Task>("tasks", []);
+  writeCollection<Goal>("goals", []);
+  writeCollection<Routine>("routines", []);
+  writeCollection<RoutineExecution>("routine-executions", []);
+  writeCollection<Plugin>("plugins", []);
+  writeCollection<MemoryEntry>("memory", []);
+  writeCollection<InboxMessage>("inbox", []);
+  writeCollection<UsageRecord>("usage-records", []);
+  writeCollection<ActivityEvent>("activity-events", []);
+  writeCollection<CalendarEventRecord>("calendar-events", buildSeededCalendarEvents());
+  writeDocument("budget-config", buildSeededBudget());
+  setE2ESkills([]);
+  writeDocument(SKILL_SOURCES_DOC, DEFAULT_SKILL_SOURCES);
+  setE2EImages([]);
+  setE2EAiAuthStatus(buildFreshAuthStatus());
+  setE2EIntegrationStatus(buildCleanIntegrationStatus());
   setE2EWorkspaceFiles(buildSeededWorkspaceFiles());
 }
 
@@ -1213,7 +1308,7 @@ export function resetE2EState(): void {
   clearConfigCache();
 }
 
-export function seedE2EState(mode: "seeded" | "fresh" = "seeded"): void {
+export function seedE2EState(mode: "seeded" | "fresh" | "clean" = "seeded"): void {
   assertE2EEnabled();
   clearConfigCache();
 
@@ -1221,23 +1316,23 @@ export function seedE2EState(mode: "seeded" | "fresh" = "seeded"): void {
   saveUserConfig({
     ...config,
     locale: "en",
-    displayName: mode === "fresh" ? "" : "Taylor",
-    profileNameKey: mode === "fresh" ? "" : "taylor",
-    emailAccounts: mode === "fresh" ? [] : ["inbox"],
-    calendarAccounts: mode === "fresh" ? [] : ["calendar-main"],
+    displayName: mode === "seeded" ? "Taylor" : "",
+    profileNameKey: mode === "seeded" ? "taylor" : "",
+    emailAccounts: mode === "seeded" ? ["inbox"] : [],
+    calendarAccounts: mode === "seeded" ? ["calendar-main"] : [],
     telegram: {
-      enabled: mode !== "fresh",
+      enabled: mode === "seeded",
       botToken: "",
-      botName: mode !== "fresh" ? "ClawJS Demo Bot" : "",
-      botUsername: mode !== "fresh" ? "clawjs_demo_bot" : "",
+      botName: mode === "seeded" ? "ClawJS Demo Bot" : "",
+      botUsername: mode === "seeded" ? "clawjs_demo_bot" : "",
       allowedChatIds: [],
       syncMessages: false,
     },
     slack: {
-      enabled: mode !== "fresh",
+      enabled: mode === "seeded",
       botToken: "",
-      teamName: mode !== "fresh" ? "ClawJS Demo Team" : "",
-      botUsername: mode !== "fresh" ? "clawjs_demo_bot" : "",
+      teamName: mode === "seeded" ? "ClawJS Demo Team" : "",
+      botUsername: mode === "seeded" ? "clawjs_demo_bot" : "",
       allowedChannelIds: [],
       syncMessages: false,
     },
@@ -1260,8 +1355,8 @@ export function seedE2EState(mode: "seeded" | "fresh" = "seeded"): void {
 
   saveClawJSLocalSettings({
     locale: "en",
-    onboardingCompleted: mode !== "fresh",
-    disclaimerAcceptedAt: mode !== "fresh" ? new Date().toISOString() : undefined,
+    onboardingCompleted: mode === "seeded",
+    disclaimerAcceptedAt: mode === "seeded" ? new Date().toISOString() : undefined,
     sidebarOpen: true,
     openClawEnabled: true,
     theme: "light",
@@ -1270,8 +1365,10 @@ export function seedE2EState(mode: "seeded" | "fresh" = "seeded"): void {
   if (mode === "seeded") {
     writeSeededCollections();
     buildSeededSession();
-  } else {
+  } else if (mode === "fresh") {
     writeFreshCollections();
+  } else {
+    writeCleanCollections();
   }
 
   clearConfigCache();

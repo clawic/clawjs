@@ -67,10 +67,10 @@ function wacliDbPath(): string {
   return path.join(wacliStoreDir(), "wacli.db");
 }
 
-import { findCommand } from "@/lib/platform";
+import { findCommand, findCommandFresh } from "@/lib/platform";
 
 async function execWacli(args: string[]): Promise<{ stdout: string; stderr: string }> {
-  const binary = await findCommand("wacli");
+  const binary = await findCommandFresh("wacli");
   if (!binary) {
     throw new Error("wacli is not installed");
   }
@@ -150,7 +150,7 @@ function updateFromBuffer(state: WacliSessionState): void {
 
 export async function getWacliAuthStatus(): Promise<WacliAuthStatus> {
   const state = sessionState();
-  const cliAvailable = !!await findCommand("wacli");
+  const cliAvailable = !!await findCommandFresh("wacli");
   const authenticated = cliAvailable ? await readAuthStatus() : false;
   const dbExists = existsSync(wacliDbPath());
 
@@ -181,7 +181,7 @@ export async function getWacliAuthStatus(): Promise<WacliAuthStatus> {
 
 export async function startWacliAuth(): Promise<WacliAuthStatus> {
   const state = sessionState();
-  const binary = await findCommand("wacli");
+  const binary = await findCommandFresh("wacli");
   if (!binary) {
     return {
       cliAvailable: false,

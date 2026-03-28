@@ -14,18 +14,23 @@ test("sdk accepts runtime.binaryPath when openclaw is outside PATH", async ({ pa
 
   const rootDir = process.cwd();
   const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "clawjs-e2e-openclaw-binary-"));
-  const workspaceDir = path.join(tempRoot, "workspace");
-  const openclawLog = path.join(tempRoot, "openclaw.log");
-  const binaryPath = path.join(tempRoot, "bin", "custom-openclaw");
+const workspaceDir = path.join(tempRoot, "workspace");
+const openclawLog = path.join(tempRoot, "openclaw.log");
+const binaryPath = path.join(tempRoot, "bin", "custom-openclaw");
+  const configPath = path.join(tempRoot, "openclaw.json");
   const moduleUrl = pathToFileURL(path.join(rootDir, "packages", "clawjs-node", "dist", "index.js")).href;
 
-  fs.mkdirSync(path.dirname(binaryPath), { recursive: true });
+fs.mkdirSync(path.dirname(binaryPath), { recursive: true });
   fs.writeFileSync(binaryPath, `#!/usr/bin/env node
 const fs = require("fs");
 const args = process.argv.slice(2);
 const logPath = ${JSON.stringify(openclawLog)};
 
-fs.appendFileSync(logPath, args.join(" ") + "\\n");
+fs.appendFileSync(logPath, JSON.stringify({
+  args,
+  stateDir: process.env.OPENCLAW_STATE_DIR || null,
+  configPath: process.env.OPENCLAW_CONFIG_PATH || null,
+}) + "\\n");
 
 if (args[0] === "--version") {
   process.stdout.write("openclaw 7.7.7\\n");
@@ -68,6 +73,8 @@ const claw = await Claw({
   runtime: {
     adapter: "openclaw",
     binaryPath: ${JSON.stringify(binaryPath)},
+    homeDir: ${JSON.stringify(tempRoot)},
+    configPath: ${JSON.stringify(configPath)},
     env: {
       ...process.env,
       PATH: process.env.PATH || "",
@@ -87,7 +94,11 @@ await claw.runtime.setupWorkspace();
 process.stdout.write(JSON.stringify({
   cliAvailable: status.cliAvailable,
   version: status.version,
-  commands: fs.readFileSync(${JSON.stringify(openclawLog)}, "utf8").trim().split("\\n").filter(Boolean),
+  commands: fs.readFileSync(${JSON.stringify(openclawLog)}, "utf8")
+    .trim()
+    .split("\\n")
+    .filter(Boolean)
+    .map((line) => JSON.parse(line)),
 }, null, 2));
 `;
 
@@ -103,12 +114,19 @@ process.stdout.write(JSON.stringify({
   const payload = JSON.parse(stdout) as {
     cliAvailable: boolean;
     version: string;
-    commands: string[];
+    commands: Array<{
+      args: string[];
+      stateDir: string | null;
+      configPath: string | null;
+    }>;
   };
 
   expect(payload.cliAvailable).toBeTruthy();
   expect(payload.version).toBe("7.7.7");
-  expect(payload.commands.some((command) => command.startsWith("agents add demo-e2e-binary-path"))).toBeTruthy();
+  const setupCommand = payload.commands.find((command) => command.args.join(" ").startsWith("agents add demo-e2e-binary-path"));
+  expect(setupCommand).toBeTruthy();
+  expect(setupCommand?.configPath).toBe(configPath);
+  expect(setupCommand?.stateDir).toBe(tempRoot);
 
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.setContent(`
@@ -128,7 +146,7 @@ process.stdout.write(JSON.stringify({
           </article>
         </div>
         <h2 style="margin: 0 0 12px; font-size: 18px;">Observed Commands</h2>
-        <pre style="margin: 0; white-space: pre-wrap; border-radius: 18px; background: #111827; color: #e5eefc; padding: 18px; font-size: 13px; line-height: 1.5;">${payload.commands.join("\n")}</pre>
+        <pre style="margin: 0; white-space: pre-wrap; border-radius: 18px; background: #111827; color: #e5eefc; padding: 18px; font-size: 13px; line-height: 1.5;">${JSON.stringify(payload.commands, null, 2)}</pre>
       </section>
     </main>
   `);

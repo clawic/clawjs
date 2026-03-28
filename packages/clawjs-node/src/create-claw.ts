@@ -148,6 +148,8 @@ import {
   type OpenClawRuntimeContext,
   type OpenClawGatewayStatus,
   type AuthDiagnostics,
+  type AuthLoginPlan,
+  type AuthLoginProgressEvent,
   type AuthLoginResult,
   type RuntimeAdapterOptions,
   type RuntimeCommandSpec,
@@ -157,7 +159,7 @@ import {
   type RuntimeProbeStatus,
   type SaveApiKeyResult,
 } from "./runtime/index.ts";
-import { withOpenClawBinaryEnv, withOpenClawCommandRunner } from "./runtime/openclaw-command.ts";
+import { withOpenClawCommandEnv, withOpenClawCommandRunner } from "./runtime/openclaw-command.ts";
 import {
   disableManagedOpenClawPlugins,
   doctorOpenClawPlugins,
@@ -491,7 +493,12 @@ export interface ClawInstance {
   auth: {
     status: () => Promise<Record<string, ProviderAuthSummary>>;
     diagnostics: (provider?: string) => AuthDiagnostics;
-    login: (provider: string, options?: { setDefault?: boolean; env?: NodeJS.ProcessEnv }) => Promise<AuthLoginResult>;
+    prepareLogin: (provider: string) => Promise<AuthLoginPlan>;
+    login: (provider: string, options?: {
+      setDefault?: boolean;
+      env?: NodeJS.ProcessEnv;
+      onProgress?: (event: AuthLoginProgressEvent) => void;
+    }) => Promise<AuthLoginResult>;
     setApiKey: (provider: string, key: string, profileId?: string) => {
       profileId: string;
       provider: string;
@@ -701,11 +708,17 @@ export async function createClaw(options: CreateClawOptions): Promise<ClawInstan
   const dataStore = createWorkspaceDataStore(workspaceDir, filesystem);
   const adapter = getRuntimeAdapter(options.runtime.adapter);
   const runtimeEnv = adapter.id === "openclaw"
-    ? withOpenClawBinaryEnv(options.runtime.env, options.runtime.binaryPath)
+    ? withOpenClawCommandEnv(options.runtime.env, {
+        binaryPath: options.runtime.binaryPath,
+        homeDir: options.runtime.homeDir,
+        configPath: options.runtime.configPath,
+      })
     : options.runtime.env;
   const processHost = adapter.id === "openclaw"
     ? withOpenClawCommandRunner(baseProcessHost, {
         binaryPath: options.runtime.binaryPath,
+        homeDir: options.runtime.homeDir,
+        configPath: options.runtime.configPath,
         env: runtimeEnv,
       })
     : baseProcessHost;
@@ -1068,6 +1081,49 @@ export async function createClaw(options: CreateClawOptions): Promise<ClawInstan
     } catch {
       return { providers: [] };
     }
+  }
+
+  function resolveRequestedAuthProvider(provider: string): string {
+    const requested = provider.trim();
+    if (!requested) return requested;
+    const diagnostics = adapter.diagnostics(requested, resolvedRuntimeOptions) as AuthDiagnostics & {
+      resolvedOauthProvider?: string | null;
+    };
+    return diagnostics.resolvedOauthProvider?.trim() || requested;
+  }
+
+  async function prepareAuthLogin(provider: string): Promise<AuthLoginPlan> {
+    const requestedProvider = provider.trim();
+    const resolvedProvider = resolveRequestedAuthProvider(requestedProvider);
+
+    if (typeof adapter.prepareLogin === "function") {
+      const prepared = await adapter.prepareLogin(requestedProvider, processHost, resolvedRuntimeOptions).catch(() => null);
+      if (prepared) {
+        return prepared;
+      }
+    }
+
+    const summaries = await readProviderAuth();
+    const current = summaries[resolvedProvider] ?? summaries[requestedProvider];
+    if (current?.hasAuth && current.hasSubscription) {
+      return {
+        requestedProvider,
+        provider: current.provider,
+        status: "reused",
+        hasExistingAuth: true,
+        launchMode: "none",
+        message: "Existing provider auth is already available.",
+      };
+    }
+
+    return {
+      requestedProvider,
+      provider: resolvedProvider,
+      status: "launch_required",
+      hasExistingAuth: false,
+      launchMode: adapter.id === "openclaw" ? "browser" : "unknown",
+      message: "Interactive sign-in is required.",
+    };
   }
 
   async function readModelCatalog(): Promise<ModelCatalog> {
@@ -1488,6 +1544,23 @@ export async function createClaw(options: CreateClawOptions): Promise<ClawInstan
     };
     appendAuditEvent("auth.progress", "auth", payload);
     eventBus.emit("auth.progress", payload);
+  }
+
+  function emitAuthLoginProgress(
+    event: AuthLoginProgressEvent,
+    onProgress?: (event: AuthLoginProgressEvent) => void,
+  ): void {
+    emitAuthProgress(event.phase, event.status, event.provider, {
+      ...(event.step ? { step: event.step } : {}),
+      ...(event.result ? { result: event.result } : {}),
+      ...(event.launchMode ? { launchMode: event.launchMode } : {}),
+      ...(typeof event.pid === "number" ? { pid: event.pid } : {}),
+      ...(event.command ? { command: event.command } : {}),
+      ...(event.args ? { args: event.args } : {}),
+      ...(event.message ? { message: event.message } : {}),
+      ...(event.error ? { error: event.error } : {}),
+    });
+    onProgress?.(event);
   }
 
   function openClawContextDefaults() {
@@ -2595,16 +2668,55 @@ export async function createClaw(options: CreateClawOptions): Promise<ClawInstan
         return summaries;
       },
       diagnostics: (provider) => adapter.diagnostics(provider, resolvedRuntimeOptions),
+      prepareLogin: async (provider) => prepareAuthLogin(provider),
       login: async (provider, loginOptions = {}) => {
-        emitAuthProgress("auth.login", "start", provider);
+        const requestedProvider = provider.trim();
+        emitAuthLoginProgress({
+          phase: "auth.login",
+          status: "start",
+          provider: requestedProvider,
+          timestamp: new Date().toISOString(),
+          step: "checking_existing_auth",
+          message: "Checking whether an existing provider auth can be reused.",
+        }, loginOptions.onProgress);
         try {
-          const launched = await adapter.login(provider, processHost, {
+          const plan = await prepareAuthLogin(requestedProvider);
+          if (plan.status === "reused") {
+            patchProviderIntent(plan.provider, {
+              enabled: true,
+              preferredAuthMode: "oauth",
+              metadata: {
+                lastLoginStartedAt: new Date().toISOString(),
+                lastLoginReuseAt: new Date().toISOString(),
+              },
+            });
+            const reused: AuthLoginResult = {
+              requestedProvider: plan.requestedProvider,
+              provider: plan.provider,
+              status: "reused",
+              launchMode: "none",
+              message: plan.message,
+            };
+            emitAuthLoginProgress({
+              phase: "auth.login",
+              status: "complete",
+              provider: reused.provider,
+              timestamp: new Date().toISOString(),
+              step: "reused_existing_auth",
+              result: reused.status,
+              launchMode: reused.launchMode,
+              message: reused.message,
+            }, loginOptions.onProgress);
+            return reused;
+          }
+
+          const launched = await adapter.login(requestedProvider, processHost, {
             ...resolvedRuntimeOptions,
             setDefault: loginOptions.setDefault,
             cwd: workspaceDir,
             env: loginOptions.env ?? resolvedRuntimeOptions.env,
           });
-          patchProviderIntent(provider, {
+          patchProviderIntent(launched.provider, {
             enabled: true,
             preferredAuthMode: "oauth",
             metadata: {
@@ -2614,19 +2726,37 @@ export async function createClaw(options: CreateClawOptions): Promise<ClawInstan
           appendAuditEvent("auth.login_started", "auth", {
             provider: launched.provider,
             pid: launched.pid,
+            launchMode: launched.launchMode,
             runtimeAdapter: adapter.id,
           });
           eventBus.emit("auth.login_started", {
             provider: launched.provider,
             pid: launched.pid,
+            launchMode: launched.launchMode,
             runtimeAdapter: adapter.id,
           });
-          emitAuthProgress("auth.login", "complete", launched.provider, { pid: launched.pid });
+          emitAuthLoginProgress({
+            phase: "auth.login",
+            status: "complete",
+            provider: launched.provider,
+            timestamp: new Date().toISOString(),
+            step: "launching_interactive_flow",
+            result: launched.status,
+            launchMode: launched.launchMode,
+            ...(typeof launched.pid === "number" ? { pid: launched.pid } : {}),
+            ...(launched.command ? { command: launched.command } : {}),
+            ...(launched.args ? { args: launched.args } : {}),
+            ...(launched.message ? { message: launched.message } : {}),
+          }, loginOptions.onProgress);
           return launched;
         } catch (error) {
-          emitAuthProgress("auth.login", "error", provider, {
-            message: error instanceof Error ? error.message : "login failed",
-          });
+          emitAuthLoginProgress({
+            phase: "auth.login",
+            status: "error",
+            provider: requestedProvider,
+            timestamp: new Date().toISOString(),
+            error: error instanceof Error ? error.message : "login failed",
+          }, loginOptions.onProgress);
           throw error;
         }
       },

@@ -5,8 +5,9 @@ import { getE2EIntegrationStatus, isE2EEnabled, setE2EIntegrationStatus } from "
 import {
   getClawJSOpenClawContext,
   getClawJSOpenClawStatus,
+  reconcileClawJSOpenClawDefaultModelWithAvailableAuth,
 } from "@/lib/openclaw-agent";
-import { findCommand } from "@/lib/platform";
+import { findCommand, findCommandFresh } from "@/lib/platform";
 
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   return Promise.race([
@@ -15,8 +16,13 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   ]);
 }
 
+function isBenignWorkspaceSetupError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return /already exists/i.test(message);
+}
+
 async function ensureGatewayRunning(): Promise<void> {
-  const binary = await findCommand("openclaw");
+  const binary = await findCommandFresh("openclaw");
   if (!binary) return;
 
   const isRunning = await new Promise<boolean>((resolve) => {
@@ -52,7 +58,7 @@ async function ensureWhisperInstalled(): Promise<void> {
   const hasWhisperCli = await findCommand("whisper-cli");
   if (hasWhisperCli) return;
 
-  const binary = await findCommand("openclaw");
+  const binary = await findCommandFresh("openclaw");
   const brewPath = await findCommand("brew");
 
   if (brewPath) {
@@ -83,11 +89,11 @@ export async function POST() {
         installed: true,
         cliAvailable: true,
         agentConfigured: true,
-        modelConfigured: true,
-        authConfigured: true,
-        ready: true,
+        modelConfigured: false,
+        authConfigured: false,
+        ready: false,
         needsSetup: false,
-        needsAuth: false,
+        needsAuth: true,
         lastError: null,
       },
     };
@@ -96,30 +102,30 @@ export async function POST() {
   }
 
   try {
-    try {
-      await withTimeout(ensureGatewayRunning(), 30_000);
-    } catch {
-      // best effort
-    }
+    const claw = await withTimeout(ensureClawWorkspaceReady(), 25_000);
 
     try {
-      const claw = await withTimeout(ensureClawWorkspaceReady(), 25_000);
-      await withTimeout(claw.runtime.setupWorkspace(), 25_000);
-      await withTimeout(claw.compat.refresh(), 15_000).catch(() => null);
-    } catch {
-      // keep going and return real runtime status
+      await withTimeout(claw.runtime.setupWorkspace(), 20_000);
+    } catch (error) {
+      if (!isBenignWorkspaceSetupError(error)) {
+        // keep going and return real runtime status
+      }
     }
 
-    try {
-      await withTimeout(ensureWhisperInstalled(), 130_000);
-    } catch {
-      // best effort
-    }
+    await withTimeout(reconcileClawJSOpenClawDefaultModelWithAvailableAuth(), 10_000).catch(() => null);
+
+    void withTimeout(ensureGatewayRunning(), 30_000).catch(() => {
+      // best effort; gateway bootstrap should not block onboarding
+    });
+    void withTimeout(ensureWhisperInstalled(), 130_000).catch(() => {
+      // best effort; whisper bootstrap should not block onboarding
+    });
+    void withTimeout(claw.compat.refresh(), 15_000).catch(() => null);
 
     const status = await withTimeout(getClawJSOpenClawStatus(), 15_000);
     const ctx = getClawJSOpenClawContext();
-    const claw = await getClaw();
-    const doctor = await claw.doctor.run().catch(() => null);
+    const liveClaw = await getClaw();
+    const doctor = await withTimeout(liveClaw.doctor.run(), 10_000).catch(() => null);
 
     return Response.json({
       ok: status.ready,

@@ -13,7 +13,6 @@ type PackageInfo = {
 };
 
 const ALLOWED_PACKAGES: Record<string, PackageInfo> = {
-  openclaw: { method: "npm", npmPkg: "openclaw" },
   wacli: { method: "brew", formula: "steipete/tap/wacli" },
 };
 
@@ -57,9 +56,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, output: `Installed ${adapterId || pkg || "fixture"}` });
     }
 
-    // Generic adapter install via SDK
-    if (adapterId && VALID_ADAPTER_IDS.has(adapterId)) {
-      const result = await installAdapter(adapterId);
+    const resolvedAdapterId = adapterId && VALID_ADAPTER_IDS.has(adapterId)
+      ? adapterId
+      : pkg === "openclaw" && VALID_ADAPTER_IDS.has("openclaw")
+        ? "openclaw"
+        : "";
+
+    if (resolvedAdapterId) {
+      const result = await installAdapter(resolvedAdapterId);
       return NextResponse.json(result);
     }
 

@@ -5,7 +5,7 @@ import {
   createClaw,
   readOpenClawRuntimeConfig,
   resolveOpenClawContext,
-} from "@clawjs/node";
+} from "@clawjs/claw";
 
 import { DEFAULT_CLAWJS_OPENCLAW_AGENT_ID } from "./openclaw-defaults.ts";
 
@@ -45,6 +45,17 @@ export function openClawConfigPath(): string {
   const configured = readConfiguredEnv("OPENCLAW_CONFIG_PATH");
   if (configured) return resolveHomePath(configured);
   return path.join(resolveOpenClawStateDir(), "openclaw.json");
+}
+
+export function buildOpenClawCommandEnv(baseEnv: NodeJS.ProcessEnv = process.env): NodeJS.ProcessEnv {
+  return {
+    ...baseEnv,
+    OPENCLAW_STATE_DIR: resolveOpenClawStateDir(),
+    OPENCLAW_CONFIG_PATH: openClawConfigPath(),
+    OPENCLAW_WORKSPACE_DIR: resolveClawJSWorkspaceDir(),
+    OPENCLAW_AGENT_DIR: resolveClawJSAgentDir(),
+    OPENCLAW_CONVERSATIONS_DIR: resolveClawJSSessionsDir(),
+  };
 }
 
 interface OpenClawAgentConfig {
@@ -126,7 +137,10 @@ export async function getClaw(): Promise<Awaited<ReturnType<typeof createClaw>>>
     clawPromise = createClaw({
       runtime: {
         adapter: activeAdapter as "openclaw",
+        homeDir: resolveOpenClawStateDir(),
+        configPath: openClawConfigPath(),
         agentDir: resolveClawJSAgentDir(),
+        env: buildOpenClawCommandEnv(),
       },
       workspace: {
         appId: ids.appId,

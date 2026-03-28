@@ -5,6 +5,7 @@ import os from "os";
 import path from "path";
 
 import {
+  buildOpenClawPackageManagerEnv,
   buildCapabilitySignature,
   buildCompatReport,
   buildDoctorReport,
@@ -171,6 +172,9 @@ test("getOpenClawRuntimeStatus exposes installed=false when the CLI is missing",
 
 test("runtime install, uninstall, setup, and repair build the expected commands", async () => {
   const calls: Array<{ command: string; args: string[] }> = [];
+  const expectedNpm = buildOpenClawInstallCommand("npm").command;
+  const expectedPnpmInstall = buildOpenClawInstallCommand("pnpm").command;
+  const expectedPnpmUninstall = buildOpenClawUninstallCommand("pnpm").command;
   const runner: CommandRunner = {
     async exec(command, args) {
       calls.push({ command, args });
@@ -178,14 +182,12 @@ test("runtime install, uninstall, setup, and repair build the expected commands"
     },
   };
 
-  assert.deepEqual(buildOpenClawInstallCommand("npm"), {
-    command: "npm",
-    args: ["install", "-g", "openclaw"],
-  });
-  assert.deepEqual(buildOpenClawUninstallCommand("npm"), {
-    command: "npm",
-    args: ["uninstall", "-g", "openclaw"],
-  });
+  const npmInstall = buildOpenClawInstallCommand("npm");
+  const npmUninstall = buildOpenClawUninstallCommand("npm");
+  assert.equal(npmInstall.command, expectedNpm);
+  assert.deepEqual(npmInstall.args, ["install", "-g", "openclaw"]);
+  assert.equal(npmUninstall.command, buildOpenClawUninstallCommand("npm").command);
+  assert.deepEqual(npmUninstall.args, ["uninstall", "-g", "openclaw"]);
   assert.deepEqual(buildOpenClawWorkspaceSetupCommand({ agentId: "demo", workspaceDir: "/tmp/demo" }), {
     command: "openclaw",
     args: ["agents", "add", "demo", "--non-interactive", "--workspace", "/tmp/demo", "--json"],
@@ -201,11 +203,11 @@ test("runtime install, uninstall, setup, and repair build the expected commands"
   await repairOpenClawRuntime(runner);
 
   assert.deepEqual(calls[0], {
-    command: "pnpm",
+    command: expectedPnpmInstall,
     args: ["add", "-g", "openclaw"],
   });
   assert.deepEqual(calls[1], {
-    command: "pnpm",
+    command: expectedPnpmUninstall,
     args: ["remove", "-g", "openclaw"],
   });
   assert.deepEqual(calls[2], {
@@ -218,7 +220,48 @@ test("runtime install, uninstall, setup, and repair build the expected commands"
   });
 });
 
+test("buildOpenClawInstallCommand resolves npm from the live PATH before shell-specific fallbacks", () => {
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "clawjs-openclaw-install-"));
+  const preferredDir = path.join(tempRoot, "preferred");
+  const preferredNpm = path.join(preferredDir, "npm");
+
+  fs.mkdirSync(preferredDir, { recursive: true });
+  fs.writeFileSync(preferredNpm, "#!/bin/sh\nexit 0\n", { mode: 0o755 });
+
+  const installCommand = buildOpenClawInstallCommand("npm", {
+    ...process.env,
+    PATH: `${preferredDir}${path.delimiter}${process.env.PATH || ""}`,
+    HOME: tempRoot,
+  });
+
+  const uninstallCommand = buildOpenClawUninstallCommand("npm", {
+    ...process.env,
+    PATH: `${preferredDir}${path.delimiter}${process.env.PATH || ""}`,
+    HOME: tempRoot,
+  });
+
+  assert.equal(installCommand.command, preferredNpm);
+  assert.equal(uninstallCommand.command, preferredNpm);
+  assert.equal(installCommand.env?.npm_config_prefix, tempRoot);
+  assert.equal(uninstallCommand.env?.NPM_CONFIG_PREFIX, tempRoot);
+});
+
+test("buildOpenClawPackageManagerEnv prepends the resolved global bin directory", () => {
+  const env = buildOpenClawPackageManagerEnv("/opt/homebrew/bin/npm", {
+    HOME: "/Users/tester",
+    PATH: `/custom/bin${path.delimiter}/usr/bin`,
+  } as NodeJS.ProcessEnv);
+
+  assert.equal(env?.HOME, "/Users/tester");
+  assert.equal(env?.npm_config_prefix, "/opt/homebrew");
+  assert.equal(env?.NPM_CONFIG_PREFIX, "/opt/homebrew");
+  assert.equal(env?.PATH?.split(path.delimiter)[0], "/opt/homebrew/bin");
+  assert.ok(env?.PATH?.includes("/custom/bin"));
+});
+
 test("buildOpenClawRuntimeProgressPlan returns structured progress phases", () => {
+  const expectedPnpmInstall = buildOpenClawInstallCommand("pnpm").command;
+  const expectedPnpmUninstall = buildOpenClawUninstallCommand("pnpm").command;
   const installPlan = buildOpenClawRuntimeProgressPlan("install", undefined, "pnpm");
   assert.equal(installPlan.capability, "runtime");
   assert.deepEqual(
@@ -226,7 +269,7 @@ test("buildOpenClawRuntimeProgressPlan returns structured progress phases", () =
     ["runtime.install.prepare", "runtime.install.execute", "runtime.install.finalize"],
   );
   assert.deepEqual(installPlan.steps[1]?.command, {
-    command: "pnpm",
+    command: expectedPnpmInstall,
     args: ["add", "-g", "openclaw"],
   });
 
@@ -237,7 +280,7 @@ test("buildOpenClawRuntimeProgressPlan returns structured progress phases", () =
     ["runtime.uninstall.prepare", "runtime.uninstall.execute", "runtime.uninstall.finalize"],
   );
   assert.deepEqual(uninstallPlan.steps[1]?.command, {
-    command: "pnpm",
+    command: expectedPnpmUninstall,
     args: ["remove", "-g", "openclaw"],
   });
 
@@ -255,6 +298,8 @@ test("buildOpenClawRuntimeProgressPlan returns structured progress phases", () =
 test("runtime operations emit structured progress events", async () => {
   const calls: Array<{ command: string; args: string[] }> = [];
   const events: OpenClawRuntimeProgressEvent[] = [];
+  const expectedPnpmInstall = buildOpenClawInstallCommand("pnpm").command;
+  const expectedPnpmUninstall = buildOpenClawUninstallCommand("pnpm").command;
   const runner: CommandRunner = {
     async exec(command, args) {
       calls.push({ command, args });
@@ -284,8 +329,8 @@ test("runtime operations emit structured progress events", async () => {
   assert.equal(events.find((event) => event.phase === "runtime.repair.execute" && event.status === "complete")?.status, "complete");
 
   assert.deepEqual(calls, [
-    { command: "pnpm", args: ["add", "-g", "openclaw"] },
-    { command: "pnpm", args: ["remove", "-g", "openclaw"] },
+    { command: expectedPnpmInstall, args: ["add", "-g", "openclaw"] },
+    { command: expectedPnpmUninstall, args: ["remove", "-g", "openclaw"] },
     {
       command: "openclaw",
       args: ["agents", "add", "demo", "--non-interactive", "--workspace", "/tmp/demo", "--json"],
@@ -373,7 +418,7 @@ exit 0
   assert.equal(status.cliAvailable, true);
   assert.equal(status.version, "1.2.3");
 
-  await installOpenClawRuntime(runner, "npm");
+  await installOpenClawRuntime(runner, "npm", undefined, { env });
   await setupOpenClawWorkspace({ agentId: "demo", workspaceDir: "/tmp/demo" }, runner);
   await repairOpenClawRuntime(runner);
 

@@ -23,9 +23,14 @@ export async function POST(req: NextRequest) {
     const pkg = typeof body?.package === "string" ? body.package : "";
     const adapterId = typeof body?.adapter === "string" ? body.adapter : "";
 
-    // Generic adapter uninstall via SDK
-    if (adapterId && VALID_ADAPTER_IDS.has(adapterId)) {
-      const result = await uninstallAdapter(adapterId);
+    const resolvedAdapterId = adapterId && VALID_ADAPTER_IDS.has(adapterId)
+      ? adapterId
+      : pkg === "openclaw" && VALID_ADAPTER_IDS.has("openclaw")
+        ? "openclaw"
+        : "";
+
+    if (resolvedAdapterId) {
+      const result = await uninstallAdapter(resolvedAdapterId);
       return Response.json(result);
     }
 

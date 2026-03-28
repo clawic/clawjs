@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 import type { BindingDefinition } from "@clawjs/core";
-import { syncBinding } from "@clawjs/node";
+import { syncBinding } from "@clawjs/claw";
 
 import { resolveClawJSWorkspaceDir } from "./openclaw-agent.ts";
 import {

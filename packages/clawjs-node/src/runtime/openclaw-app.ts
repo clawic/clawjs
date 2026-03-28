@@ -1,6 +1,3 @@
-import fs from "fs";
-import path from "path";
-
 import { NodeFileSystemHost } from "../host/filesystem.ts";
 import {
   readOpenClawRuntimeConfig,
@@ -11,38 +8,13 @@ import {
   type ResolveOpenClawContextOptions,
 } from "./openclaw-context.ts";
 
-export type OpenClawLegacyMigrationStrategy = "none" | "copy_merge_if_missing" | "move_if_missing";
-
-export interface OpenClawLegacyMigrationOptions {
-  strategy?: OpenClawLegacyMigrationStrategy;
-  workspaceDirCandidates?: string[];
-  agentDirCandidates?: string[];
-  conversationsDirCandidates?: string[];
-}
-
 export interface DiscoverOpenClawAppContextOptions extends ResolveOpenClawContextOptions {
   agentIds?: string[];
-  migrateLegacy?: OpenClawLegacyMigrationOptions;
-}
-
-export interface OpenClawPathMigrationAction {
-  kind: "workspace" | "agent" | "conversations";
-  sourcePath: string | null;
-  targetPath: string;
-  strategy: OpenClawLegacyMigrationStrategy;
-  performed: boolean;
-  reason: "migrated" | "missing_source" | "target_exists" | "disabled";
-}
-
-export interface OpenClawLegacyMigrationResult {
-  strategy: OpenClawLegacyMigrationStrategy;
-  actions: OpenClawPathMigrationAction[];
 }
 
 export interface OpenClawAppContext extends OpenClawRuntimeContext {
   requestedAgentIds: string[];
   matchedAgentId: string | null;
-  migration: OpenClawLegacyMigrationResult | null;
 }
 
 export interface DetachOpenClawAppContextOptions extends ResolveOpenClawContextOptions {
@@ -105,107 +77,6 @@ function selectAgentId(
   };
 }
 
-function copyMergeIfMissing(sourcePath: string, targetPath: string): boolean {
-  if (!fs.existsSync(sourcePath)) return false;
-  const stat = fs.statSync(sourcePath);
-  if (stat.isDirectory()) {
-    fs.mkdirSync(targetPath, { recursive: true });
-    let changed = false;
-    for (const entry of fs.readdirSync(sourcePath, { withFileTypes: true })) {
-      const performed = copyMergeIfMissing(
-        path.join(sourcePath, entry.name),
-        path.join(targetPath, entry.name),
-      );
-      changed = changed || performed;
-    }
-    return changed;
-  }
-  if (fs.existsSync(targetPath)) return false;
-  fs.mkdirSync(path.dirname(targetPath), { recursive: true });
-  fs.copyFileSync(sourcePath, targetPath);
-  return true;
-}
-
-function migratePath(
-  kind: OpenClawPathMigrationAction["kind"],
-  targetPath: string,
-  sourceCandidates: string[] | undefined,
-  strategy: OpenClawLegacyMigrationStrategy,
-): OpenClawPathMigrationAction {
-  const sourcePath = normalizeCandidateList(sourceCandidates ?? [])
-    .find((candidate) => candidate !== targetPath && fs.existsSync(candidate)) ?? null;
-
-  if (strategy === "none") {
-    return {
-      kind,
-      sourcePath,
-      targetPath,
-      strategy,
-      performed: false,
-      reason: "disabled",
-    };
-  }
-
-  if (!sourcePath) {
-    return {
-      kind,
-      sourcePath: null,
-      targetPath,
-      strategy,
-      performed: false,
-      reason: "missing_source",
-    };
-  }
-
-  if (strategy === "move_if_missing") {
-    if (fs.existsSync(targetPath)) {
-      return {
-        kind,
-        sourcePath,
-        targetPath,
-        strategy,
-        performed: false,
-        reason: "target_exists",
-      };
-    }
-    fs.mkdirSync(path.dirname(targetPath), { recursive: true });
-    fs.renameSync(sourcePath, targetPath);
-    return {
-      kind,
-      sourcePath,
-      targetPath,
-      strategy,
-      performed: true,
-      reason: "migrated",
-    };
-  }
-
-  const performed = copyMergeIfMissing(sourcePath, targetPath);
-  return {
-    kind,
-    sourcePath,
-    targetPath,
-    strategy,
-    performed,
-    reason: performed ? "migrated" : "target_exists",
-  };
-}
-
-export function migrateOpenClawAppState(
-  context: Pick<OpenClawRuntimeContext, "workspaceDir" | "agentDir" | "conversationsDir">,
-  options: OpenClawLegacyMigrationOptions = {},
-): OpenClawLegacyMigrationResult {
-  const strategy = options.strategy ?? "copy_merge_if_missing";
-  return {
-    strategy,
-    actions: [
-      migratePath("workspace", context.workspaceDir, options.workspaceDirCandidates, strategy),
-      migratePath("agent", context.agentDir, options.agentDirCandidates, strategy),
-      migratePath("conversations", context.conversationsDir, options.conversationsDirCandidates, strategy),
-    ],
-  };
-}
-
 export function discoverOpenClawAppContext(options: DiscoverOpenClawAppContextOptions = {}): OpenClawAppContext {
   const config = readOpenClawRuntimeConfig({
     configPath: options.configPath,
@@ -216,15 +87,11 @@ export function discoverOpenClawAppContext(options: DiscoverOpenClawAppContextOp
     ...options,
     agentId: selection.agentId,
   });
-  const migration = options.migrateLegacy
-    ? migrateOpenClawAppState(context, options.migrateLegacy)
-    : null;
 
   return {
     ...context,
     requestedAgentIds: selection.requestedAgentIds,
     matchedAgentId: selection.matchedAgentId,
-    migration,
   };
 }
 

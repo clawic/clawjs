@@ -1,7 +1,6 @@
 import { test, expect, resetDemoState } from "./fixtures";
 
 test("demo API contracts stay deterministic in hermetic mode", async ({ request }) => {
-  const retiredAgentAlias = ["CLAW", "LEN"].join("");
   await resetDemoState(request, "seeded");
 
   const statusResponse = await request.get("/api/e2e/status");
@@ -17,7 +16,7 @@ test("demo API contracts stay deterministic in hermetic mode", async ({ request 
   expect(statusPayload.paths.localSettingsPath).toContain("/.tmp/e2e/workspace/settings.json");
   for (const value of Object.values(statusPayload.paths)) {
     expect(String(value)).not.toContain("clawjs-legacy");
-    expect(String(value)).not.toContain(retiredAgentAlias);
+    expect(String(value)).not.toContain("CLAWLEN");
   }
 
   const integrationsResponse = await request.get("/api/integrations/status");
@@ -85,6 +84,7 @@ test("demo API contracts stay deterministic in hermetic mode", async ({ request 
   const authRead = await request.get("/api/integrations/auth");
   expect(authRead.ok()).toBeTruthy();
   const authPayload = await authRead.json();
+  expect(authPayload.defaultModel === null || typeof authPayload.defaultModel === "string").toBe(true);
   expect(authPayload.providers.openai.hasProfileApiKey).toBe(true);
 });
 

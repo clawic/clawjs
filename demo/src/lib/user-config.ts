@@ -6,7 +6,7 @@ import fs from "fs";
 import os from "os";
 import path from "path";
 import crypto from "crypto";
-import { normalizeTtsConfig } from "@clawjs/node";
+import { normalizeTtsConfig } from "@clawjs/claw";
 import { defaultLocale, resolveLocale, type Locale } from "./i18n/messages.ts";
 import { getClawJSLocalSettings } from "./local-settings.ts";
 import {

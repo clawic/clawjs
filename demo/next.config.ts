@@ -1,8 +1,17 @@
+import path from "path";
 import type { NextConfig } from "next";
+import { fileURLToPath } from "url";
+
+const demoRoot = path.dirname(fileURLToPath(import.meta.url));
+const repoRoot = path.resolve(demoRoot, "..");
 
 const nextConfig: NextConfig = {
   distDir: process.env.NEXT_DIST_DIR || ".next",
+  outputFileTracingRoot: repoRoot,
   serverExternalPackages: ["better-sqlite3"],
+  turbopack: {
+    root: repoRoot,
+  },
   async headers() {
     return [
       {

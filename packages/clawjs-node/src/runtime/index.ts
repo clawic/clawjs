@@ -2,6 +2,7 @@ export * from "./contracts.ts";
 export * from "./gateway.ts";
 export * from "./openclaw-memory.ts";
 export * from "./openclaw-context.ts";
+export * from "./openclaw-setup.ts";
 export * from "./openclaw-app.ts";
 export * from "../demo/index.ts";
 export {

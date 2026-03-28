@@ -42,7 +42,7 @@ import {
   setupOpenClawWorkspace,
   uninstallOpenClawRuntime,
 } from "../openclaw.ts";
-import { buildOpenClawCommand, withOpenClawBinaryEnv } from "../openclaw-command.ts";
+import { buildOpenClawCommand, withOpenClawCommandEnv } from "../openclaw-command.ts";
 import {
   buildOpenClawAuthDiagnostics,
   launchOpenClawAuthLogin,
@@ -72,8 +72,15 @@ const OPENCLAW_WORKSPACE_FILES: RuntimeFileDescriptor[] = [
   { key: "HEARTBEAT", path: "HEARTBEAT.md", required: true, visibleToUser: true, seedPolicy: "seed_if_missing" },
 ];
 
-function withRuntimeEnv(runner: CommandRunner, options: Pick<RuntimeAdapterOptions, "env" | "binaryPath"> = {}): CommandRunner {
-  const env = withOpenClawBinaryEnv(options.env, options.binaryPath);
+function withRuntimeEnv(
+  runner: CommandRunner,
+  options: Pick<RuntimeAdapterOptions, "env" | "binaryPath" | "homeDir" | "configPath"> = {},
+): CommandRunner {
+  const env = withOpenClawCommandEnv(options.env, {
+    binaryPath: options.binaryPath,
+    homeDir: options.homeDir,
+    configPath: options.configPath,
+  });
   if (!env) return runner;
   return {
     exec(command, args, options = {}) {

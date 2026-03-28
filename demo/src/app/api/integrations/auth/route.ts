@@ -1,7 +1,18 @@
+import { execSync } from "child_process";
+
 import { NextRequest, NextResponse } from "next/server";
 
+import {
+  buildOpenClawAuthLoginCommand,
+  getOpenClawOAuthProviderSummary,
+  isOpenClawProviderEnabled,
+  readDirectOpenClawAuthState,
+  readOpenClawProviderIntentMap,
+  requiresExplicitProviderEnable,
+} from "@clawjs/claw";
+
 import { invalidateOpenClawAvailabilityCache } from "@/app/api/chat/route";
-import { ensureClawWorkspaceReady, getClaw } from "@/lib/claw";
+import { buildOpenClawCommandEnv, ensureClawWorkspaceReady, getClaw, resolveClawJSAgentDir, resolveClawJSWorkspaceDir } from "@/lib/claw";
 import {
   getE2EAiAuthStatus,
   getE2EIntegrationStatus,
@@ -13,8 +24,13 @@ import {
 } from "@/lib/e2e";
 import {
   getClawJSOpenClawAgentId,
+  ensureClawJSOpenClawAgent,
 } from "@/lib/openclaw-agent";
-import { findCommand } from "@/lib/platform";
+import { findCommand, findCommandFresh } from "@/lib/platform";
+import { launchInMacTerminal } from "@/lib/terminal-launch";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 interface ProviderAuthInfo {
   provider: string;
@@ -24,6 +40,7 @@ interface ProviderAuthInfo {
   hasProfileApiKey: boolean;
   hasEnvKey: boolean;
   authType: "oauth" | "token" | "api_key" | "env" | null;
+  enabledForAgent: boolean;
 }
 
 const ALL_PROVIDER_KEYS = [
@@ -47,7 +64,12 @@ const PROVIDER_DEFAULT_MODELS: Record<string, string> = {
   "qwen": "qwen/qwen3-coder",
 };
 
-function emptyProvider(provider: string): ProviderAuthInfo {
+const OPENCLAW_CALLBACK_PORT = 1455;
+const NO_STORE_HEADERS = { "Cache-Control": "no-store, max-age=0" };
+let currentAuthPid: number | null = null;
+const OPENCLAW_ENV_PREFIXES = ["OPENCLAW_", "CLAWJS_"] as const;
+
+function emptyProvider(provider: string, providerIntents = {}): ProviderAuthInfo {
   return {
     provider,
     hasAuth: false,
@@ -56,6 +78,7 @@ function emptyProvider(provider: string): ProviderAuthInfo {
     hasProfileApiKey: false,
     hasEnvKey: false,
     authType: null,
+    enabledForAgent: isOpenClawProviderEnabled(provider, providerIntents),
   };
 }
 
@@ -65,46 +88,158 @@ function resolveModelId(input: string): string {
   return PROVIDER_DEFAULT_MODELS[trimmed] ?? trimmed;
 }
 
-export async function GET() {
-  if (isE2EEnabled()) {
-    return NextResponse.json(getE2EAiAuthStatus());
+function collectOpenClawLaunchEnv(env: NodeJS.ProcessEnv = process.env): NodeJS.ProcessEnv {
+  const selected = buildOpenClawCommandEnv(env);
+
+  for (const [key, value] of Object.entries(env)) {
+    if (!value) continue;
+    if (!OPENCLAW_ENV_PREFIXES.some((prefix) => key.startsWith(prefix))) continue;
+    selected[key] = value;
   }
 
-  const cliAvailable = !!(await findCommand("openclaw"));
+  return selected;
+}
+
+function readProviderIntents(claw: Awaited<ReturnType<typeof getClaw>>) {
+  return readOpenClawProviderIntentMap(claw.intent.get("providers"));
+}
+
+async function setProviderEnabledForAgent(
+  claw: Awaited<ReturnType<typeof getClaw>>,
+  provider: string,
+  enabled: boolean,
+  preferredAuthMode: "oauth" | "token" | "api_key" | "env" | "secret_ref" | null = "oauth",
+): Promise<void> {
+  const current = readProviderIntents(claw);
+  claw.intent.patch("providers", {
+    providers: {
+      ...current,
+      [provider]: {
+        ...(current[provider] ?? {}),
+        enabled,
+        preferredAuthMode,
+      },
+    },
+  });
+  if (!enabled) {
+    await claw.intent.apply({ domains: ["providers"] });
+  }
+}
+
+async function launchOAuthInMacTerminal(provider: string): Promise<void> {
+  const binaryPath = await findCommandFresh("openclaw");
+  if (!binaryPath) {
+    throw new Error("OpenClaw is not installed or is not responding.");
+  }
+
+  const loginCommand = buildOpenClawAuthLoginCommand(provider, getClawJSOpenClawAgentId(), {
+    setDefault: true,
+  });
+
+  await launchInMacTerminal(binaryPath, loginCommand.args, {
+    cwd: resolveClawJSWorkspaceDir(),
+    env: collectOpenClawLaunchEnv(),
+  });
+}
+
+function killProcess(pid: number): void {
+  if (!Number.isInteger(pid) || pid <= 0) return;
+  try {
+    process.kill(pid, "SIGKILL");
+  } catch {
+    // ignore already exited or inaccessible processes
+  }
+}
+
+function collectPids(command: string): number[] {
+  try {
+    const stdout = execSync(command, { timeout: 3_000, stdio: ["ignore", "pipe", "ignore"] }).toString().trim();
+    if (!stdout) return [];
+    return stdout
+      .split(/\r?\n/)
+      .map((value) => Number.parseInt(value.trim(), 10))
+      .filter((value) => Number.isInteger(value) && value > 0);
+  } catch {
+    return [];
+  }
+}
+
+function cleanupStaleOAuthState(agentId: string): void {
+  if (currentAuthPid) {
+    killProcess(currentAuthPid);
+    currentAuthPid = null;
+  }
+
+  if (process.platform === "win32") return;
+
+  for (const pid of collectPids(`lsof -ti :${OPENCLAW_CALLBACK_PORT}`)) {
+    killProcess(pid);
+  }
+
+  for (const pid of collectPids(`pgrep -f "openclaw models --agent ${agentId} auth login"`)) {
+    killProcess(pid);
+  }
+}
+
+export async function GET() {
+  if (isE2EEnabled()) {
+    return NextResponse.json(getE2EAiAuthStatus(), { headers: NO_STORE_HEADERS });
+  }
+
+  const cliAvailable = !!(await findCommandFresh("openclaw"));
   const providers = Object.fromEntries(ALL_PROVIDER_KEYS.map((key) => [key, emptyProvider(key)]));
 
   if (!cliAvailable) {
-    return NextResponse.json({ cliAvailable: false, providers });
+    return NextResponse.json({ cliAvailable: false, providers }, { headers: NO_STORE_HEADERS });
   }
 
   try {
+    await ensureClawJSOpenClawAgent();
     const claw = await getClaw();
-    const summaries = await claw.auth.status();
-    const defaultModel = await claw.models.getDefault().catch(() => undefined);
+    const providerIntents = readProviderIntents(claw);
+    const direct = await readDirectOpenClawAuthState(resolveClawJSAgentDir(), getClawJSOpenClawAgentId(), undefined, {
+      binaryPath: await findCommandFresh("openclaw") || undefined,
+      homeDir: process.env.OPENCLAW_STATE_DIR,
+      configPath: process.env.OPENCLAW_CONFIG_PATH,
+      cwd: resolveClawJSWorkspaceDir(),
+      env: collectOpenClawLaunchEnv(),
+      timeoutMs: 20_000,
+    });
+    let summaries = direct.providerAuth;
+    let defaultModelId = direct.defaultModel;
 
-    for (const summary of Object.values(summaries)) {
-      providers[summary.provider] = {
-        provider: summary.provider,
-        hasAuth: summary.hasAuth,
-        hasSubscription: summary.hasSubscription,
-        hasApiKey: summary.hasApiKey,
-        hasProfileApiKey: summary.hasProfileApiKey,
-        hasEnvKey: summary.hasEnvKey,
-        authType: summary.authType,
+    if (Object.keys(summaries).length === 0 && !defaultModelId) {
+      summaries = await claw.auth.status();
+      defaultModelId = (await claw.models.getDefault().catch(() => null))?.modelId ?? null;
+    }
+
+    for (const provider of ALL_PROVIDER_KEYS) {
+      const summary = getOpenClawOAuthProviderSummary(summaries, provider) ?? summaries[provider];
+      providers[provider] = {
+        ...emptyProvider(provider, providerIntents),
+        ...(summary ? {
+          hasAuth: summary.hasAuth,
+          hasSubscription: summary.hasSubscription,
+          hasApiKey: summary.hasApiKey,
+          hasProfileApiKey: summary.hasProfileApiKey,
+          hasEnvKey: summary.hasEnvKey,
+          authType: summary.authType,
+        } : {}),
+        enabledForAgent: isOpenClawProviderEnabled(provider, providerIntents),
       };
     }
 
     return NextResponse.json({
       cliAvailable: true,
-      defaultModel,
+      defaultModel: defaultModelId,
       providers,
-    });
+    }, { headers: NO_STORE_HEADERS });
   } catch (error) {
     return NextResponse.json({
       cliAvailable: true,
       error: error instanceof Error ? error.message : "Failed to check auth",
       providers,
-    });
+    }, { headers: NO_STORE_HEADERS });
   }
 }
 
@@ -141,6 +276,7 @@ async function handleOAuthLaunch(provider: string): Promise<NextResponse> {
       hasAuth: true,
       hasSubscription: true,
       authType: "oauth",
+      enabledForAgent: true,
     }, `${provider}/gpt-5.4`);
     syncAuthIntoIntegrationStatus(next);
     return NextResponse.json({
@@ -149,15 +285,63 @@ async function handleOAuthLaunch(provider: string): Promise<NextResponse> {
     });
   }
 
-  await ensureClawWorkspaceReady();
+  const cliAvailable = !!(await findCommandFresh("openclaw"));
+  if (!cliAvailable) {
+    return NextResponse.json(
+      { ok: false, error: "OpenClaw is not installed or is not responding." },
+      { status: 409, headers: NO_STORE_HEADERS },
+    );
+  }
+
+  await ensureClawJSOpenClawAgent();
+  cleanupStaleOAuthState(getClawJSOpenClawAgentId());
   const claw = await getClaw();
-  await claw.auth.login(provider, { setDefault: true });
+  const loginPlan = await claw.auth.prepareLogin(provider);
+
+  if (loginPlan.status === "reused") {
+    await setProviderEnabledForAgent(claw, provider, true, "oauth");
+    const modelId = resolveModelId(provider);
+    await claw.models.setDefault(modelId).catch(() => undefined);
+    invalidateOpenClawAvailabilityCache();
+    return NextResponse.json({
+      ok: true,
+      connected: true,
+      reusedExistingAuth: true,
+      model: modelId,
+      loginPlan,
+      message: loginPlan.message ?? "Existing provider auth was enabled for this agent.",
+    }, { headers: NO_STORE_HEADERS });
+  }
+
+  if (process.platform === "darwin" && await findCommand("osascript")) {
+    await launchOAuthInMacTerminal(provider);
+    await setProviderEnabledForAgent(claw, provider, true, "oauth");
+    currentAuthPid = null;
+    invalidateOpenClawAvailabilityCache();
+
+    return NextResponse.json({
+      ok: true,
+      launched: {
+        provider,
+        pid: null,
+        command: "osascript",
+        args: [],
+      },
+      launchMode: "terminal",
+      message: "Sign-in started in Terminal. Complete the provider flow there and come back here.",
+    }, { headers: NO_STORE_HEADERS });
+  }
+
+  const launched = await claw.auth.login(provider, { setDefault: true });
+  currentAuthPid = typeof launched.pid === "number" ? launched.pid : null;
   invalidateOpenClawAvailabilityCache();
 
   return NextResponse.json({
     ok: true,
-    message: "Sign-in started. Complete the flow in your browser, then come back here.",
-  });
+    launched,
+    launchMode: launched.launchMode,
+    message: launched.message ?? "Sign-in started. Complete the flow in your browser, then come back here.",
+  }, { headers: NO_STORE_HEADERS });
 }
 
 async function handleApiKeySave(provider: string, key: string): Promise<NextResponse> {
@@ -199,16 +383,23 @@ async function handleAuthRemove(provider: string): Promise<NextResponse> {
     const auth = getE2EAiAuthStatus();
     const current = auth.providers[provider.trim()];
     if (current) {
-      auth.providers[provider.trim()] = {
-        ...current,
-        hasAuth: false,
-        hasSubscription: false,
-        hasApiKey: false,
-        hasProfileApiKey: false,
-        authType: null,
-      };
-      if (auth.defaultModel?.startsWith(`${provider.trim()}/`)) {
-        auth.defaultModel = undefined;
+      if (requiresExplicitProviderEnable(provider.trim())) {
+        auth.providers[provider.trim()] = {
+          ...current,
+          enabledForAgent: false,
+        };
+      } else {
+        auth.providers[provider.trim()] = {
+          ...current,
+          hasAuth: false,
+          hasSubscription: false,
+          hasApiKey: false,
+          hasProfileApiKey: false,
+          authType: null,
+        };
+        if (auth.defaultModel?.startsWith(`${provider.trim()}/`)) {
+          auth.defaultModel = undefined;
+        }
       }
       setE2EAiAuthStatus(auth);
       syncAuthIntoIntegrationStatus(auth);
@@ -217,6 +408,12 @@ async function handleAuthRemove(provider: string): Promise<NextResponse> {
   }
 
   const claw = await getClaw();
+  if (requiresExplicitProviderEnable(provider.trim())) {
+    await setProviderEnabledForAgent(claw, provider.trim(), false, "oauth");
+    invalidateOpenClawAvailabilityCache();
+    return NextResponse.json({ ok: true, removed: false, disabledForAgent: true });
+  }
+
   const removed = claw.auth.removeProvider(provider.trim());
 
   if (removed > 0) {

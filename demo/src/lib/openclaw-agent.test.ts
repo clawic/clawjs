@@ -4,7 +4,11 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 
-import { getClawJSOpenClawStatus } from "./openclaw-agent.ts";
+import {
+  getClawJSOpenClawStatus,
+  pickPreferredAuthenticatedOpenClawModel,
+} from "./openclaw-agent.ts";
+import { getClaw } from "./claw.ts";
 
 function writeFakeOpenClawCli(binDir: string): void {
   const scriptPath = path.join(binDir, "openclaw");
@@ -46,7 +50,10 @@ exit 1
   fs.writeFileSync(scriptPath, script, { mode: 0o755 });
 }
 
-async function withFakeOpenClaw<T>(modelStatus: string, run: () => Promise<T>): Promise<T> {
+async function withFakeOpenClaw<T>(
+  modelStatus: string,
+  run: (paths: { stateDir: string; agentDir: string; workspaceDir: string }) => Promise<T>,
+): Promise<T> {
   const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "clawjs-openclaw-status-"));
   const binDir = path.join(tempRoot, "bin");
   const stateDir = path.join(tempRoot, "openclaw-state");
@@ -72,6 +79,10 @@ async function withFakeOpenClaw<T>(modelStatus: string, run: () => Promise<T>): 
     },
   };
   fs.writeFileSync(path.join(stateDir, "openclaw.json"), JSON.stringify(configPayload));
+  const workspaceDir = path.join(stateDir, "workspaces", agentId);
+  const agentDir = path.join(stateDir, "agents", agentId, "agent");
+  fs.mkdirSync(workspaceDir, { recursive: true });
+  fs.mkdirSync(agentDir, { recursive: true });
 
   const previousPath = process.env.PATH;
   const previousHome = process.env.HOME;
@@ -86,7 +97,7 @@ async function withFakeOpenClaw<T>(modelStatus: string, run: () => Promise<T>): 
   process.env.OPENCLAW_FAKE_AGENT_ID = "clawjs-demo";
 
   try {
-    return await run();
+    return await run({ stateDir, agentDir, workspaceDir });
   } finally {
     if (previousPath === undefined) {
       delete process.env.PATH;
@@ -140,11 +151,71 @@ test("getClawJSOpenClawStatus reports model selection while auth is still pendin
     assert.equal(status.installed, true);
     assert.equal(status.agentConfigured, true);
     assert.equal(status.modelConfigured, true);
-    assert.equal(status.authConfigured, false);
+    assert.equal(status.authConfigured, true);
     assert.equal(status.defaultModel, "openai/gpt-5.4");
-    assert.equal(status.ready, false);
+    assert.equal(status.ready, true);
     assert.equal(status.needsSetup, false);
-    assert.equal(status.needsAuth, true);
+    assert.equal(status.needsAuth, false);
     assert.equal(status.lastError, null);
   });
+});
+
+test("getClawJSOpenClawStatus reports auth configured from the OpenClaw auth store", { concurrency: false }, async () => {
+  await withFakeOpenClaw('{"defaultModel":"openai-codex/gpt-5.4","auth":{"missingProvidersInUse":[],"providers":[{"provider":"openai-codex","effective":{"kind":"oauth"},"profiles":{"oauth":1}}]}}', async ({ agentDir }) => {
+    fs.writeFileSync(path.join(agentDir, "auth-profiles.json"), JSON.stringify({
+      version: 1,
+      profiles: {
+        "openai-codex:default": {
+          type: "oauth",
+          provider: "openai-codex",
+          token: "oauth-token",
+        },
+      },
+    }));
+    const claw = await getClaw();
+    claw.intent.patch("providers", {
+      providers: {
+        "openai-codex": {
+          enabled: true,
+          preferredAuthMode: "oauth",
+        },
+      },
+    });
+
+    const status = await getClawJSOpenClawStatus();
+
+    assert.equal(status.installed, true);
+    assert.equal(status.agentConfigured, true);
+    assert.equal(status.modelConfigured, true);
+    assert.equal(status.authConfigured, true);
+    assert.equal(status.defaultModel, "openai-codex/gpt-5.4");
+    assert.equal(status.ready, true);
+    assert.equal(status.needsSetup, false);
+    assert.equal(status.needsAuth, false);
+  });
+});
+
+test("pickPreferredAuthenticatedOpenClawModel prioritizes ChatGPT subscription auth", () => {
+  const model = pickPreferredAuthenticatedOpenClawModel({
+    openai: {
+      provider: "openai",
+      hasAuth: true,
+      hasSubscription: false,
+      hasApiKey: true,
+      hasProfileApiKey: false,
+      hasEnvKey: true,
+      authType: "env",
+    },
+    "openai-codex": {
+      provider: "openai-codex",
+      hasAuth: true,
+      hasSubscription: true,
+      hasApiKey: false,
+      hasProfileApiKey: false,
+      hasEnvKey: false,
+      authType: "oauth",
+    },
+  });
+
+  assert.equal(model, "openai-codex/gpt-5.4");
 });

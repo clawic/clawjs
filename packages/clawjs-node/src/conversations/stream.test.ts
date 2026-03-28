@@ -14,6 +14,22 @@ test("extractOpenClawCliText and splitTextIntoChunks normalize CLI output", () =
   assert.deepEqual(splitTextIntoChunks(text, 4), ["hell", "o wo", "rld"]);
 });
 
+test("extractOpenClawCliText tolerates gateway preamble and root payloads", () => {
+  const text = extractOpenClawCliText(`Gateway agent failed; falling back to embedded: Error: gateway closed
+Gateway target: ws://127.0.0.1:18789
+{
+  "payloads": [
+    { "text": "Hi. " },
+    { "text": "What can I help you with?" }
+  ],
+  "meta": {
+    "aborted": false
+  }
+}`);
+
+  assert.equal(text, "Hi. What can I help you with?");
+});
+
 test("streamOpenClawConversation streams via gateway SSE when available", async () => {
   const encoder = new TextEncoder();
   const dependencies: StreamConversationDependencies = {
@@ -75,6 +91,37 @@ test("streamOpenClawConversation falls back to CLI when gateway is unavailable",
   }
 
   assert.deepEqual(chunks, ["hel", "lo ", "wor", "ld"]);
+});
+
+test("streamOpenClawConversation parses CLI fallback output with preamble logs", async () => {
+  const chunks: string[] = [];
+  for await (const chunk of streamOpenClawConversation({
+    sessionId: "session-cli-preamble",
+    agentId: "agent-1",
+    messages: [{ role: "user", content: "hello" }],
+    chunkSize: 6,
+    transport: "cli",
+  }, {
+    runner: {
+      async exec() {
+        return {
+          stdout: "",
+          stderr: `Gateway agent failed; falling back to embedded: Error: gateway closed
+Gateway target: ws://127.0.0.1:18789
+{
+  "payloads": [
+    { "text": "hello world" }
+  ]
+}`,
+          exitCode: 0,
+        };
+      },
+    },
+  })) {
+    if (!chunk.done) chunks.push(chunk.delta);
+  }
+
+  assert.deepEqual(chunks, ["hello ", "world"]);
 });
 
 test("streamOpenClawConversationEvents emits chunk and title events", async () => {

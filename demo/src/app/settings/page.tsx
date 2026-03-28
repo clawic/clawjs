@@ -7,11 +7,12 @@ import { useSearchParams } from "next/navigation";
 import { ALL_CALENDARS_ID, NONE_CALENDARS_ID } from "@/lib/calendar-constants";
 import { ALL_EMAIL_ACCOUNTS_ID, NONE_EMAIL_ACCOUNTS_ID } from "@/lib/email-constants";
 import { useLocale } from "@/components/locale-provider";
+import { hasConfirmedOAuthSubscription, type AiAuthSummary } from "@/lib/ai-auth";
 import { localized } from "@/lib/i18n/localized";
 import type { IntegrationStatus, ProfileSection } from "@/lib/app-bootstrap";
 import type { Locale } from "@/lib/i18n/messages";
 import type { UserConfig } from "@/lib/user-config";
-import type { TtsCatalog, TtsConfigFieldDescriptor, TtsProvider, TtsProviderConfig, TtsProviderDescriptor } from "@clawjs/node";
+import type { TtsCatalog, TtsConfigFieldDescriptor, TtsProvider, TtsProviderConfig, TtsProviderDescriptor } from "@clawjs/claw";
 import MarkdownEditor from "@/components/markdown-editor";
 import { useTheme } from "@/components/theme-provider";
 import { Compass, Ear, Scale, Heart, Zap, Check, Brain, Eye, Sparkles, MessageSquare, Clock, Shield, Users, BookOpen, Gauge, Swords, Smile, Target, Feather, AlertCircle, RefreshCw, RotateCcw, FolderOpen, Download, Trash2, Search, Hash } from "lucide-react";
@@ -21,6 +22,7 @@ type Tab = "general" | "tools" | "integrations" | "profile" | "persona" | "openc
 type PersonaSubTab = "essentials" | "approach" | "style" | "session" | "safety";
 type ProfileSubTab = "basics" | "people" | "context";
 type AuthState = "idle" | "launching" | "polling" | "done";
+type AuthLaunchMode = "browser" | "terminal" | null;
 
 const DEFAULT_PATHS = {
   wacli: "~/.wacli/wacli.db",
@@ -598,12 +600,13 @@ function SettingsContent() {
   const [oauthStates, setOauthStates] = useState<Record<string, AuthState>>(() => {
     const p = bootstrapData?.aiAuth?.providers;
     return {
-      "openai-codex": p?.["openai-codex"]?.hasSubscription ? "done" : "idle",
-      "google-gemini-cli": p?.["google-gemini-cli"]?.hasSubscription ? "done" : "idle",
-      "kimi-coding": p?.["kimi-coding"]?.hasSubscription ? "done" : "idle",
-      "qwen": p?.["qwen"]?.hasSubscription ? "done" : "idle",
+      "openai-codex": hasConfirmedOAuthSubscription(p as Record<string, AiAuthSummary> | undefined, "openai-codex") ? "done" : "idle",
+      "google-gemini-cli": hasConfirmedOAuthSubscription(p as Record<string, AiAuthSummary> | undefined, "google-gemini-cli") ? "done" : "idle",
+      "kimi-coding": hasConfirmedOAuthSubscription(p as Record<string, AiAuthSummary> | undefined, "kimi-coding") ? "done" : "idle",
+      "qwen": hasConfirmedOAuthSubscription(p as Record<string, AiAuthSummary> | undefined, "qwen") ? "done" : "idle",
     };
   });
+  const [oauthLaunchModes, setOauthLaunchModes] = useState<Record<string, AuthLaunchMode>>({});
   const [apiKeyValues, setApiKeyValues] = useState<Record<string, string>>({});
   const [apiKeySaved, setApiKeySaved] = useState<Record<string, boolean>>(() => {
     const p = bootstrapData?.aiAuth?.providers;
@@ -869,10 +872,10 @@ function SettingsContent() {
         if (data.defaultModel) setDefaultModel(data.defaultModel);
         setOauthStates((prev) => {
           const next = { ...prev };
-          if (data.providers?.["openai-codex"]?.hasSubscription) next["openai-codex"] = prev["openai-codex"] === "idle" ? "done" : prev["openai-codex"];
-          if (data.providers?.["google-gemini-cli"]?.hasSubscription) next["google-gemini-cli"] = prev["google-gemini-cli"] === "idle" ? "done" : prev["google-gemini-cli"];
-          if (data.providers?.["kimi-coding"]?.hasSubscription) next["kimi-coding"] = prev["kimi-coding"] === "idle" ? "done" : prev["kimi-coding"];
-          if (data.providers?.["qwen"]?.hasSubscription) next["qwen"] = prev["qwen"] === "idle" ? "done" : prev["qwen"];
+          if (hasConfirmedOAuthSubscription(data.providers as Record<string, AiAuthSummary> | undefined, "openai-codex")) next["openai-codex"] = prev["openai-codex"] === "idle" ? "done" : prev["openai-codex"];
+          if (hasConfirmedOAuthSubscription(data.providers as Record<string, AiAuthSummary> | undefined, "google-gemini-cli")) next["google-gemini-cli"] = prev["google-gemini-cli"] === "idle" ? "done" : prev["google-gemini-cli"];
+          if (hasConfirmedOAuthSubscription(data.providers as Record<string, AiAuthSummary> | undefined, "kimi-coding")) next["kimi-coding"] = prev["kimi-coding"] === "idle" ? "done" : prev["kimi-coding"];
+          if (hasConfirmedOAuthSubscription(data.providers as Record<string, AiAuthSummary> | undefined, "qwen")) next["qwen"] = prev["qwen"] === "idle" ? "done" : prev["qwen"];
           return next;
         });
         setApiKeySaved((prev) => {
@@ -929,6 +932,7 @@ function SettingsContent() {
   // ── OAuth launch handler ──
   const launchOAuth = useCallback(async (provider: string) => {
     setOauthStates((prev) => ({ ...prev, [provider]: "launching" as AuthState }));
+    setOauthLaunchModes((prev) => ({ ...prev, [provider]: null }));
 
     try {
       const res = await fetch("/api/integrations/auth", {
@@ -939,9 +943,21 @@ function SettingsContent() {
       const data = await res.json();
       if (!data.ok) {
         setOauthStates((prev) => ({ ...prev, [provider]: "idle" as AuthState }));
+        setOauthLaunchModes((prev) => ({ ...prev, [provider]: null }));
         return;
       }
 
+      if (data.connected) {
+        setOauthStates((prev) => ({ ...prev, [provider]: "done" as AuthState }));
+        setOauthLaunchModes((prev) => ({ ...prev, [provider]: null }));
+        if (data.model) {
+          setDefaultModel(data.model);
+        }
+        await refreshToolStatus();
+        return;
+      }
+
+      setOauthLaunchModes((prev) => ({ ...prev, [provider]: data.launchMode === "terminal" ? "terminal" : "browser" }));
       setOauthStates((prev) => ({ ...prev, [provider]: "polling" as AuthState }));
 
       if (authPollRef.current) clearInterval(authPollRef.current);
@@ -952,15 +968,17 @@ function SettingsContent() {
           if (authPollRef.current) clearInterval(authPollRef.current);
           authPollRef.current = null;
           setOauthStates((prev) => ({ ...prev, [provider]: "idle" as AuthState }));
+          setOauthLaunchModes((prev) => ({ ...prev, [provider]: null }));
           return;
         }
         try {
           const statusRes = await fetch("/api/integrations/auth");
           const statusData = await statusRes.json();
-          if (statusData.providers?.[provider]?.hasSubscription) {
+          if (hasConfirmedOAuthSubscription(statusData.providers as Record<string, AiAuthSummary> | undefined, provider)) {
             if (authPollRef.current) clearInterval(authPollRef.current);
             authPollRef.current = null;
             setOauthStates((prev) => ({ ...prev, [provider]: "done" as AuthState }));
+            setOauthLaunchModes((prev) => ({ ...prev, [provider]: null }));
             if (statusData.defaultModel) {
               setDefaultModel(statusData.defaultModel);
             } else {
@@ -981,6 +999,7 @@ function SettingsContent() {
       }, 3000);
     } catch {
       setOauthStates((prev) => ({ ...prev, [provider]: "idle" as AuthState }));
+      setOauthLaunchModes((prev) => ({ ...prev, [provider]: null }));
     }
   }, [refreshToolStatus]);
 
@@ -1027,6 +1046,7 @@ function SettingsContent() {
         setApiKeySaved((prev) => ({ ...prev, [provider]: false }));
         setApiKeyValues((prev) => ({ ...prev, [provider]: "" }));
         setOauthStates((prev) => ({ ...prev, [provider]: "idle" as AuthState }));
+        setOauthLaunchModes((prev) => ({ ...prev, [provider]: null }));
         await refreshToolStatus();
         flashSaved();
       }
@@ -1981,6 +2001,8 @@ function SettingsContent() {
                     ].map((item) => (
                       <span
                         key={item.label}
+                        data-testid={`openclaw-status-${item.label.toLowerCase().replace(/\s+/g, "-")}`}
+                        data-state={item.ok ? "ready" : "pending"}
                         className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium ${
                           item.ok
                             ? "bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400"
@@ -2268,7 +2290,7 @@ function SettingsContent() {
                             await fetch("/api/integrations/install", {
                               method: "POST",
                               headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({ package: "openclaw" }),
+                              body: JSON.stringify({ adapter: "openclaw" }),
                             });
                             await fetch("/api/integrations/setup", { method: "POST" });
                             await refreshToolStatus();
@@ -2311,7 +2333,7 @@ function SettingsContent() {
                             const res = await fetch("/api/integrations/uninstall", {
                               method: "POST",
                               headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({ package: "openclaw" }),
+                              body: JSON.stringify({ adapter: "openclaw" }),
                             });
                             const data = await res.json();
                             if (!res.ok || !data.success) {
@@ -2459,8 +2481,6 @@ function SettingsContent() {
               ];
               apiKeyProviders.sort((a, b) => (isProviderDefault(b.id) ? 1 : 0) - (isProviderDefault(a.id) ? 1 : 0));
 
-              const isPolling = Object.values(oauthStates).some((s) => s === "polling");
-
               /* ── API key modal provider data ── */
               const modalProvider = apiKeyModalProvider
                 ? apiKeyProviders.find((p) => p.id === apiKeyModalProvider)
@@ -2473,6 +2493,7 @@ function SettingsContent() {
                 ? oauthProviders.find((p) => p.id === oauthModalProvider)
                 : null;
               const oauthModalState = oauthModalProvider ? (oauthStates[oauthModalProvider] ?? "idle") : "idle";
+              const oauthModalLaunchMode = oauthModalProvider ? (oauthLaunchModes[oauthModalProvider] ?? null) : null;
               const oauthModalConnected = oauthModalState === "done";
               const oauthModalDef = oauthModalProvider ? isProviderDefault(oauthModalProvider, true) : false;
 
@@ -2498,8 +2519,6 @@ function SettingsContent() {
                               if (v) {
                                 setOauthModalProvider(id);
                               } else {
-                                const baseProvider = id.replace("openai-codex", "openai").replace("google-gemini-cli", "google").replace("kimi-coding", "kimi");
-                                removeAuth(baseProvider);
                                 removeAuth(id);
                                 setOauthStates((prev) => ({ ...prev, [id]: "idle" as AuthState }));
                               }
@@ -2599,13 +2618,24 @@ function SettingsContent() {
                               {m.setDefault}
                             </button>
                           )}
-                          {!oauthModalConnected && (oauthModalState === "polling" || oauthModalState === "launching") && (
+                          {!oauthModalConnected && oauthModalState === "launching" && (
                             <div className="flex items-center justify-center gap-2 py-1">
                               <svg className="w-3.5 h-3.5 animate-spin text-muted-foreground" viewBox="0 0 24 24" fill="none">
                                 <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2.5" opacity="0.2" />
                                 <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
                               </svg>
-                              <span className="text-[11px] text-muted-foreground">{m.openTerminal}</span>
+                              <span className="text-[11px] text-muted-foreground">{m.checkingForExistingAuth}</span>
+                            </div>
+                          )}
+                          {!oauthModalConnected && oauthModalState === "polling" && (
+                            <div className="flex items-center justify-center gap-2 py-1">
+                              <svg className="w-3.5 h-3.5 animate-spin text-muted-foreground" viewBox="0 0 24 24" fill="none">
+                                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2.5" opacity="0.2" />
+                                <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                              </svg>
+                              <span className="text-[11px] text-muted-foreground">
+                                {oauthModalLaunchMode === "terminal" ? m.completeSignInInTerminal : m.completeSignInInBrowser}
+                              </span>
                             </div>
                           )}
                           {!oauthModalConnected && oauthModalState !== "polling" && oauthModalState !== "launching" && (
@@ -2618,8 +2648,6 @@ function SettingsContent() {
                               <button
                                 type="button"
                                 onClick={() => {
-                                  const baseProvider = oauthModalProvider.replace("openai-codex", "openai").replace("google-gemini-cli", "google").replace("kimi-coding", "kimi");
-                                  removeAuth(baseProvider);
                                   removeAuth(oauthModalProvider);
                                   setOauthStates((prev) => ({ ...prev, [oauthModalProvider]: "idle" as AuthState }));
                                   setOauthModalProvider(null);
@@ -2642,6 +2670,7 @@ function SettingsContent() {
                               onClick={() => {
                                 if (authPollRef.current) { clearInterval(authPollRef.current); authPollRef.current = null; }
                                 setOauthStates((prev) => ({ ...prev, [oauthModalProvider]: "idle" as AuthState }));
+                                setOauthLaunchModes((prev) => ({ ...prev, [oauthModalProvider]: null }));
                               }}
                               className="px-4 py-2 rounded-xl border border-border text-sm text-strong-foreground hover:bg-card transition-colors"
                             >

@@ -1,3 +1,7 @@
+import fs from "fs";
+import os from "os";
+import path from "path";
+
 import type { CapabilityName, ProgressEvent } from "@clawjs/core";
 
 import { NodeProcessHost, type ExecResult } from "../host/process.ts";
@@ -48,6 +52,124 @@ export interface OpenClawRuntimeProgressEvent extends ProgressEvent {
 
 export type OpenClawRuntimeProgressSink = (event: OpenClawRuntimeProgressEvent) => void;
 
+function isExecutablePath(candidate: string): boolean {
+  try {
+    const stat = fs.statSync(candidate);
+    return stat.isFile() || stat.isSymbolicLink();
+  } catch {
+    return false;
+  }
+}
+
+function normalizePathEntries(entries: string[]): string[] {
+  const seen = new Set<string>();
+  const normalized: string[] = [];
+  for (const entry of entries) {
+    const trimmed = entry.trim();
+    if (!trimmed || seen.has(trimmed)) continue;
+    seen.add(trimmed);
+    normalized.push(trimmed);
+  }
+  return normalized;
+}
+
+function resolvePackageManagerPath(binary: string, env: NodeJS.ProcessEnv = process.env): string {
+  const trimmed = binary.trim();
+  if (!trimmed) return binary;
+  if (trimmed.includes("/") || trimmed.includes("\\")) {
+    return isExecutablePath(trimmed) ? trimmed : binary;
+  }
+
+  const pathEntries = (env.PATH || process.env.PATH || "")
+    .split(path.delimiter)
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+  const homeDir = env.HOME?.trim() || os.homedir();
+  const fixedCandidates = process.platform === "win32"
+    ? []
+    : [
+        "/opt/homebrew/bin",
+        "/usr/local/bin",
+        "/usr/bin",
+        path.join(homeDir, ".volta", "bin"),
+        path.join(homeDir, ".local", "bin"),
+      ];
+
+  const nvmDir = process.platform === "win32"
+    ? null
+    : path.join(homeDir, ".nvm", "versions", "node");
+
+  const candidates = [...pathEntries];
+  for (const entry of fixedCandidates) {
+    if (!candidates.includes(entry)) candidates.push(entry);
+  }
+
+  if (nvmDir && fs.existsSync(nvmDir)) {
+    try {
+      const versions = fs.readdirSync(nvmDir)
+        .map((version) => path.join(nvmDir, version, "bin"))
+        .filter((entry) => !candidates.includes(entry))
+        .sort((left, right) => right.localeCompare(left));
+      candidates.push(...versions);
+    } catch {
+      // ignore nvm scan failures
+    }
+  }
+
+  const extensions = process.platform === "win32"
+    ? (env.PATHEXT || ".EXE;.CMD;.BAT")
+        .split(";")
+        .map((entry) => entry.trim())
+        .filter(Boolean)
+    : [""];
+
+  for (const directory of candidates) {
+    for (const extension of extensions) {
+      const candidate = path.join(directory, `${trimmed}${extension}`);
+      if (isExecutablePath(candidate)) {
+        return candidate;
+      }
+    }
+  }
+
+  return binary;
+}
+
+export function deriveGlobalPrefixFromPackageManagerBinary(binaryPath: string): string | null {
+  const trimmed = binaryPath.trim();
+  if (!trimmed.includes("/") && !trimmed.includes("\\")) {
+    return null;
+  }
+  return path.resolve(path.dirname(trimmed), "..");
+}
+
+export function buildOpenClawPackageManagerEnv(
+  binaryPath: string,
+  baseEnv: NodeJS.ProcessEnv = process.env,
+): NodeJS.ProcessEnv | undefined {
+  const prefix = deriveGlobalPrefixFromPackageManagerBinary(binaryPath);
+  if (!prefix) {
+    return undefined;
+  }
+
+  const pathEntries = normalizePathEntries([
+    path.join(prefix, "bin"),
+    "/opt/homebrew/bin",
+    "/usr/local/bin",
+    "/usr/bin",
+    "/bin",
+    ...(baseEnv.PATH || "").split(path.delimiter),
+  ]);
+
+  return {
+    ...baseEnv,
+    HOME: baseEnv.HOME?.trim() || os.homedir(),
+    PATH: pathEntries.join(path.delimiter),
+    npm_config_prefix: prefix,
+    NPM_CONFIG_PREFIX: prefix,
+  };
+}
+
 function runtimeOperationCapability(operation: OpenClawRuntimeOperation): CapabilityName {
   return operation === "setup" ? "workspace" : "runtime";
 }
@@ -97,7 +219,12 @@ export function buildOpenClawRuntimeProgressPlan(
         capability: runtimeOperationCapability(operation),
         steps: [
           buildProgressStep("runtime.install.prepare", `Resolve the ${installer} command for OpenClaw.`, 10),
-          buildProgressStep("runtime.install.execute", "Install the OpenClaw CLI.", 60, buildOpenClawInstallCommand(installer)),
+          buildProgressStep(
+            "runtime.install.execute",
+            "Install the OpenClaw CLI.",
+            60,
+            buildOpenClawInstallCommand(installer, commandOptions.env),
+          ),
           buildProgressStep("runtime.install.finalize", "OpenClaw is ready to be probed again.", 100),
         ],
       };
@@ -107,7 +234,12 @@ export function buildOpenClawRuntimeProgressPlan(
         capability: runtimeOperationCapability(operation),
         steps: [
           buildProgressStep("runtime.uninstall.prepare", `Resolve the ${installer} command used to remove OpenClaw.`, 10),
-          buildProgressStep("runtime.uninstall.execute", "Remove the OpenClaw CLI.", 60, buildOpenClawUninstallCommand(installer)),
+          buildProgressStep(
+            "runtime.uninstall.execute",
+            "Remove the OpenClaw CLI.",
+            60,
+            buildOpenClawUninstallCommand(installer, commandOptions.env),
+          ),
           buildProgressStep("runtime.uninstall.finalize", "OpenClaw has been removed from the current runtime context.", 100),
         ],
       };
@@ -492,29 +624,39 @@ export function buildDoctorReport(status: OpenClawRuntimeStatus): DoctorReport {
   };
 }
 
-export function buildOpenClawInstallCommand(installer: "npm" | "pnpm" = "npm"): { command: string; args: string[] } {
+export function buildOpenClawInstallCommand(
+  installer: "npm" | "pnpm" = "npm",
+  env: NodeJS.ProcessEnv = process.env,
+): { command: string; args: string[]; env?: NodeJS.ProcessEnv } {
   if (installer === "pnpm") {
     return {
-      command: "pnpm",
+      command: resolvePackageManagerPath("pnpm", env),
       args: ["add", "-g", "openclaw"],
     };
   }
+  const command = resolvePackageManagerPath("npm", env);
   return {
-    command: "npm",
+    command,
     args: ["install", "-g", "openclaw"],
+    env: buildOpenClawPackageManagerEnv(command, env),
   };
 }
 
-export function buildOpenClawUninstallCommand(installer: "npm" | "pnpm" = "npm"): { command: string; args: string[] } {
+export function buildOpenClawUninstallCommand(
+  installer: "npm" | "pnpm" = "npm",
+  env: NodeJS.ProcessEnv = process.env,
+): { command: string; args: string[]; env?: NodeJS.ProcessEnv } {
   if (installer === "pnpm") {
     return {
-      command: "pnpm",
+      command: resolvePackageManagerPath("pnpm", env),
       args: ["remove", "-g", "openclaw"],
     };
   }
+  const command = resolvePackageManagerPath("npm", env);
   return {
-    command: "npm",
+    command,
     args: ["uninstall", "-g", "openclaw"],
+    env: buildOpenClawPackageManagerEnv(command, env),
   };
 }
 
@@ -541,16 +683,28 @@ export async function installOpenClawRuntime(
   runner: CommandRunner,
   installer: "npm" | "pnpm" = "npm",
   onProgress?: OpenClawRuntimeProgressSink,
+  commandOptions: OpenClawCommandOptions = {},
 ): Promise<void> {
-  await runOpenClawRuntimeProgressPlan(buildOpenClawRuntimeProgressPlan("install", undefined, installer), runner, onProgress, 120_000);
+  await runOpenClawRuntimeProgressPlan(
+    buildOpenClawRuntimeProgressPlan("install", undefined, installer, commandOptions),
+    runner,
+    onProgress,
+    120_000,
+  );
 }
 
 export async function uninstallOpenClawRuntime(
   runner: CommandRunner,
   installer: "npm" | "pnpm" = "npm",
   onProgress?: OpenClawRuntimeProgressSink,
+  commandOptions: OpenClawCommandOptions = {},
 ): Promise<void> {
-  await runOpenClawRuntimeProgressPlan(buildOpenClawRuntimeProgressPlan("uninstall", undefined, installer), runner, onProgress, 120_000);
+  await runOpenClawRuntimeProgressPlan(
+    buildOpenClawRuntimeProgressPlan("uninstall", undefined, installer, commandOptions),
+    runner,
+    onProgress,
+    120_000,
+  );
 }
 
 export async function setupOpenClawWorkspace(
