@@ -65,7 +65,7 @@ const same = await createClaw({
 | `claw.doctor` | `run` |
 | `claw.models` | `list`, `catalog`, `getDefault`, `setDefault` |
 | `claw.providers` | `list`, `catalog`, `authState` |
-| `claw.auth` | `status`, `diagnostics`, `login`, `setApiKey`, `saveApiKey`, `removeProvider` |
+| `claw.auth` | `status`, `diagnostics`, `prepareLogin`, `login`, `setApiKey`, `saveApiKey`, `setProviderEnabled`, `removeProvider` |
 | `claw.scheduler` | `list`, `run`, `enable`, `disable` |
 | `claw.memory` | `list`, `search` |
 | `claw.skills` | `list`, `sync`, `sources`, `search`, `install` |
@@ -212,6 +212,7 @@ const loginPlan = await claw.auth.prepareLogin("openai");
 const loginResult = await claw.auth.login("openai", { setDefault: true });
 claw.auth.setApiKey("openai", "sk-...", "default");
 await claw.auth.saveApiKey("openai", "sk-...");
+await claw.auth.setProviderEnabled("openai-codex", true, { preferredAuthMode: "oauth" });
 claw.auth.removeProvider("openai");
 ```
 These auth operations also update the canonical provider intent under

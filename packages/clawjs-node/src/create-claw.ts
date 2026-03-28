@@ -204,6 +204,7 @@ import {
   resolveIntentDomainPath,
   writeIntentDomain,
 } from "./intents/store.ts";
+import { requiresExplicitProviderEnable } from "./auth/openclaw-auth.ts";
 import {
   readAllObservedDomains,
   readObservedDomain,
@@ -513,6 +514,16 @@ export interface ClawInstance {
         runtimeCommand?: RuntimeCommandSpec;
       },
     ) => Promise<SaveApiKeyResult>;
+    setProviderEnabled: (
+      provider: string,
+      enabled: boolean,
+      options?: {
+        preferredAuthMode?: "oauth" | "token" | "api_key" | "env" | "secret_ref" | null;
+        secretRef?: string | null;
+        profileId?: string | null;
+        metadata?: Record<string, unknown>;
+      },
+    ) => Promise<void>;
     removeProvider: (provider: string) => number;
   };
   scheduler: {
@@ -2832,6 +2843,43 @@ export async function createClaw(options: CreateClawOptions): Promise<ClawInstan
           });
           throw error;
         }
+      },
+      setProviderEnabled: async (provider, enabled, intentOptions = {}) => {
+        const patch: {
+          enabled: boolean;
+          preferredAuthMode?: "oauth" | "token" | "api_key" | "env" | "secret_ref" | null;
+          secretRef?: string | null;
+          profileId?: string | null;
+          metadata?: Record<string, unknown>;
+        } = { enabled };
+        if ("preferredAuthMode" in intentOptions) {
+          patch.preferredAuthMode = intentOptions.preferredAuthMode ?? null;
+        }
+        if ("secretRef" in intentOptions) {
+          patch.secretRef = intentOptions.secretRef ?? null;
+        }
+        if ("profileId" in intentOptions) {
+          patch.profileId = intentOptions.profileId ?? null;
+        }
+        if (intentOptions.metadata) {
+          patch.metadata = intentOptions.metadata;
+        }
+
+        patchProviderIntent(provider, patch);
+        if (!enabled && !requiresExplicitProviderEnable(provider)) {
+          adapter.removeProvider(provider, resolvedRuntimeOptions);
+        }
+        await refreshObservedDomain("providers");
+        appendAuditEvent("auth.provider_intent_updated", "auth", {
+          provider,
+          enabled,
+          runtimeAdapter: adapter.id,
+        });
+        eventBus.emit("auth.provider_intent_updated", {
+          provider,
+          enabled,
+          runtimeAdapter: adapter.id,
+        });
       },
       removeProvider: (provider) => {
         emitAuthProgress("auth.remove", "start", provider);

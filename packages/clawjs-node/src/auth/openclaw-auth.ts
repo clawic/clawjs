@@ -1,3 +1,4 @@
+import { execSync } from "child_process";
 import path from "path";
 
 import { maskCredential, type ProviderAuthSummary } from "@clawjs/core";
@@ -103,6 +104,20 @@ export interface OpenClawDirectAuthState {
   providerAuth: Record<string, ProviderAuthSummary>;
 }
 
+export interface CleanupOpenClawAuthLoginStateOptions {
+  agentId: string;
+  currentPid?: number | null;
+  callbackPort?: number;
+  platform?: NodeJS.Platform;
+  pidCollector?: (command: string) => number[];
+  killer?: (pid: number) => void;
+}
+
+export interface CleanupOpenClawAuthLoginStateResult {
+  killedPids: number[];
+  clearedCurrentPid: boolean;
+}
+
 const OPENCLAW_OAUTH_PROVIDER_ALIASES: Record<string, string> = {
   chatgpt: "openai-codex",
   gemini: "google-gemini-cli",
@@ -129,6 +144,30 @@ const EXPLICIT_ENABLE_REQUIRED_PROVIDERS = new Set([
   "kimi-coding",
   "qwen",
 ]);
+
+const DEFAULT_OPENCLAW_CALLBACK_PORT = 1455;
+
+function collectPidsFromCommand(command: string): number[] {
+  try {
+    const stdout = execSync(command, { timeout: 3_000, stdio: ["ignore", "pipe", "ignore"] }).toString().trim();
+    if (!stdout) return [];
+    return stdout
+      .split(/\r?\n/)
+      .map((value) => Number.parseInt(value.trim(), 10))
+      .filter((value) => Number.isInteger(value) && value > 0);
+  } catch {
+    return [];
+  }
+}
+
+function killProcess(pid: number): void {
+  if (!Number.isInteger(pid) || pid <= 0) return;
+  try {
+    process.kill(pid, "SIGKILL");
+  } catch {
+    // ignore already exited or inaccessible processes
+  }
+}
 
 export function resolveAuthStorePath(agentDir: string): string {
   return path.join(agentDir, "auth-profiles.json");
@@ -224,6 +263,43 @@ export function hasConfirmedOpenClawOAuthSubscription<T extends Partial<Provider
   return isOpenClawProviderEnabled(oauthProviderId, providerIntents)
     && !!summary?.hasAuth
     && !!summary?.hasSubscription;
+}
+
+export function cleanupOpenClawAuthLoginState(
+  options: CleanupOpenClawAuthLoginStateOptions,
+): CleanupOpenClawAuthLoginStateResult {
+  const {
+    agentId,
+    currentPid,
+    callbackPort = DEFAULT_OPENCLAW_CALLBACK_PORT,
+    platform = process.platform,
+    pidCollector = collectPidsFromCommand,
+    killer = killProcess,
+  } = options;
+
+  const killedPids = new Set<number>();
+
+  if (Number.isInteger(currentPid) && (currentPid ?? 0) > 0) {
+    killer(currentPid!);
+    killedPids.add(currentPid!);
+  }
+
+  if (platform !== "win32") {
+    for (const pid of pidCollector(`lsof -ti :${callbackPort}`)) {
+      killer(pid);
+      killedPids.add(pid);
+    }
+
+    for (const pid of pidCollector(`pgrep -f "openclaw models --agent ${agentId} auth login"`)) {
+      killer(pid);
+      killedPids.add(pid);
+    }
+  }
+
+  return {
+    killedPids: [...killedPids],
+    clearedCurrentPid: Number.isInteger(currentPid) && (currentPid ?? 0) > 0,
+  };
 }
 
 export function buildOpenClawAuthLoginCommand(

@@ -20,6 +20,7 @@ remain adapter-specific.
 - `claw.auth.login(provider, options?)`
 - `claw.auth.setApiKey(provider, key, profileId?)`
 - `claw.auth.saveApiKey(provider, key, options?)`
+- `claw.auth.setProviderEnabled(provider, enabled, options?)`
 - `claw.auth.removeProvider(provider)`
 
 Auth writes now update two separate layers on purpose:

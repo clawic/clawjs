@@ -7,6 +7,7 @@ import path from "path";
 import { maskCredential } from "@clawjs/core";
 import {
   buildOpenClawAuthLoginCommand,
+  cleanupOpenClawAuthLoginState,
   filterOpenClawProviderAuthByIntent,
   getOpenClawOAuthProviderSummary,
   hasConfirmedOpenClawOAuthSubscription,
@@ -208,6 +209,32 @@ test("filterOpenClawProviderAuthByIntent excludes disabled explicit providers", 
   });
 
   assert.deepEqual(Object.keys(filtered).sort(), ["anthropic", "openai-codex"]);
+});
+
+test("cleanupOpenClawAuthLoginState kills tracked and discovered login processes", () => {
+  const killed: number[] = [];
+  const commands: string[] = [];
+
+  const result = cleanupOpenClawAuthLoginState({
+    agentId: "clawjs-demo",
+    currentPid: 123,
+    callbackPort: 1455,
+    pidCollector(command) {
+      commands.push(command);
+      if (command.includes("lsof")) return [456, 789];
+      if (command.includes("pgrep")) return [789, 999];
+      return [];
+    },
+    killer(pid) {
+      killed.push(pid);
+    },
+  });
+
+  assert.equal(result.clearedCurrentPid, true);
+  assert.deepEqual(result.killedPids.sort((left, right) => left - right), [123, 456, 789, 999]);
+  assert.deepEqual(killed.sort((left, right) => left - right), [123, 456, 789, 789, 999]);
+  assert.equal(commands.some((entry) => entry.includes("lsof -ti :1455")), true);
+  assert.equal(commands.some((entry) => entry.includes("pgrep -f \"openclaw models --agent clawjs-demo auth login\"")), true);
 });
 
 test("removeAuthProfilesForProvider deletes provider auth entries from the current agent dir", () => {

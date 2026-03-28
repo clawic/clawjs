@@ -1728,16 +1728,9 @@ test("createClaw provider intents reconcile auth state and disabled providers", 
   assert.equal(providersIntentAfterSave.providers?.openai?.preferredAuthMode, "api_key");
   assert.equal(diffAfterSave.drifted, false);
 
-  claw.intent.patch("providers", {
-    providers: {
-      ...(providersIntentAfterSave.providers ?? {}),
-      openai: {
-        ...(providersIntentAfterSave.providers?.openai ?? {}),
-        enabled: false,
-      },
-    },
+  await claw.auth.setProviderEnabled("openai", false, {
+    preferredAuthMode: "api_key",
   });
-  await claw.intent.apply({ domains: ["providers"] });
 
   const authState = await claw.auth.status();
   const diffAfterDisable = await claw.intent.diff({ domains: ["providers"] });

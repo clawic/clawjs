@@ -1,9 +1,8 @@
-import { execSync } from "child_process";
-
 import { NextRequest, NextResponse } from "next/server";
 
 import {
   buildOpenClawAuthLoginCommand,
+  cleanupOpenClawAuthLoginState,
   getOpenClawOAuthProviderSummary,
   isOpenClawProviderEnabled,
   readDirectOpenClawAuthState,
@@ -104,28 +103,6 @@ function readProviderIntents(claw: Awaited<ReturnType<typeof getClaw>>) {
   return readOpenClawProviderIntentMap(claw.intent.get("providers"));
 }
 
-async function setProviderEnabledForAgent(
-  claw: Awaited<ReturnType<typeof getClaw>>,
-  provider: string,
-  enabled: boolean,
-  preferredAuthMode: "oauth" | "token" | "api_key" | "env" | "secret_ref" | null = "oauth",
-): Promise<void> {
-  const current = readProviderIntents(claw);
-  claw.intent.patch("providers", {
-    providers: {
-      ...current,
-      [provider]: {
-        ...(current[provider] ?? {}),
-        enabled,
-        preferredAuthMode,
-      },
-    },
-  });
-  if (!enabled) {
-    await claw.intent.apply({ domains: ["providers"] });
-  }
-}
-
 async function launchOAuthInMacTerminal(provider: string): Promise<void> {
   const binaryPath = await findCommandFresh("openclaw");
   if (!binaryPath) {
@@ -142,43 +119,13 @@ async function launchOAuthInMacTerminal(provider: string): Promise<void> {
   });
 }
 
-function killProcess(pid: number): void {
-  if (!Number.isInteger(pid) || pid <= 0) return;
-  try {
-    process.kill(pid, "SIGKILL");
-  } catch {
-    // ignore already exited or inaccessible processes
-  }
-}
-
-function collectPids(command: string): number[] {
-  try {
-    const stdout = execSync(command, { timeout: 3_000, stdio: ["ignore", "pipe", "ignore"] }).toString().trim();
-    if (!stdout) return [];
-    return stdout
-      .split(/\r?\n/)
-      .map((value) => Number.parseInt(value.trim(), 10))
-      .filter((value) => Number.isInteger(value) && value > 0);
-  } catch {
-    return [];
-  }
-}
-
 function cleanupStaleOAuthState(agentId: string): void {
-  if (currentAuthPid) {
-    killProcess(currentAuthPid);
-    currentAuthPid = null;
-  }
-
-  if (process.platform === "win32") return;
-
-  for (const pid of collectPids(`lsof -ti :${OPENCLAW_CALLBACK_PORT}`)) {
-    killProcess(pid);
-  }
-
-  for (const pid of collectPids(`pgrep -f "openclaw models --agent ${agentId} auth login"`)) {
-    killProcess(pid);
-  }
+  cleanupOpenClawAuthLoginState({
+    agentId,
+    currentPid: currentAuthPid,
+    callbackPort: OPENCLAW_CALLBACK_PORT,
+  });
+  currentAuthPid = null;
 }
 
 export async function GET() {
@@ -299,7 +246,7 @@ async function handleOAuthLaunch(provider: string): Promise<NextResponse> {
   const loginPlan = await claw.auth.prepareLogin(provider);
 
   if (loginPlan.status === "reused") {
-    await setProviderEnabledForAgent(claw, provider, true, "oauth");
+    await claw.auth.setProviderEnabled(provider, true, { preferredAuthMode: "oauth" });
     const modelId = resolveModelId(provider);
     await claw.models.setDefault(modelId).catch(() => undefined);
     invalidateOpenClawAvailabilityCache();
@@ -315,7 +262,7 @@ async function handleOAuthLaunch(provider: string): Promise<NextResponse> {
 
   if (process.platform === "darwin" && await findCommand("osascript")) {
     await launchOAuthInMacTerminal(provider);
-    await setProviderEnabledForAgent(claw, provider, true, "oauth");
+    await claw.auth.setProviderEnabled(provider, true, { preferredAuthMode: "oauth" });
     currentAuthPid = null;
     invalidateOpenClawAvailabilityCache();
 
@@ -409,7 +356,7 @@ async function handleAuthRemove(provider: string): Promise<NextResponse> {
 
   const claw = await getClaw();
   if (requiresExplicitProviderEnable(provider.trim())) {
-    await setProviderEnabledForAgent(claw, provider.trim(), false, "oauth");
+    await claw.auth.setProviderEnabled(provider.trim(), false, { preferredAuthMode: "oauth" });
     invalidateOpenClawAvailabilityCache();
     return NextResponse.json({ ok: true, removed: false, disabledForAgent: true });
   }
