@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { inspectManagedBlock } from "@clawjs/node";
+import { inspectManagedBlock } from "@clawjs/claw";
 import { getClaw } from "@/lib/claw";
 import { getE2EWorkspaceFiles, isE2EEnabled, updateE2EWorkspaceFile } from "@/lib/e2e";
 import { SOUL_MANAGED_BLOCK_ID, USER_MANAGED_BLOCK_ID } from "@/lib/profile-context";

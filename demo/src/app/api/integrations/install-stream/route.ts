@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { NodeProcessHost, getRuntimeAdapter, listRuntimeAdapters } from "@clawjs/node";
+import { NodeProcessHost, getRuntimeAdapter, listRuntimeAdapters } from "@clawjs/claw";
 
 interface ProgressEvent {
   phase: string;

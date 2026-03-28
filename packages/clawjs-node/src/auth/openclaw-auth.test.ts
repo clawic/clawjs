@@ -7,13 +7,21 @@ import path from "path";
 import { maskCredential } from "@clawjs/core";
 import {
   buildOpenClawAuthLoginCommand,
+  cleanupOpenClawAuthLoginState,
+  filterOpenClawProviderAuthByIntent,
+  getOpenClawOAuthProviderSummary,
+  hasConfirmedOpenClawOAuthSubscription,
+  isOpenClawProviderEnabled,
   launchOpenClawAuthLogin,
   loadAuthStore,
   persistProviderApiKey,
   buildOpenClawAuthDiagnostics,
   normalizeAuthSummaries,
   normalizeProviderAuth,
+  readDirectOpenClawAuthState,
+  readOpenClawProviderIntentMap,
   removeAuthProfilesForProvider,
+  requiresExplicitProviderEnable,
   resolveOpenClawOAuthProvider,
   saveAuthStore,
   saveProviderApiKey,
@@ -107,6 +115,128 @@ test("summarizeAuthProfiles and normalizeAuthSummaries are stable", () => {
   assert.equal(normalized.openai.authType, "oauth");
 });
 
+test("normalizeProviderAuth ignores transient runtime oauth hints without persisted credentials", () => {
+  const status = parseOpenClawModelsStatus(JSON.stringify({
+    auth: {
+      providers: [
+        {
+          provider: "openai-codex",
+          effective: { kind: "oauth" },
+          profiles: { oauth: 0, token: 0, apiKey: 0 },
+        },
+      ],
+    },
+  }));
+
+  const summary = normalizeProviderAuth(status, "openai-codex", {
+    version: 1,
+    profiles: {},
+  });
+
+  assert.equal(summary.hasAuth, false);
+  assert.equal(summary.hasSubscription, false);
+  assert.equal(summary.authType, null);
+});
+
+test("normalizeAuthSummaries includes providers confirmed only by the auth store", () => {
+  const status = parseOpenClawModelsStatus(JSON.stringify({
+    auth: {
+      providers: [],
+    },
+  }));
+
+  const normalized = normalizeAuthSummaries(status, {
+    version: 1,
+    profiles: {
+      "openai-codex:default": { type: "oauth", provider: "openai-codex", token: "oauth-token-xyz987" },
+    },
+  });
+
+  assert.equal(normalized["openai-codex"]?.hasAuth, true);
+  assert.equal(normalized["openai-codex"]?.hasSubscription, true);
+  assert.equal(normalized["openai-codex"]?.authType, "oauth");
+});
+
+test("provider intent helpers respect explicit enable rules", () => {
+  const intents = readOpenClawProviderIntentMap({
+    providers: {
+      "openai-codex": { enabled: true },
+      anthropic: { enabled: false },
+    },
+  });
+
+  assert.equal(requiresExplicitProviderEnable("openai-codex"), true);
+  assert.equal(requiresExplicitProviderEnable("anthropic"), false);
+  assert.equal(isOpenClawProviderEnabled("openai-codex", intents), true);
+  assert.equal(isOpenClawProviderEnabled("anthropic", intents), false);
+  assert.equal(isOpenClawProviderEnabled("openai-codex", {}), false);
+  assert.equal(isOpenClawProviderEnabled("anthropic", {}), true);
+});
+
+test("provider auth summaries collapse openclaw oauth aliases", () => {
+  const providers = {
+    openai: {
+      provider: "openai",
+      hasAuth: true,
+      hasSubscription: true,
+      enabledForAgent: true,
+    },
+    "openai-codex": {
+      provider: "openai-codex",
+      hasAuth: false,
+      hasSubscription: false,
+      enabledForAgent: false,
+    },
+  };
+
+  assert.equal(getOpenClawOAuthProviderSummary(providers, "openai-codex")?.provider, "openai");
+  assert.equal(hasConfirmedOpenClawOAuthSubscription(providers, "openai-codex", {
+    "openai-codex": { enabled: true },
+  }), true);
+  assert.equal(hasConfirmedOpenClawOAuthSubscription(providers, "openai-codex", {
+    "openai-codex": { enabled: false },
+  }), false);
+});
+
+test("filterOpenClawProviderAuthByIntent excludes disabled explicit providers", () => {
+  const filtered = filterOpenClawProviderAuthByIntent({
+    anthropic: { provider: "anthropic", hasAuth: true, hasSubscription: false },
+    "openai-codex": { provider: "openai-codex", hasAuth: true, hasSubscription: true },
+    qwen: { provider: "qwen", hasAuth: true, hasSubscription: true },
+  }, {
+    "openai-codex": { enabled: true },
+    qwen: { enabled: false },
+  });
+
+  assert.deepEqual(Object.keys(filtered).sort(), ["anthropic", "openai-codex"]);
+});
+
+test("cleanupOpenClawAuthLoginState kills tracked and discovered login processes", () => {
+  const killed: number[] = [];
+  const commands: string[] = [];
+
+  const result = cleanupOpenClawAuthLoginState({
+    agentId: "clawjs-demo",
+    currentPid: 123,
+    callbackPort: 1455,
+    pidCollector(command) {
+      commands.push(command);
+      if (command.includes("lsof")) return [456, 789];
+      if (command.includes("pgrep")) return [789, 999];
+      return [];
+    },
+    killer(pid) {
+      killed.push(pid);
+    },
+  });
+
+  assert.equal(result.clearedCurrentPid, true);
+  assert.deepEqual(result.killedPids.sort((left, right) => left - right), [123, 456, 789, 999]);
+  assert.deepEqual(killed.sort((left, right) => left - right), [123, 456, 789, 789, 999]);
+  assert.equal(commands.some((entry) => entry.includes("lsof -ti :1455")), true);
+  assert.equal(commands.some((entry) => entry.includes("pgrep -f \"openclaw models --agent clawjs-demo auth login\"")), true);
+});
+
 test("removeAuthProfilesForProvider deletes provider auth entries from the current agent dir", () => {
   const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "clawjs-auth-"));
   const agentDir = path.join(tempRoot, "agent");
@@ -141,6 +271,39 @@ test("setDefaultModel normalizes failure output", async () => {
   await assert.rejects(() => setDefaultModel("openai", runner, "agent-1"), /Failed to set default model openai\/gpt-5.4: boom/);
 });
 
+test("readDirectOpenClawAuthState combines runtime status and persisted auth", async () => {
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "clawjs-auth-state-"));
+  const agentDir = path.join(tempRoot, "agent");
+  saveAuthStore(agentDir, {
+    version: 1,
+    profiles: {
+      "openai-codex:default": { type: "oauth", provider: "openai-codex", token: "oauth-token-xyz987" },
+    },
+  });
+
+  const runner = new FakeRunner({
+    "openclaw models --agent clawjs-demo status --json": {
+      stdout: JSON.stringify({
+        defaultModel: "openai/gpt-5.4",
+        auth: {
+          providers: [
+            {
+              provider: "openai",
+              effective: { kind: "oauth" },
+              profiles: { oauth: 1, token: 0, apiKey: 0 },
+            },
+          ],
+        },
+      }),
+    },
+  });
+
+  const state = await readDirectOpenClawAuthState(agentDir, "clawjs-demo", runner);
+  assert.equal(state.defaultModel, "openai/gpt-5.4");
+  assert.equal(state.providerAuth["openai"]?.hasAuth, false);
+  assert.equal(state.providerAuth["openai-codex"]?.hasSubscription, true);
+});
+
 test("resolveOpenClawOAuthProvider and build login command normalize aliases", () => {
   assert.equal(resolveOpenClawOAuthProvider("openai"), "openai-codex");
   assert.equal(resolveOpenClawOAuthProvider("gemini"), "google-gemini-cli");
@@ -163,7 +326,10 @@ test("launchOpenClawAuthLogin spawns a detached login flow", () => {
   const launcher = new FakeLauncher();
   const result = launchOpenClawAuthLogin("google", launcher, "agent-1", { setDefault: false });
 
+  assert.equal(result.requestedProvider, "google");
   assert.equal(result.provider, "google-gemini-cli");
+  assert.equal(result.status, "launched");
+  assert.equal(result.launchMode, "browser");
   assert.equal(result.pid, 4242);
   assert.deepEqual(launcher.calls, [{
     command: "openclaw",

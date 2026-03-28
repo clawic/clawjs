@@ -65,7 +65,7 @@ const same = await createClaw({
 | `claw.doctor` | `run` |
 | `claw.models` | `list`, `catalog`, `getDefault`, `setDefault` |
 | `claw.providers` | `list`, `catalog`, `authState` |
-| `claw.auth` | `status`, `diagnostics`, `login`, `setApiKey`, `saveApiKey`, `removeProvider` |
+| `claw.auth` | `status`, `diagnostics`, `prepareLogin`, `login`, `setApiKey`, `saveApiKey`, `setProviderEnabled`, `removeProvider` |
 | `claw.scheduler` | `list`, `run`, `enable`, `disable` |
 | `claw.memory` | `list`, `search` |
 | `claw.skills` | `list`, `sync`, `sources`, `search`, `install` |
@@ -111,7 +111,7 @@ claw.runtime.repairPlan();
 claw.runtime.setupWorkspacePlan();
 ```
 For OpenClaw-specific app-state management, the same namespace exposes
-`discoverContext`, `migrateLegacyState`, and `detachWorkspace`.
+`discoverContext` and `detachWorkspace`.
 
 When the adapter is `openclaw`, `claw.runtime.plugins` also exposes the
 managed bridge workflow for the ClawJS plugin packages:
@@ -208,14 +208,21 @@ await claw.models.setDefault("openai/gpt-4.1");
 
 const summaries = await claw.auth.status();
 const authDiagnostics = claw.auth.diagnostics("openai");
-await claw.auth.login("openai", { setDefault: true });
+const loginPlan = await claw.auth.prepareLogin("openai");
+const loginResult = await claw.auth.login("openai", { setDefault: true });
 claw.auth.setApiKey("openai", "sk-...", "default");
 await claw.auth.saveApiKey("openai", "sk-...");
+await claw.auth.setProviderEnabled("openai-codex", true, { preferredAuthMode: "oauth" });
 claw.auth.removeProvider("openai");
 ```
 These auth operations also update the canonical provider intent under
 `.clawjs/intents/providers.json`, while observed auth summaries stay
 rebuildable under `.clawjs/observed/providers.json`.
+
+`prepareLogin()` tells you whether ClawJS can reuse existing auth for the
+requested provider or whether an interactive flow still needs to be
+launched. `login()` returns the same distinction plus the launch mode when
+an interactive flow starts.
 
 For real secrets, prefer the `claw.secrets` helpers plus your
 provider-specific wrapper rather than hardcoding credentials in source.

@@ -133,11 +133,41 @@ export interface AuthDiagnostics {
   [key: string]: unknown;
 }
 
-export interface AuthLoginResult {
+export type AuthLoginLaunchMode = "none" | "browser" | "terminal" | "unknown";
+
+export interface AuthLoginPlan {
+  requestedProvider: string;
   provider: string;
+  status: "reused" | "launch_required";
+  hasExistingAuth: boolean;
+  launchMode: AuthLoginLaunchMode;
+  message?: string;
+}
+
+export interface AuthLoginProgressEvent {
+  phase: "auth.login";
+  status: "start" | "complete" | "error";
+  provider: string;
+  timestamp: string;
+  step?: "checking_existing_auth" | "reused_existing_auth" | "launching_interactive_flow";
+  result?: AuthLoginPlan["status"] | "launched";
+  launchMode?: AuthLoginLaunchMode;
   pid?: number;
-  command: string;
-  args: string[];
+  command?: string;
+  args?: string[];
+  message?: string;
+  error?: string;
+}
+
+export interface AuthLoginResult {
+  requestedProvider?: string;
+  provider: string;
+  status: "reused" | "launched";
+  launchMode: AuthLoginLaunchMode;
+  pid?: number;
+  command?: string;
+  args?: string[];
+  message?: string;
 }
 
 export interface SaveApiKeyResult {
@@ -209,6 +239,7 @@ export interface RuntimeAdapter {
   setDefaultModel(model: string, runner: CommandRunner, options: RuntimeAdapterOptions): Promise<string>;
   getAuthState(runner: CommandRunner, options: RuntimeAdapterOptions): Promise<AuthState>;
   getProviderAuth(runner: CommandRunner, options: RuntimeAdapterOptions): Promise<Record<string, ProviderAuthSummary>>;
+  prepareLogin?(provider: string, runner: CommandRunner, options: RuntimeAdapterOptions): Promise<AuthLoginPlan | null>;
   login(provider: string, launcher: DetachedAuthLauncher, options: RuntimeAdapterOptions & { setDefault?: boolean; cwd?: string }): Promise<AuthLoginResult>;
   diagnostics(provider: string | undefined, options: RuntimeAdapterOptions): AuthDiagnostics;
   setApiKey(provider: string, key: string, options: RuntimeAdapterOptions & { profileId?: string }): {

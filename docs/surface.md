@@ -21,6 +21,9 @@ The docs check script validates that every current export from
     AuditQueryInput
     AuditRecord
     AuthDiagnostics
+    AuthLoginLaunchMode
+    AuthLoginPlan
+    AuthLoginProgressEvent
     AuthLoginResult
     AuthStoreFilesystem
     BindingStoreRecord
@@ -100,11 +103,13 @@ The docs check script validates that every current export from
     DEFAULT_SECRETS_PROXY_PATH
     DEFAULT_SECRETS_VAULT_APP_PATH
     DEFAULT_SESSION_TITLE
+    DeriveOpenClawSetupStatusInput
     demoAdapter
     DemoScenario
     DemoScenarioId
     describeOpenClawVersion
     describeSecret
+    deriveOpenClawSetupStatus
     DetachedAuthLauncher
     DetachedPtySpec
     DetachedSpawnResult
@@ -155,10 +160,13 @@ The docs check script validates that every current export from
     getDefaultOpenClawModel
     getDemoScenario
     getOpenClawGatewayStatus
+    getOpenClawModelProvider
     getOpenClawRuntimeStatus
+    getOpenClawSetupStatus
     getRuntimeAdapter
     getSkillSource
     getTtsCatalog
+    hasOpenClawProviderAuth
     hermesAdapter
     initializeWorkspace
     initializeWorkspaceManifest
@@ -174,6 +182,7 @@ The docs check script validates that every current export from
     listManagedBlockProblems
     listManagedBlocks
     listManagedFiles
+    listOpenClawAgents
     listOpenClawChannels
     listOpenClawModels
     listRuntimeAdapters
@@ -195,7 +204,6 @@ The docs check script validates that every current export from
     mergeManagedBlocks
     MergeManagedBlocksOptions
     migrateCompatSnapshot
-    migrateOpenClawAppState
     nanobotAdapter
     nanoclawAdapter
     nemoclawAdapter
@@ -233,9 +241,6 @@ The docs check script validates that every current export from
     OpenClawGatewayConfig
     OpenClawGatewayStatus
     OpenClawGatewayWaitOptions
-    OpenClawLegacyMigrationOptions
-    OpenClawLegacyMigrationResult
-    OpenClawLegacyMigrationStrategy
     OpenClawMemorySearchCommandOptions
     OpenClawMemorySearchHit
     OpenClawModelsProviderRecord
@@ -243,6 +248,8 @@ The docs check script validates that every current export from
     OpenClawModelsStatusJson
     OpenClawPathMigrationAction
     OpenClawRuntimeContext
+    OpenClawSetupReader
+    OpenClawSetupStatus
     OpenClawRuntimeOperation
     OpenClawRuntimeProgressEvent
     OpenClawRuntimeProgressPlan
@@ -324,6 +331,7 @@ The docs check script validates that every current export from
     resolveObservedDomainPath
     resolveOpenClawConfigPath
     resolveOpenClawContext
+    resolveOpenClawContextWithCli
     ResolveOpenClawContextOptions
     resolveOpenClawOAuthProvider
     resolveProviderStatePath

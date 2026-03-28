@@ -19,10 +19,10 @@ export interface OpenClawGatewayStatus {
   whatsapp: OpenClawWhatsAppChannelStatus;
 }
 
-import { findCommand } from "@/lib/platform";
+import { findCommandFresh } from "@/lib/platform";
 
 async function execOpenClaw(args: string[]): Promise<string> {
-  const binary = await findCommand("openclaw");
+  const binary = await findCommandFresh("openclaw");
   if (!binary) {
     throw new Error("openclaw CLI is not available");
   }
@@ -56,7 +56,7 @@ export async function ensureWhatsAppPluginEnabled(): Promise<boolean> {
 }
 
 export async function getOpenClawGatewayStatus(): Promise<OpenClawGatewayStatus> {
-  const cliAvailable = !!await findCommand("openclaw");
+  const cliAvailable = !!await findCommandFresh("openclaw");
   if (!cliAvailable) {
     return {
       cliAvailable,

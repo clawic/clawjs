@@ -105,12 +105,35 @@ function throwIfAborted(signal?: AbortSignal): void {
 }
 
 export function extractJsonPayloadText(stdout: string): string {
-  const parsed = JSON.parse(stdout) as {
-    result?: {
-      payloads?: Array<{ text?: string | null }>;
-    };
-  };
-  return parsed.result?.payloads?.map((payload) => payload.text || "").join("").trim() || "";
+  const trimmed = stdout.trim();
+  const candidates = [trimmed];
+
+  for (const match of trimmed.matchAll(/(?:^|\n)\s*\{/g)) {
+    const index = typeof match.index === "number" ? match.index + match[0].lastIndexOf("{") : -1;
+    if (index > 0 && index < trimmed.length) {
+      candidates.push(trimmed.slice(index));
+    }
+  }
+
+  for (const candidate of candidates) {
+    try {
+      const parsed = JSON.parse(candidate) as {
+        payloads?: Array<{ text?: string | null }>;
+        result?: {
+          payloads?: Array<{ text?: string | null }>;
+        };
+      };
+      const payloads = parsed.payloads ?? parsed.result?.payloads ?? [];
+      const text = payloads.map((payload) => payload.text || "").join("").trim();
+      if (text) {
+        return text;
+      }
+    } catch {
+      continue;
+    }
+  }
+
+  throw new Error("Runtime CLI returned an invalid JSON payload");
 }
 
 export const extractOpenClawCliText = extractJsonPayloadText;
@@ -258,8 +281,9 @@ async function* streamCliChunks(
     timeoutMs: invocation.timeoutMs ?? 130_000,
   });
 
+  const combinedOutput = [result.stdout, result.stderr].filter((value) => value && value.trim()).join("\n");
   const text = invocation.parser === "json-payloads"
-    ? extractJsonPayloadText(result.stdout)
+    ? extractJsonPayloadText(combinedOutput)
     : result.stdout.trim();
   if (!text) {
     throw new Error("Runtime CLI returned no text");

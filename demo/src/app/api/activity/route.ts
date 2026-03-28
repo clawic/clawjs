@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { resolveClawJSWorkspaceDir } from "@/lib/claw";
 import { isE2EEnabled } from "@/lib/e2e";
 import { readCollection, writeCollection, type ActivityEvent as StoredActivityEvent } from "@/lib/demo-store";
-import { WorkspaceAuditLog } from "@clawjs/node";
+import { WorkspaceAuditLog } from "@clawjs/claw";
 import fs from "fs";
 import path from "path";
 

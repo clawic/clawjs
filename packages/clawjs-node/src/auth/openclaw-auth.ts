@@ -1,13 +1,14 @@
+import { execSync } from "child_process";
 import path from "path";
 
 import { maskCredential, type ProviderAuthSummary } from "@clawjs/core";
 import {
+  getDefaultOpenClawModel,
+  parseOpenClawModelsStatus,
   type OpenClawModelsStatusJson,
-  providerHasApiKey,
-  providerHasAuth,
-  providerHasSubscription,
 } from "../models/openclaw-models.ts";
 import { NodeFileSystemHost, resolveFileLockPath } from "../host/filesystem.ts";
+import { NodeProcessHost } from "../host/process.ts";
 import { buildOpenClawCommand, type OpenClawCommandOptions } from "../runtime/openclaw-command.ts";
 
 export interface OpenClawAuthCredential {
@@ -48,10 +49,14 @@ export interface DetachedAuthLauncher {
 }
 
 export interface OpenClawAuthLaunchResult {
+  requestedProvider?: string;
   provider: string;
+  status: "launched";
+  launchMode: "browser";
   pid: number | undefined;
-  command: string;
-  args: string[];
+  command?: string;
+  args?: string[];
+  message?: string;
 }
 
 export interface OpenClawAuthLoginCommand {
@@ -86,6 +91,33 @@ export interface OpenClawAuthDiagnostics {
   issues: string[];
 }
 
+export interface OpenClawProviderIntentConfig {
+  enabled?: boolean;
+  preferredAuthMode?: "oauth" | "token" | "api_key" | "env" | "secret_ref" | null;
+  profileId?: string | null;
+}
+
+export type OpenClawProviderIntentMap = Record<string, OpenClawProviderIntentConfig>;
+
+export interface OpenClawDirectAuthState {
+  defaultModel: string | null;
+  providerAuth: Record<string, ProviderAuthSummary>;
+}
+
+export interface CleanupOpenClawAuthLoginStateOptions {
+  agentId: string;
+  currentPid?: number | null;
+  callbackPort?: number;
+  platform?: NodeJS.Platform;
+  pidCollector?: (command: string) => number[];
+  killer?: (pid: number) => void;
+}
+
+export interface CleanupOpenClawAuthLoginStateResult {
+  killedPids: number[];
+  clearedCurrentPid: boolean;
+}
+
 const OPENCLAW_OAUTH_PROVIDER_ALIASES: Record<string, string> = {
   chatgpt: "openai-codex",
   gemini: "google-gemini-cli",
@@ -97,6 +129,45 @@ const OPENCLAW_OAUTH_PROVIDER_ALIASES: Record<string, string> = {
   "openai-codex": "openai-codex",
   qwen: "qwen",
 };
+
+const OPENCLAW_PROVIDER_STATUS_KEYS: Record<string, string[]> = {
+  "openai-codex": ["openai-codex", "openai"],
+  "google-gemini-cli": ["google-gemini-cli", "google"],
+  "kimi-coding": ["kimi-coding", "kimi"],
+  qwen: ["qwen"],
+  anthropic: ["anthropic"],
+};
+
+const EXPLICIT_ENABLE_REQUIRED_PROVIDERS = new Set([
+  "openai-codex",
+  "google-gemini-cli",
+  "kimi-coding",
+  "qwen",
+]);
+
+const DEFAULT_OPENCLAW_CALLBACK_PORT = 1455;
+
+function collectPidsFromCommand(command: string): number[] {
+  try {
+    const stdout = execSync(command, { timeout: 3_000, stdio: ["ignore", "pipe", "ignore"] }).toString().trim();
+    if (!stdout) return [];
+    return stdout
+      .split(/\r?\n/)
+      .map((value) => Number.parseInt(value.trim(), 10))
+      .filter((value) => Number.isInteger(value) && value > 0);
+  } catch {
+    return [];
+  }
+}
+
+function killProcess(pid: number): void {
+  if (!Number.isInteger(pid) || pid <= 0) return;
+  try {
+    process.kill(pid, "SIGKILL");
+  } catch {
+    // ignore already exited or inaccessible processes
+  }
+}
 
 export function resolveAuthStorePath(agentDir: string): string {
   return path.join(agentDir, "auth-profiles.json");
@@ -138,6 +209,97 @@ export function resolveOpenClawOAuthProvider(provider: string): string | null {
   const normalized = provider.trim().toLowerCase();
   if (!normalized) return null;
   return OPENCLAW_OAUTH_PROVIDER_ALIASES[normalized] ?? null;
+}
+
+export function requiresExplicitProviderEnable(provider: string): boolean {
+  return EXPLICIT_ENABLE_REQUIRED_PROVIDERS.has(provider.trim());
+}
+
+export function readOpenClawProviderIntentMap(input: unknown): OpenClawProviderIntentMap {
+  if (!input || typeof input !== "object") return {};
+  const providers = (input as { providers?: unknown }).providers;
+  if (!providers || typeof providers !== "object") return {};
+  return providers as OpenClawProviderIntentMap;
+}
+
+export function isOpenClawProviderEnabled(
+  provider: string,
+  providerIntents: OpenClawProviderIntentMap | null | undefined,
+): boolean {
+  const explicit = providerIntents?.[provider]?.enabled;
+  if (typeof explicit === "boolean") return explicit;
+  return !requiresExplicitProviderEnable(provider);
+}
+
+export function filterOpenClawProviderAuthByIntent<T extends { provider: string }>(
+  providerAuth: Record<string, T>,
+  providerIntents: OpenClawProviderIntentMap | null | undefined,
+): Record<string, T> {
+  return Object.fromEntries(
+    Object.entries(providerAuth).filter(([provider]) => isOpenClawProviderEnabled(provider, providerIntents)),
+  );
+}
+
+export function getOpenClawOAuthProviderSummary<T extends Partial<ProviderAuthSummary>>(
+  providers: Record<string, T> | null | undefined,
+  oauthProviderId: string,
+): T | undefined {
+  const candidateKeys = OPENCLAW_PROVIDER_STATUS_KEYS[oauthProviderId] ?? [oauthProviderId];
+  const matches = candidateKeys
+    .map((key) => providers?.[key])
+    .filter((summary): summary is T => !!summary);
+
+  return matches.find((summary) => !!summary.hasAuth && !!summary.hasSubscription)
+    ?? matches.find((summary) => !!summary.hasSubscription)
+    ?? matches[0];
+}
+
+export function hasConfirmedOpenClawOAuthSubscription<T extends Partial<ProviderAuthSummary>>(
+  providers: Record<string, T> | null | undefined,
+  oauthProviderId: string,
+  providerIntents?: OpenClawProviderIntentMap | null,
+): boolean {
+  const summary = getOpenClawOAuthProviderSummary(providers, oauthProviderId);
+  return isOpenClawProviderEnabled(oauthProviderId, providerIntents)
+    && !!summary?.hasAuth
+    && !!summary?.hasSubscription;
+}
+
+export function cleanupOpenClawAuthLoginState(
+  options: CleanupOpenClawAuthLoginStateOptions,
+): CleanupOpenClawAuthLoginStateResult {
+  const {
+    agentId,
+    currentPid,
+    callbackPort = DEFAULT_OPENCLAW_CALLBACK_PORT,
+    platform = process.platform,
+    pidCollector = collectPidsFromCommand,
+    killer = killProcess,
+  } = options;
+
+  const killedPids = new Set<number>();
+
+  if (Number.isInteger(currentPid) && (currentPid ?? 0) > 0) {
+    killer(currentPid!);
+    killedPids.add(currentPid!);
+  }
+
+  if (platform !== "win32") {
+    for (const pid of pidCollector(`lsof -ti :${callbackPort}`)) {
+      killer(pid);
+      killedPids.add(pid);
+    }
+
+    for (const pid of pidCollector(`pgrep -f "openclaw models --agent ${agentId} auth login"`)) {
+      killer(pid);
+      killedPids.add(pid);
+    }
+  }
+
+  return {
+    killedPids: [...killedPids],
+    clearedCurrentPid: Number.isInteger(currentPid) && (currentPid ?? 0) > 0,
+  };
 }
 
 export function buildOpenClawAuthLoginCommand(
@@ -186,10 +348,14 @@ export function launchOpenClawAuthLogin(
   );
 
   return {
+    requestedProvider: provider,
     provider: command.provider,
+    status: "launched",
+    launchMode: "browser",
     pid: spawned.pid,
     command: spawned.command,
     args: spawned.args,
+    message: "Interactive sign-in started in the runtime.",
   };
 }
 
@@ -248,23 +414,44 @@ export function summarizeAuthProfiles(store: OpenClawAuthStore): OpenClawAuthPro
     .sort((a, b) => a.profileId.localeCompare(b.profileId));
 }
 
+function summarizeProviderCredentials(
+  authStore: OpenClawAuthStore | null | undefined,
+  providerKey: string,
+): { oauth: number; token: number; apiKey: number } {
+  const counts = { oauth: 0, token: 0, apiKey: 0 };
+  if (!authStore) return counts;
+
+  for (const credential of Object.values(authStore.profiles)) {
+    if (credential.provider !== providerKey) continue;
+    if (credential.type === "oauth") counts.oauth += 1;
+    if (credential.type === "token") counts.token += 1;
+    if (credential.type === "api_key") counts.apiKey += 1;
+  }
+
+  return counts;
+}
+
 export function normalizeProviderAuth(
   status: OpenClawModelsStatusJson,
   providerKey: string,
   authStore?: OpenClawAuthStore | null,
 ): ProviderAuthSummary {
   const providerData = status.auth?.providers?.find((provider) => provider.provider === providerKey);
-  const hasAuth = providerHasAuth(providerData);
-  const hasSubscription = providerHasSubscription(providerData);
-  const hasApiKey = providerHasApiKey(providerData);
-  const hasProfileApiKey = (providerData?.profiles?.apiKey ?? 0) > 0;
+  const persistedCounts = authStore
+    ? summarizeProviderCredentials(authStore, providerKey)
+    : {
+        oauth: providerData?.profiles?.oauth ?? 0,
+        token: providerData?.profiles?.token ?? 0,
+        apiKey: providerData?.profiles?.apiKey ?? 0,
+      };
+  const hasSubscription = persistedCounts.oauth > 0 || persistedCounts.token > 0;
+  const hasProfileApiKey = persistedCounts.apiKey > 0;
   const hasEnvKey = !!providerData?.env?.value;
-  const effectiveKind = typeof providerData?.effective?.kind === "string"
-    ? providerData.effective.kind.trim().toLowerCase()
-    : "";
-  const authType: ProviderAuthSummary["authType"] = (providerData?.profiles?.oauth ?? 0) > 0 || effectiveKind === "oauth"
+  const hasApiKey = hasProfileApiKey || hasEnvKey;
+  const hasAuth = hasSubscription || hasApiKey;
+  const authType: ProviderAuthSummary["authType"] = persistedCounts.oauth > 0
     ? "oauth"
-    : (providerData?.profiles?.token ?? 0) > 0 || effectiveKind === "token"
+    : persistedCounts.token > 0
       ? "token"
       : hasProfileApiKey
         ? "api_key"
@@ -293,10 +480,50 @@ export function normalizeAuthSummaries(
   authStore?: OpenClawAuthStore | null,
 ): Record<string, ProviderAuthSummary> {
   const summaries: Record<string, ProviderAuthSummary> = {};
+  const providerKeys = new Set<string>();
   for (const provider of status.auth?.providers ?? []) {
-    summaries[provider.provider] = normalizeProviderAuth(status, provider.provider, authStore);
+    if (provider.provider) providerKeys.add(provider.provider);
+  }
+  for (const summary of authStore ? summarizeAuthProfiles(authStore) : []) {
+    if (summary.provider) providerKeys.add(summary.provider);
+  }
+  for (const providerKey of providerKeys) {
+    summaries[providerKey] = normalizeProviderAuth(status, providerKey, authStore);
   }
   return summaries;
+}
+
+export async function readDirectOpenClawAuthState(
+  agentDir: string,
+  agentId?: string,
+  runner: OpenClawAuthRunner = new NodeProcessHost(),
+  options: OpenClawCommandOptions & { cwd?: string; timeoutMs?: number } = {},
+): Promise<OpenClawDirectAuthState> {
+  const command = buildOpenClawCommand([
+    "models",
+    ...(agentId ? ["--agent", agentId] : []),
+    "status",
+    "--json",
+  ], options);
+  const result = await runner.exec(command.command, command.args, {
+    cwd: options.cwd,
+    env: command.env,
+    timeoutMs: options.timeoutMs ?? 20_000,
+  });
+  const rawStatus = result.stdout.trim() || result.stderr.trim() || "{}";
+  const parsed = parseOpenClawModelsStatus(rawStatus);
+  const authStore = loadAuthStore(agentDir);
+  const normalized = normalizeAuthSummaries(
+    parsed,
+    Object.keys(authStore.profiles).length > 0 ? authStore : null,
+  );
+
+  return {
+    defaultModel: getDefaultOpenClawModel(parsed)?.modelId ?? null,
+    providerAuth: Object.fromEntries(
+      Object.values(normalized).map((summary) => [summary.provider, summary]),
+    ),
+  };
 }
 
 export function removeAuthProfilesForProvider(

@@ -2,7 +2,7 @@ import { randomUUID } from "crypto";
 import fs from "fs";
 import path from "path";
 
-import { ConversationStore, resolveConversationsDir } from "@clawjs/node";
+import { ConversationStore, resolveConversationsDir } from "@clawjs/claw";
 
 import { resolveClawJSSessionsDir, resolveClawJSWorkspaceDir } from "./openclaw-agent.ts";
 

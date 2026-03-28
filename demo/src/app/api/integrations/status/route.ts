@@ -1,8 +1,14 @@
+import { NextResponse } from "next/server";
+
 import { existsSync } from "fs";
 import { getCalendarIntegrationStatus } from "@/lib/calendar";
 import { getContactsIntegrationStatus } from "@/lib/contacts-native";
 import { getMailIntegrationStatus } from "@/lib/email";
-import { getClawJSOpenClawStatus, getClawJSOpenClawContext } from "@/lib/openclaw-agent";
+import {
+  getClawJSOpenClawStatus,
+  getClawJSOpenClawContext,
+  reconcileClawJSOpenClawDefaultModelWithAvailableAuth,
+} from "@/lib/openclaw-agent";
 import { getUserConfig, resolvePath } from "@/lib/user-config";
 import { getWacliAuthStatus } from "@/lib/wacli-runtime";
 import { hasBinary } from "@/lib/platform";
@@ -21,16 +27,21 @@ interface ToolStatus {
   wacliAvailable?: boolean;
 }
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+const NO_STORE_HEADERS = { "Cache-Control": "no-store, max-age=0" };
+
 export async function GET() {
   if (isE2EEnabled()) {
-    return Response.json(getE2EIntegrationStatus());
+    return NextResponse.json(getE2EIntegrationStatus(), { headers: NO_STORE_HEADERS });
   }
 
   const config = getUserConfig();
 
   const contactsEnabled = !!config.contactsEnabled;
 
-  const [wacliStatus, calendarStatus, contactsStatus, emailStatus, openClawStatus, adapterStatuses] = await Promise.all([
+  let [wacliStatus, calendarStatus, contactsStatus, emailStatus, openClawStatus, adapterStatuses] = await Promise.all([
     getWacliAuthStatus(),
     getCalendarIntegrationStatus(config.calendarAccounts?.[0] || undefined),
     contactsEnabled
@@ -49,6 +60,11 @@ export async function GET() {
     getAllAdapterStatuses(),
   ]);
 
+  if (openClawStatus.cliAvailable && openClawStatus.agentConfigured && !openClawStatus.authConfigured) {
+    await reconcileClawJSOpenClawDefaultModelWithAvailableAuth().catch(() => null);
+    openClawStatus = await getClawJSOpenClawStatus();
+  }
+
   const wacliDbExists = config.dataSources.wacliDbPath
     ? existsSync(resolvePath(config.dataSources.wacliDbPath))
     : false;
@@ -58,7 +74,7 @@ export async function GET() {
     : false;
 
   const openClawCtx = getClawJSOpenClawContext();
-  return Response.json({
+  return NextResponse.json({
     adapters: adapterStatuses,
     openClaw: {
       ...openClawStatus,
@@ -125,5 +141,5 @@ export async function GET() {
       teamName: config.slack?.teamName,
       lastError: null as string | null,
     },
-  });
+  }, { headers: NO_STORE_HEADERS });
 }

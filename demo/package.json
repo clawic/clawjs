@@ -11,12 +11,12 @@
     "dev": "next dev --port 4200",
     "build": "next build",
     "start": "next start",
-    "test": "node --test src/lib/sessions.test.ts src/lib/i18n.test.ts src/lib/openclaw-agent.test.ts src/lib/user-config.test.ts src/lib/workspace-reset.test.ts src/lib/ai-providers.test.ts"
+    "test": "node --test src/lib/sessions.test.ts src/lib/i18n.test.ts src/lib/openclaw-agent.test.ts src/lib/platform.test.ts src/lib/user-config.test.ts src/lib/workspace-reset.test.ts src/lib/ai-providers.test.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.3.0",
     "@clawjs/core": "file:../packages/clawjs-core",
-    "@clawjs/node": "file:../packages/clawjs-node",
+    "@clawjs/claw": "file:../packages/clawjs-node",
     "@clawjs/workspace": "file:../packages/clawjs-workspace",
     "better-sqlite3": "^12.6.2",
     "class-variance-authority": "^0.7.1",

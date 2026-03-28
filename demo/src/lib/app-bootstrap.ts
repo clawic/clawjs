@@ -179,6 +179,7 @@ export interface AiAuthProviderInfo {
   hasProfileApiKey: boolean;
   hasEnvKey: boolean;
   authType: string | null;
+  enabledForAgent?: boolean;
 }
 
 export interface AiAuthStatus {

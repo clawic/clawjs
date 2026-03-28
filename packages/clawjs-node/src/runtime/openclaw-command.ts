@@ -1,5 +1,7 @@
 export interface OpenClawCommandOptions {
   binaryPath?: string;
+  homeDir?: string;
+  configPath?: string;
   env?: NodeJS.ProcessEnv;
 }
 
@@ -53,11 +55,29 @@ export function withOpenClawBinaryEnv(
   };
 }
 
+export function withOpenClawCommandEnv(
+  env?: NodeJS.ProcessEnv,
+  options: OpenClawCommandOptions = {},
+): NodeJS.ProcessEnv | undefined {
+  const commandEnv = withOpenClawBinaryEnv(env, options.binaryPath) ?? (env ? { ...env } : undefined) ?? {};
+  const resolvedStateDir = readConfiguredValue(commandEnv.OPENCLAW_STATE_DIR) ?? readConfiguredValue(options.homeDir);
+  const resolvedConfigPath = readConfiguredValue(commandEnv.OPENCLAW_CONFIG_PATH) ?? readConfiguredValue(options.configPath);
+
+  if (resolvedStateDir) {
+    commandEnv.OPENCLAW_STATE_DIR = resolvedStateDir;
+  }
+  if (resolvedConfigPath) {
+    commandEnv.OPENCLAW_CONFIG_PATH = resolvedConfigPath;
+  }
+
+  return Object.keys(commandEnv).length > 0 ? commandEnv : undefined;
+}
+
 export function buildOpenClawCommand(
   args: string[],
   options: OpenClawCommandOptions = {},
 ): { command: string; args: string[]; env?: NodeJS.ProcessEnv } {
-  const env = withOpenClawBinaryEnv(options.env, options.binaryPath);
+  const env = withOpenClawCommandEnv(options.env, options);
   return {
     command: resolveOpenClawBinaryPath({
       ...options,
@@ -72,7 +92,7 @@ export function withOpenClawCommandRunner<T extends OpenClawCommandRunner>(
   runner: T,
   options: OpenClawCommandOptions = {},
 ): T {
-  const env = withOpenClawBinaryEnv(options.env, options.binaryPath);
+  const env = withOpenClawCommandEnv(options.env, options);
   const binaryPath = resolveOpenClawBinaryPath({
     ...options,
     ...(env ? { env } : {}),
@@ -80,7 +100,7 @@ export function withOpenClawCommandRunner<T extends OpenClawCommandRunner>(
 
   return {
     exec(command, args, execOptions = {}) {
-      const commandEnv = withOpenClawBinaryEnv(execOptions.env ?? env, options.binaryPath);
+      const commandEnv = withOpenClawCommandEnv(execOptions.env ?? env, options);
       return runner.exec(command === "openclaw" ? binaryPath : command, args, {
         ...execOptions,
         ...(commandEnv ? { env: commandEnv } : {}),
@@ -88,7 +108,7 @@ export function withOpenClawCommandRunner<T extends OpenClawCommandRunner>(
     },
     ...(typeof runner.stream === "function" ? {
       stream(command, args, streamOptions = {}) {
-        const commandEnv = withOpenClawBinaryEnv(streamOptions.env ?? env, options.binaryPath);
+        const commandEnv = withOpenClawCommandEnv(streamOptions.env ?? env, options);
         return runner.stream!(command === "openclaw" ? binaryPath : command, args, {
           ...streamOptions,
           ...(commandEnv ? { env: commandEnv } : {}),
@@ -97,7 +117,7 @@ export function withOpenClawCommandRunner<T extends OpenClawCommandRunner>(
     } : {}),
     ...(typeof runner.spawnDetachedPty === "function" ? {
       spawnDetachedPty(command, args, spawnOptions = {}) {
-        const commandEnv = withOpenClawBinaryEnv(spawnOptions.env ?? env, options.binaryPath);
+        const commandEnv = withOpenClawCommandEnv(spawnOptions.env ?? env, options);
         return runner.spawnDetachedPty!(command === "openclaw" ? binaryPath : command, args, {
           ...spawnOptions,
           ...(commandEnv ? { env: commandEnv } : {}),

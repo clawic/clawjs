@@ -969,7 +969,7 @@ export async function runCli(argv: string[], context: CliContext): Promise<numbe
       if (wantsJson) {
         writeJson(context.stdout, launched);
       } else {
-        context.stdout.write(`${launched.command} ${launched.args.join(" ")}\n`);
+        context.stdout.write(`${launched.command ?? ""} ${(launched.args ?? []).join(" ")}\n`);
       }
       return CLI_EXIT_OK;
     }
@@ -980,7 +980,11 @@ export async function runCli(argv: string[], context: CliContext): Promise<numbe
     if (wantsJson) {
       writeJson(context.stdout, launched);
     } else {
-      context.stdout.write(`${launched.provider} ${launched.pid ?? "unknown"}\n`);
+      context.stdout.write(
+        launched.status === "reused"
+          ? `${launched.provider} reused\n`
+          : `${launched.provider} ${launched.pid ?? "unknown"}\n`,
+      );
     }
     return CLI_EXIT_OK;
   }

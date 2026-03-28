@@ -11,10 +11,11 @@ The Node API exposes:
 - `claw.providers.authState()`
 - `claw.auth.status()`
 - `claw.auth.diagnostics(provider?)`
-- `claw.auth.login(provider, { setDefault?, env? })`
+- `claw.auth.prepareLogin(provider)`
+- `claw.auth.login(provider, { setDefault?, env?, onProgress? })`
 - `claw.auth.setApiKey(provider, key, profileId?)`
 - `claw.auth.saveApiKey(provider, key, options?)`
-- `claw.auth.removeProvider(provider, legacyAgentDirs?)`
+- `claw.auth.removeProvider(provider)`
 
 CLI equivalents:
 
@@ -34,7 +35,12 @@ claw \
   --provider openai
 ```
 
-`auth login` is adapter-driven. Some adapters normalize aliases before launching a CLI login flow, while others persist credentials through config or auth-store files. ClawJS exposes the same high-level methods either way.
+`auth login` is adapter-driven. Some adapters normalize aliases before launching a CLI login flow, while others persist credentials through config or auth-store files. ClawJS now exposes a structured preflight via `prepareLogin()` and returns whether login reused existing auth or actually launched an interactive flow.
+
+For OpenClaw, `claw.auth.status()` prefers persisted auth-store credentials
+over transient runtime hints when reporting completed provider auth. This
+avoids treating an OAuth login as finished before the credential is actually
+stored.
 
 If you need to persist a manual API key without an interactive flow, use `setApiKey` or `saveApiKey`.
 

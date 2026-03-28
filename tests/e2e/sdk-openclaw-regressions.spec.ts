@@ -86,7 +86,7 @@ process.exit(0);
   const script = `
 import fs from "fs";
 
-const { Claw } = await import(${JSON.stringify(moduleUrl)});
+const { Claw, deriveOpenClawSetupStatus, getOpenClawSetupStatus } = await import(${JSON.stringify(moduleUrl)});
   const claw = await Claw({
   runtime: {
     adapter: "openclaw",
@@ -107,9 +107,18 @@ const { Claw } = await import(${JSON.stringify(moduleUrl)});
   },
 });
 
+fs.mkdirSync(${JSON.stringify(path.join(workspaceDir, ".clawjs"))}, { recursive: true });
+fs.writeFileSync(${JSON.stringify(path.join(workspaceDir, ".clawjs", "manifest.json"))}, "{\\"workspaceId\\":\\"demo-e2e-openclaw-regressions\\"}\\n");
+
 const status = await claw.runtime.status();
 const models = await claw.models.list();
 const effectiveModelId = models[0]?.modelId ?? models[0]?.id ?? null;
+const setupBeforeAuth = deriveOpenClawSetupStatus({
+  context: claw.runtime.context(),
+  defaultModel: { modelId: "openai/gpt-5.4", provider: "openai" },
+  providerAuth: {},
+});
+const setupAfterAuth = await getOpenClawSetupStatus(claw);
 
 let startError = null;
 try {
@@ -132,6 +141,8 @@ process.stdout.write(JSON.stringify({
   cliAvailable: status.cliAvailable,
   modelId: effectiveModelId,
   id: models[0]?.id ?? null,
+  setupBeforeAuth,
+  setupAfterAuth,
   startError,
   stopError,
 }, null, 2));
@@ -151,6 +162,15 @@ process.stdout.write(JSON.stringify({
     cliAvailable: boolean;
     modelId: string | null;
     id: string | null;
+    setupBeforeAuth: {
+      agentConfigured: boolean;
+      needsSetup: boolean;
+      needsAuth: boolean;
+    };
+    setupAfterAuth: {
+      ready: boolean;
+      authConfigured: boolean;
+    };
     startError: string | null;
     stopError: string | null;
   };
@@ -159,6 +179,11 @@ process.stdout.write(JSON.stringify({
   expect(payload.cliAvailable).toBe(true);
   expect(payload.modelId).toBe("openai/gpt-5.4");
   expect(payload.modelId).toBe(payload.id);
+  expect(payload.setupBeforeAuth.agentConfigured).toBe(true);
+  expect(payload.setupBeforeAuth.needsSetup).toBe(false);
+  expect(payload.setupBeforeAuth.needsAuth).toBe(true);
+  expect(payload.setupAfterAuth.authConfigured).toBe(true);
+  expect(payload.setupAfterAuth.ready).toBe(true);
   expect(payload.startError).toMatch(/gateway start did not reach the expected state/i);
   expect(payload.stopError).toMatch(/gateway stop did not reach the expected state/i);
 
@@ -176,6 +201,16 @@ process.stdout.write(JSON.stringify({
           <article style="padding: 16px; border-radius: 18px; background: #d9e7fb; color: #10203a;">
             <p style="margin: 0 0 6px; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.72;">Model Identity</p>
             <p style="margin: 0; font-size: 18px;">${payload.modelId}</p>
+          </article>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-bottom: 20px;">
+          <article style="padding: 16px; border-radius: 18px; background: #ebf7ef; color: #0f5132;">
+            <p style="margin: 0 0 6px; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.72;">Setup Before Auth</p>
+            <p style="margin: 0; font-size: 18px;">needsSetup=${payload.setupBeforeAuth.needsSetup ? "true" : "false"}, needsAuth=${payload.setupBeforeAuth.needsAuth ? "true" : "false"}</p>
+          </article>
+          <article style="padding: 16px; border-radius: 18px; background: #fff4db; color: #7c4a00;">
+            <p style="margin: 0 0 6px; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.72;">Setup After Auth</p>
+            <p style="margin: 0; font-size: 18px;">ready=${payload.setupAfterAuth.ready ? "true" : "false"}, authConfigured=${payload.setupAfterAuth.authConfigured ? "true" : "false"}</p>
           </article>
         </div>
         <h2 style="margin: 0 0 12px; font-size: 18px;">Gateway Failures Surface As Errors</h2>

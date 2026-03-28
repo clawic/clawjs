@@ -9,7 +9,7 @@ import {
   type RuntimeAdapterId,
   type RuntimeAdapterStability,
   type RuntimeAdapterSupportLevel,
-} from "@clawjs/node";
+} from "@clawjs/claw";
 
 export interface AdapterCapability {
   key: string;

@@ -3,13 +3,18 @@ import { saveClawJSLocalSettings, getClawJSLocalSettings } from "@/lib/local-set
 import { resolveLocale } from "@/lib/i18n/messages";
 import { clearConfigCache } from "@/lib/user-config";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+const NO_STORE_HEADERS = { "Cache-Control": "no-store, max-age=0" };
+
 export async function GET() {
   try {
-    return Response.json(getClawJSLocalSettings());
+    return Response.json(getClawJSLocalSettings(), { headers: NO_STORE_HEADERS });
   } catch {
     return new Response(
       JSON.stringify({ error: "Failed to read local settings" }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+      { status: 500, headers: { "Content-Type": "application/json", ...NO_STORE_HEADERS } }
     );
   }
 }
@@ -27,11 +32,11 @@ export async function PUT(req: NextRequest) {
       theme: typeof body?.theme === "string" && validThemes.includes(body.theme) ? body.theme as "light" | "dark" | "system" : undefined,
     });
     clearConfigCache();
-    return Response.json(next);
+    return Response.json(next, { headers: NO_STORE_HEADERS });
   } catch {
     return new Response(
       JSON.stringify({ error: "Failed to save local settings" }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+      { status: 500, headers: { "Content-Type": "application/json", ...NO_STORE_HEADERS } }
     );
   }
 }

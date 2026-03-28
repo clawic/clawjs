@@ -40,6 +40,10 @@ import fs from "fs";
 import os from "os";
 import path from "path";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+const NO_STORE_HEADERS = { "Cache-Control": "no-store, max-age=0" };
 const ENABLE_CHAT_PERF_LOGS = process.env.CLAWJS_DEBUG_CHAT_PERF === "1";
 
 function logChatPerf(message: string): void {
@@ -1021,7 +1025,7 @@ export function clearChatCaches() {
 
 export async function GET() {
   if (isE2EEnabled()) {
-    return Response.json(buildE2EChatBootstrap());
+    return Response.json(buildE2EChatBootstrap(), { headers: NO_STORE_HEADERS });
   }
 
   const config = getUserConfig();
@@ -1047,7 +1051,7 @@ export async function GET() {
       contextShortLabels,
       profileLocation: config.profileBasics?.location || null,
     }),
-    { headers: { "Content-Type": "application/json" } }
+    { headers: { "Content-Type": "application/json", ...NO_STORE_HEADERS } }
   );
 }
 

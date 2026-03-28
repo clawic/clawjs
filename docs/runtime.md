@@ -96,6 +96,46 @@ adapter or scaffold uses the same identifier for both.
 - An adapter-specific default agent is still an agent, not a different
   top-level concept.
 
+## OpenClaw agent discovery
+
+For OpenClaw settings or diagnostics screens, prefer the async
+`resolveOpenClawContextWithCli()` helper over `resolveOpenClawContext()`
+when you need the effective agent metadata from both `openclaw.json` and
+`openclaw agents list --json`.
+
+```ts
+const context = await resolveOpenClawContextWithCli();
+
+console.log(context.configuredAgent?.id);
+console.log(context.configuredAgent?.model);
+console.log(context.cliAgentDetected);
+```
+
+`resolveOpenClawContext()` remains a synchronous config and env reader.
+`resolveOpenClawContextWithCli()` is the best-effort helper that also
+fills missing `workspace`, `agentDir`, and `model` fields from the live
+CLI agent registry when available.
+
+## OpenClaw setup readiness
+
+If an app needs to distinguish "workspace setup finished" from
+"model/auth still pending", prefer `getOpenClawSetupStatus()` instead of
+recombining `runtime.context()`, `models.getDefault()`, and
+`auth.status()` in UI code.
+
+```ts
+const setup = await getOpenClawSetupStatus(claw);
+
+console.log(setup.agentConfigured);
+console.log(setup.needsSetup);
+console.log(setup.needsAuth);
+console.log(setup.defaultModel);
+```
+
+This helper keeps the OpenClaw setup semantics in the SDK so screens can
+reliably treat agent/workspace registration as complete before provider
+auth is finished.
+
 ## Conversation transport
 
 Conversation transport is adapter-defined. Depending on the runtime,

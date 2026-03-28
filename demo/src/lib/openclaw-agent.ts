@@ -3,6 +3,15 @@ import fs from "fs";
 import path from "path";
 
 import {
+  deriveOpenClawSetupStatus,
+  hasOpenClawProviderAuth,
+  filterOpenClawProviderAuthByIntent,
+  readDirectOpenClawAuthState,
+  readOpenClawProviderIntentMap,
+} from "@clawjs/claw";
+import type { ProviderAuthSummary } from "@clawjs/core";
+
+import {
   ensureClawWorkspaceReady,
   getClaw,
   getClawJSRuntimeIds,
@@ -20,7 +29,7 @@ import {
   DEFAULT_CLAWJS_OPENCLAW_AGENT_ID,
   defaultClawJsTranscriptionDbPath,
 } from "./openclaw-defaults.ts";
-import { findCommand } from "./platform.ts";
+import { findCommand, findCommandFresh } from "./platform.ts";
 
 interface OpenClawAgentConfig {
   id: string;
@@ -55,6 +64,21 @@ export interface ClawJSOpenClawStatus {
 }
 
 let ensureAgentPromise: Promise<ClawJSOpenClawContext> | null = null;
+
+const AUTHENTICATED_MODEL_PRIORITY: string[] = [
+  "openai-codex/gpt-5.4",
+  "anthropic/claude-opus-4-6",
+  "openai/gpt-5.4",
+  "google-gemini-cli/gemini-2.5-pro",
+  "google/gemini-2.5-pro",
+  "deepseek/deepseek-chat",
+  "mistral/codestral-latest",
+  "xai/grok-3",
+  "groq/llama-3.3-70b-versatile",
+  "openrouter/anthropic/claude-opus-4-6",
+  "kimi-coding/k2p5",
+  "qwen/qwen3-coder",
+];
 
 export function resolveHomePath(value: string): string {
   return clawResolveHomePath(value);
@@ -97,12 +121,6 @@ export function getClawJSOpenClawContext(agentId = getClawJSOpenClawAgentId()): 
   };
 }
 
-function modelProvider(modelId: string | null): string | null {
-  if (!modelId?.trim()) return null;
-  const trimmed = modelId.trim();
-  return trimmed.includes("/") ? trimmed.split("/")[0] || null : trimmed;
-}
-
 export async function ensureClawJSOpenClawAgent(): Promise<ClawJSOpenClawContext> {
   const current = getClawJSOpenClawContext();
   const hasWorkspaceManifest = fs.existsSync(path.join(current.workspaceDir, ".clawjs", "manifest.json"));
@@ -123,8 +141,77 @@ export async function ensureClawJSOpenClawAgent(): Promise<ClawJSOpenClawContext
   }
 }
 
+function modelRefFromId(modelId: string | null): { modelId: string; provider: string } | null {
+  const trimmed = modelId?.trim();
+  if (!trimmed) return null;
+  const provider = trimmed.includes("/") ? trimmed.split("/")[0] || trimmed : trimmed;
+  return { modelId: trimmed, provider };
+}
+
+export async function readDirectClawJSOpenClawState(): Promise<{
+  defaultModel: string | null;
+  providerAuth: Record<string, ProviderAuthSummary>;
+}> {
+  const binary = await findCommandFresh("openclaw");
+  if (!binary) {
+    return { defaultModel: null, providerAuth: {} };
+  }
+
+  return readDirectOpenClawAuthState(resolveClawJSAgentDir(), getClawJSOpenClawAgentId(), undefined, {
+    binaryPath: binary,
+    homeDir: resolveOpenClawStateDir(),
+    configPath: openClawConfigPath(),
+    cwd: resolveClawJSWorkspaceDir(),
+    env: process.env,
+    timeoutMs: 20_000,
+  });
+}
+
+export function isClawJSOpenClawModelAuthenticated(
+  modelId: string | null,
+  providerAuth: Record<string, ProviderAuthSummary>,
+): boolean {
+  return hasOpenClawProviderAuth(modelRefFromId(modelId)?.provider ?? null, providerAuth);
+}
+
+export function pickPreferredAuthenticatedOpenClawModel(
+  providerAuth: Record<string, ProviderAuthSummary>,
+): string | null {
+  for (const modelId of AUTHENTICATED_MODEL_PRIORITY) {
+    if (isClawJSOpenClawModelAuthenticated(modelId, providerAuth)) {
+      return modelId;
+    }
+  }
+  return null;
+}
+
+export async function reconcileClawJSOpenClawDefaultModelWithAvailableAuth(): Promise<string | null> {
+  const claw = await getClaw();
+  const direct = await readDirectClawJSOpenClawState().catch(() => null);
+  const providerIntent = readOpenClawProviderIntentMap(claw.intent.get("providers"));
+  const rawProviderAuth: Record<string, ProviderAuthSummary> = direct?.providerAuth
+    ?? await claw.auth.status().catch(() => ({} as Record<string, ProviderAuthSummary>));
+  const providerAuth = filterOpenClawProviderAuthByIntent(
+    rawProviderAuth,
+    providerIntent,
+  );
+  const defaultModel = direct?.defaultModel ?? (await claw.models.getDefault().catch(() => null))?.modelId ?? null;
+
+  if (isClawJSOpenClawModelAuthenticated(defaultModel, providerAuth)) {
+    return defaultModel;
+  }
+
+  const preferredModel = pickPreferredAuthenticatedOpenClawModel(providerAuth);
+  if (!preferredModel || preferredModel === defaultModel) {
+    return defaultModel;
+  }
+
+  await claw.models.setDefault(preferredModel);
+  return preferredModel;
+}
+
 export async function getClawJSOpenClawStatus(): Promise<ClawJSOpenClawStatus> {
-  const binary = await findCommand("openclaw");
+  const binary = await findCommandFresh("openclaw");
   if (!binary) {
     return {
       installed: false,
@@ -142,14 +229,15 @@ export async function getClawJSOpenClawStatus(): Promise<ClawJSOpenClawStatus> {
     };
   }
 
-  const context = getClawJSOpenClawContext();
-  const workspaceManifestPath = path.join(context.workspaceDir, ".clawjs", "manifest.json");
-  const agentConfigured = !!context.configuredAgent || fs.existsSync(workspaceManifestPath);
-
   let version: string | null = null;
   let latestVersion: string | null = null;
   let defaultModel: string | null = null;
+  let agentConfigured = false;
+  let modelConfigured = false;
   let authConfigured = false;
+  let ready = false;
+  let needsSetup = false;
+  let needsAuth = false;
   let lastError: string | null = null;
 
   try {
@@ -174,44 +262,30 @@ export async function getClawJSOpenClawStatus(): Promise<ClawJSOpenClawStatus> {
     latestVersion = null;
   }
 
-  if (!agentConfigured) {
-    return {
-      installed: true,
-      cliAvailable: true,
-      agentConfigured: false,
-      modelConfigured: false,
-      authConfigured: false,
-      ready: false,
-      needsSetup: true,
-      needsAuth: false,
-      lastError,
-      version,
-      latestVersion,
-      defaultModel,
-    };
-  }
-
   try {
     const claw = await getClaw();
-    const defaultModelRef = await claw.models.getDefault().catch(() => null) as { id?: string; modelId?: string } | null;
-    defaultModel = defaultModelRef?.modelId ?? defaultModelRef?.id ?? null;
-    const provider = modelProvider(defaultModel);
-    const authSummaries = await claw.auth.status().catch(() => ({}));
-    authConfigured = provider
-      ? Object.values(authSummaries).some((summary) => {
-          if (!summary.hasAuth) return false;
-          // Match exact provider or prefix (e.g., "openai-codex" matches "openai" auth)
-          return summary.provider === provider
-            || provider.startsWith(summary.provider + "-")
-            || provider.startsWith(summary.provider + "/");
-        })
-      : false;
+    const direct = await readDirectClawJSOpenClawState().catch(() => null);
+    const providerIntent = readOpenClawProviderIntentMap(claw.intent.get("providers"));
+    const rawProviderAuth: Record<string, ProviderAuthSummary> = direct && Object.keys(direct.providerAuth).length > 0
+      ? direct.providerAuth
+      : await claw.auth.status().catch(() => ({} as Record<string, ProviderAuthSummary>));
+    const status = deriveOpenClawSetupStatus({
+      context: getClawJSOpenClawContext(),
+      defaultModel: direct?.defaultModel
+        ? modelRefFromId(direct.defaultModel)
+        : await claw.models.getDefault().catch(() => null),
+      providerAuth: filterOpenClawProviderAuthByIntent(rawProviderAuth, providerIntent),
+    });
+    agentConfigured = status.agentConfigured;
+    modelConfigured = status.modelConfigured;
+    authConfigured = status.authConfigured;
+    ready = status.ready;
+    needsSetup = status.needsSetup;
+    needsAuth = status.needsAuth;
+    defaultModel = status.defaultModel;
   } catch (error) {
     lastError = error instanceof Error ? error.message : String(error);
   }
-
-  const modelConfigured = !!defaultModel;
-  const ready = agentConfigured && modelConfigured && authConfigured;
 
   return {
     installed: true,
@@ -220,8 +294,8 @@ export async function getClawJSOpenClawStatus(): Promise<ClawJSOpenClawStatus> {
     modelConfigured,
     authConfigured,
     ready,
-    needsSetup: !agentConfigured || !modelConfigured,
-    needsAuth: modelConfigured && !authConfigured,
+    needsSetup,
+    needsAuth,
     lastError,
     version,
     latestVersion,

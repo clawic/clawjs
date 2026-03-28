@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { locales, messagesByLocale } from "./i18n/messages.ts";
-import { listRuntimeAdapters } from "@clawjs/node";
+import { listRuntimeAdapters } from "@clawjs/claw";
 
 /**
  * All providers supported by the SDK (from FLAGSHIP_MODELS in openclaw-models.ts).

@@ -42,12 +42,13 @@ test("generateConversationTitle uses gateway first and falls back to CLI or heur
     runner: {
       async exec() {
         return {
-          stdout: JSON.stringify({
-            result: {
-              payloads: [{ text: "Anxiety and work" }],
-            },
-          }),
-          stderr: "",
+          stdout: "",
+          stderr: `Gateway agent failed; falling back to embedded: Error: gateway closed
+{
+  "payloads": [
+    { "text": "Anxiety and work" }
+  ]
+}`,
           exitCode: 0,
         };
       },

@@ -77,6 +77,9 @@ The current Playwright specs are:
 - [sdk-openclaw-regressions.spec.ts](./sdk-openclaw-regressions.spec.ts)
   Verifies the published SDK preserves the `status.installed` and `modelId` compatibility aliases and surfaces gateway lifecycle failures as explicit errors, with a final validation screenshot.
 
+- [sdk-openclaw-detection-freshness.spec.ts](./sdk-openclaw-detection-freshness.spec.ts)
+  Verifies the demo/runtime detection does not stay stuck on a cached OpenClaw path after the binary disappears, with a final validation screenshot.
+
 - [repository-package-surface.spec.ts](./repository-package-surface.spec.ts)
   Verifies unpublished package names are absent from the public repo surface and captures a final browser screenshot of the cleaned docs state.
 

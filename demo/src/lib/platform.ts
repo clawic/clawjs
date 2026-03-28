@@ -4,7 +4,7 @@
  */
 
 import { execFile } from "child_process";
-import { existsSync, readdirSync, statSync } from "fs";
+import { accessSync, constants as fsConstants, existsSync, readdirSync, statSync } from "fs";
 import os from "os";
 import path from "path";
 
@@ -64,6 +64,71 @@ const WIN_CANDIDATES = (cmd: string) => {
 /** In-process cache for resolved binary paths. */
 const _cmdCache = new Map<string, string>();
 
+function isExecutableFile(candidate: string): boolean {
+  try {
+    accessSync(candidate, fsConstants.X_OK);
+    const stat = statSync(candidate);
+    return stat.isFile() || stat.isSymbolicLink();
+  } catch {
+    return false;
+  }
+}
+
+function resolveCommandFromUnixPathEnv(cmd: string, envPath = process.env.PATH || ""): string | null {
+  if (!cmd.trim()) return null;
+  if (cmd.includes("/")) {
+    return isExecutableFile(cmd) ? cmd : null;
+  }
+
+  const seen = new Set<string>();
+  for (const entry of envPath.split(path.delimiter)) {
+    const dir = entry.trim();
+    if (!dir || seen.has(dir)) continue;
+    seen.add(dir);
+    const candidate = path.join(dir, cmd);
+    if (isExecutableFile(candidate)) {
+      return candidate;
+    }
+  }
+
+  return null;
+}
+
+function resolveCommandFreshUnix(cmd: string): Promise<string | null> {
+  const fromPath = resolveCommandFromUnixPathEnv(cmd);
+  if (fromPath) {
+    return Promise.resolve(fromPath);
+  }
+
+  if (process.env.CLAWJS_FIND_COMMAND_STRICT_PATH === "1") {
+    return Promise.resolve(null);
+  }
+
+  const fallback = UNIX_CANDIDATES(cmd).find((c) => isExecutableFile(c)) || null;
+  return Promise.resolve(fallback);
+}
+
+function resolveCommandFreshWindows(cmd: string): Promise<string | null> {
+  return new Promise((resolve) => {
+    execFile("where", [cmd], { timeout: 3000 }, (err, stdout) => {
+      if (!err && stdout.trim()) {
+        resolve(stdout.trim().split(/\r?\n/)[0]);
+        return;
+      }
+      if (process.env.CLAWJS_FIND_COMMAND_STRICT_PATH === "1") {
+        resolve(null);
+        return;
+      }
+      const fallback = WIN_CANDIDATES(cmd).find((c) => existsSync(c)) || null;
+      resolve(fallback);
+    });
+  });
+}
+
+export function findCommandFresh(cmd: string): Promise<string | null> {
+  return isWindows ? resolveCommandFreshWindows(cmd) : resolveCommandFreshUnix(cmd);
+}
+
 /**
  * Resolve a command from PATH (via login shell / where) or well-known locations.
  * Results are cached for the lifetime of the process.
@@ -73,35 +138,9 @@ export function findCommand(cmd: string): Promise<string | null> {
   const cached = _cmdCache.get(cmd);
   if (cached) return Promise.resolve(cached);
 
-  if (isWindows) {
-    return new Promise((resolve) => {
-      execFile("where", [cmd], { timeout: 3000 }, (err, stdout) => {
-        if (!err && stdout.trim()) {
-          const found = stdout.trim().split(/\r?\n/)[0];
-          _cmdCache.set(cmd, found);
-          resolve(found);
-          return;
-        }
-        const fallback = WIN_CANDIDATES(cmd).find((c) => existsSync(c)) || null;
-        if (fallback) _cmdCache.set(cmd, fallback);
-        resolve(fallback);
-      });
-    });
-  }
-
-  // Unix: use a login shell so nvm/volta/etc. get loaded
-  return new Promise((resolve) => {
-    execFile("/bin/bash", ["-lc", `which ${cmd}`], { timeout: 3000 }, (err, stdout) => {
-      if (!err && stdout.trim()) {
-        const found = stdout.trim().split(/\r?\n/)[0];
-        _cmdCache.set(cmd, found);
-        resolve(found);
-        return;
-      }
-      const fallback = UNIX_CANDIDATES(cmd).find((c) => existsSync(c)) || null;
-      if (fallback) _cmdCache.set(cmd, fallback);
-      resolve(fallback);
-    });
+  return findCommandFresh(cmd).then((found) => {
+    if (found) _cmdCache.set(cmd, found);
+    return found;
   });
 }
 

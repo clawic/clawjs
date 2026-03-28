@@ -328,10 +328,14 @@ export const demoAdapter: RuntimeAdapter = {
       env: options.env,
     });
     return {
+      requestedProvider: provider,
       provider,
+      status: "launched",
+      launchMode: "browser",
       pid: spawned.pid,
       command: spawned.command,
       args: spawned.args,
+      message: "Interactive sign-in started in the runtime.",
     };
   },
   diagnostics(provider, options): AuthDiagnostics {

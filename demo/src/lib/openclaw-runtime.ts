@@ -1,4 +1,4 @@
-import { hasBinary, checkProcess, appInstalled } from "@/lib/platform";
+import { checkProcess, appInstalled, findCommandFresh } from "@/lib/platform";
 
 export interface OpenClawRuntime {
   openClawInstalled: boolean;
@@ -8,8 +8,8 @@ export interface OpenClawRuntime {
 
 export async function detectOpenClawRuntime(): Promise<OpenClawRuntime> {
   const [wacliAvailable, openClawCliAvailable, openClawRunning] = await Promise.all([
-    hasBinary("wacli"),
-    hasBinary("openclaw"),
+    findCommandFresh("wacli").then(Boolean),
+    findCommandFresh("openclaw").then(Boolean),
     checkProcess("openclaw"),
   ]);
 

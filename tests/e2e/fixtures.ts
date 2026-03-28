@@ -80,7 +80,7 @@ export { expect };
 
 export async function resetDemoState(
   request: import("@playwright/test").APIRequestContext,
-  profile: "seeded" | "fresh" = "seeded",
+  profile: "seeded" | "fresh" | "clean" = "seeded",
 ) {
   const response = await request.post("/api/e2e/reset", { data: { profile } });
   expect(response.ok()).toBeTruthy();

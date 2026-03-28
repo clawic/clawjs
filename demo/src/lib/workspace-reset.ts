@@ -2,7 +2,7 @@ import crypto from "crypto";
 import fs from "fs";
 import os from "os";
 import path from "path";
-import { readOpenClawRuntimeConfig, writeOpenClawRuntimeConfig } from "@clawjs/node";
+import { readOpenClawRuntimeConfig, writeOpenClawRuntimeConfig } from "@clawjs/claw";
 
 import { defaultLocale } from "./i18n/messages.ts";
 import { LOCAL_SETTINGS_SCHEMA_VERSION } from "./local-settings.ts";

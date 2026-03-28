@@ -221,6 +221,37 @@ exit 0
   return { binaryPath, openclawLog };
 }
 
+function createOpenClawAuthReadyToolchain(statusJson: unknown): { binaryPath: string; openclawLog: string } {
+  const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "clawjs-openclaw-auth-ready-"));
+  const openclawLog = path.join(rootDir, "openclaw.log");
+  const binaryPath = path.join(rootDir, "openclaw");
+  const encodedStatus = JSON.stringify(JSON.stringify(statusJson));
+
+  fs.writeFileSync(binaryPath, `#!/bin/sh
+echo "$@" >> "${openclawLog}"
+if [ "$1" = "--version" ]; then
+  echo "openclaw 3.2.1"
+  exit 0
+fi
+if [ "$1" = "models" ]; then
+  echo ${encodedStatus}
+  exit 0
+fi
+if [ "$1" = "agents" ] && [ "$2" = "list" ]; then
+  echo "[]"
+  exit 0
+fi
+if [ "$1" = "plugins" ] && [ "$2" = "list" ]; then
+  echo '{"plugins":[],"diagnostics":[]}'
+  exit 0
+fi
+echo "{}"
+exit 0
+`, { mode: 0o755 });
+
+  return { binaryPath, openclawLog };
+}
+
 function createFakeOpenClawChannelsToolchain(): { binDir: string; configPath: string } {
   const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "clawjs-openclaw-channels-"));
   const binDir = path.join(rootDir, "bin");
@@ -1697,22 +1728,95 @@ test("createClaw provider intents reconcile auth state and disabled providers", 
   assert.equal(providersIntentAfterSave.providers?.openai?.preferredAuthMode, "api_key");
   assert.equal(diffAfterSave.drifted, false);
 
-  claw.intent.patch("providers", {
-    providers: {
-      ...(providersIntentAfterSave.providers ?? {}),
-      openai: {
-        ...(providersIntentAfterSave.providers?.openai ?? {}),
-        enabled: false,
-      },
-    },
+  await claw.auth.setProviderEnabled("openai", false, {
+    preferredAuthMode: "api_key",
   });
-  await claw.intent.apply({ domains: ["providers"] });
 
   const authState = await claw.auth.status();
   const diffAfterDisable = await claw.intent.diff({ domains: ["providers"] });
 
   assert.equal(authState.openai?.hasAuth, false);
   assert.equal(diffAfterDisable.drifted, false);
+});
+
+test("createClaw auth.prepareLogin and auth.login report reused OpenClaw auth with alias resolution", async () => {
+  const workspaceDir = fs.mkdtempSync(path.join(os.tmpdir(), "clawjs-instance-openclaw-login-plan-"));
+  const agentDir = path.join(workspaceDir, ".runtime-agent");
+  fs.mkdirSync(agentDir, { recursive: true });
+  fs.writeFileSync(path.join(agentDir, "auth-profiles.json"), JSON.stringify({
+    version: 1,
+    profiles: {
+      "openai-codex:default": {
+        type: "oauth",
+        provider: "openai-codex",
+        maskedCredential: "••••oauth",
+      },
+    },
+  }, null, 2));
+  const { binaryPath } = createOpenClawAuthReadyToolchain({});
+  const claw = await createClaw({
+    runtime: {
+      adapter: "openclaw",
+      binaryPath,
+      agentDir,
+    },
+    workspace: {
+      appId: "demo",
+      workspaceId: "demo-openclaw-login-plan",
+      agentId: "demo-openclaw-login-plan",
+      rootDir: workspaceDir,
+    },
+  });
+
+  const seen: string[] = [];
+  const plan = await claw.auth.prepareLogin("openai");
+  const result = await claw.auth.login("openai", {
+    onProgress: (event) => {
+      seen.push(`${event.status}:${event.step ?? "none"}:${event.result ?? "none"}`);
+    },
+  });
+
+  assert.equal(plan.provider, "openai-codex");
+  assert.equal(plan.status, "reused");
+  assert.equal(plan.launchMode, "none");
+  assert.equal(result.provider, "openai-codex");
+  assert.equal(result.requestedProvider, "openai");
+  assert.equal(result.status, "reused");
+  assert.equal(result.launchMode, "none");
+  assert.deepEqual(seen, [
+    "start:checking_existing_auth:none",
+    "complete:reused_existing_auth:reused",
+  ]);
+});
+
+test("createClaw auth.login reports launched flows through the SDK callback", async () => {
+  const workspaceDir = fs.mkdtempSync(path.join(os.tmpdir(), "clawjs-instance-login-progress-"));
+  const claw = await createClaw({
+    runtime: { adapter: "demo" },
+    workspace: {
+      appId: "demo",
+      workspaceId: "demo-login-progress",
+      agentId: "demo-login-progress",
+      rootDir: workspaceDir,
+    },
+  });
+
+  const seen: string[] = [];
+  const plan = await claw.auth.prepareLogin("openai");
+  const result = await claw.auth.login("openai", {
+    onProgress: (event) => {
+      seen.push(`${event.status}:${event.step ?? "none"}:${event.result ?? "none"}:${event.launchMode ?? "none"}`);
+    },
+  });
+
+  assert.equal(plan.status, "launch_required");
+  assert.equal(result.status, "launched");
+  assert.equal(result.launchMode, "browser");
+  assert.equal(typeof result.command, "string");
+  assert.deepEqual(seen, [
+    "start:checking_existing_auth:none:none",
+    "complete:launching_interactive_flow:launched:browser",
+  ]);
 });
 
 test("createClaw doctor report includes workspace diagnostics", async () => {
