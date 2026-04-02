@@ -560,8 +560,36 @@ console<span class="punctuation">.</span><span class="function">log</span><span 
         <h2 class="section__title">AI Agents Running Your Operations</h2>
         <p class="section__desc">Specialized agents pick up tasks, execute them, and report back. Like handing your company's ops to a team of AI workers.</p>
       </div>
-      <div class="chat-preview-wrap">
-        <div class="demo-panel demo-panel--tasks" id="demo-tasks"></div>
+      <div class="demo-stack demo-stack--wide">
+        <div class="demo-stack__layer demo-stack__layer--front">
+          <div class="demo-panel demo-panel--tasks" id="demo-tasks"></div>
+        </div>
+        <div class="demo-stack__layer demo-stack__layer--back demo-stack__layer--narrow">
+          <div class="code-block">
+            <div class="code-block__header">
+              <span class="code-block__dot"></span>
+              <span class="code-block__dot"></span>
+              <span class="code-block__dot"></span>
+              <span class="code-block__filename">tasks.ts</span>
+            </div>
+            <pre><code><span class="comment">// Create a task</span>
+<span class="keyword">await</span> claw<span class="punctuation">.</span><span class="property">tasks</span><span class="punctuation">.</span><span class="function">create</span><span class="punctuation">({</span>
+  <span class="property">title</span><span class="punctuation">:</span> <span class="string">"Draft Q2 report"</span><span class="punctuation">,</span>
+  <span class="property">agent</span><span class="punctuation">:</span> <span class="string">"analyst"</span><span class="punctuation">,</span>
+<span class="punctuation">});</span>
+
+<span class="comment">// List by status</span>
+<span class="keyword">const</span> open <span class="punctuation">=</span> <span class="keyword">await</span> claw
+  <span class="punctuation">.</span><span class="property">tasks</span><span class="punctuation">.</span><span class="function">list</span><span class="punctuation">({</span>
+    <span class="property">status</span><span class="punctuation">:</span> <span class="string">"in_progress"</span>
+  <span class="punctuation">});</span>
+
+<span class="comment">// Assign to agent</span>
+<span class="keyword">await</span> claw<span class="punctuation">.</span><span class="property">tasks</span><span class="punctuation">.</span><span class="function">assign</span><span class="punctuation">(</span>
+  <span class="string">"task_id"</span><span class="punctuation">,</span> <span class="string">"ops-agent"</span>
+<span class="punctuation">);</span></code></pre>
+          </div>
+        </div>
       </div>
     </div>
   </section>
@@ -575,8 +603,38 @@ console<span class="punctuation">.</span><span class="function">log</span><span 
         <h2 class="section__title">Build Your Startup with AI Agents</h2>
         <p class="section__desc">Design your org structure, assign specialized agents to every role, and watch them collaborate in real time. From CEO to individual contributors, every seat runs autonomously.</p>
       </div>
-      <div class="chat-preview-wrap">
-        <div class="demo-panel demo-panel--org" id="demo-org"></div>
+      <div class="demo-stack demo-stack--wide">
+        <div class="demo-stack__layer demo-stack__layer--front">
+          <div class="demo-panel demo-panel--org" id="demo-org"></div>
+        </div>
+        <div class="demo-stack__layer demo-stack__layer--back demo-stack__layer--narrow">
+          <div class="code-block">
+            <div class="code-block__header">
+              <span class="code-block__dot"></span>
+              <span class="code-block__dot"></span>
+              <span class="code-block__dot"></span>
+              <span class="code-block__filename">org.ts</span>
+            </div>
+            <pre><code><span class="comment">// Define your org</span>
+<span class="keyword">await</span> claw<span class="punctuation">.</span><span class="property">org</span><span class="punctuation">.</span><span class="function">create</span><span class="punctuation">({</span>
+  <span class="property">role</span><span class="punctuation">:</span> <span class="string">"CEO"</span><span class="punctuation">,</span>
+  <span class="property">agent</span><span class="punctuation">:</span> <span class="string">"strategist"</span><span class="punctuation">,</span>
+  <span class="property">reports</span><span class="punctuation">:</span> <span class="punctuation">[</span>
+    <span class="punctuation">{</span> <span class="property">role</span><span class="punctuation">:</span> <span class="string">"CTO"</span> <span class="punctuation">},</span>
+    <span class="punctuation">{</span> <span class="property">role</span><span class="punctuation">:</span> <span class="string">"CMO"</span> <span class="punctuation">},</span>
+  <span class="punctuation">]</span>
+<span class="punctuation">});</span>
+
+<span class="comment">// Get the tree</span>
+<span class="keyword">const</span> tree <span class="punctuation">=</span> <span class="keyword">await</span> claw
+  <span class="punctuation">.</span><span class="property">org</span><span class="punctuation">.</span><span class="function">chart</span><span class="punctuation">();</span>
+
+<span class="comment">// Assign agent</span>
+<span class="keyword">await</span> claw<span class="punctuation">.</span><span class="property">org</span><span class="punctuation">.</span><span class="function">assign</span><span class="punctuation">(</span>
+  <span class="string">"CTO"</span><span class="punctuation">,</span> <span class="string">"dev-lead"</span>
+<span class="punctuation">);</span></code></pre>
+          </div>
+        </div>
       </div>
     </div>
   </section>
@@ -591,8 +649,36 @@ console<span class="punctuation">.</span><span class="function">log</span><span 
         <h2 class="section__title">Your Entire Network, Agent-Managed</h2>
         <p class="section__desc">AI agents enrich profiles, schedule follow-ups, track deals, and keep every relationship warm. Personal and professional, all in one place.</p>
       </div>
-      <div class="chat-preview-wrap">
-        <div class="demo-panel demo-panel--crm" id="demo-crm"></div>
+      <div class="demo-stack demo-stack--wide">
+        <div class="demo-stack__layer demo-stack__layer--front">
+          <div class="demo-panel demo-panel--crm" id="demo-crm"></div>
+        </div>
+        <div class="demo-stack__layer demo-stack__layer--back demo-stack__layer--narrow">
+          <div class="code-block">
+            <div class="code-block__header">
+              <span class="code-block__dot"></span>
+              <span class="code-block__dot"></span>
+              <span class="code-block__dot"></span>
+              <span class="code-block__filename">contacts.ts</span>
+            </div>
+            <pre><code><span class="comment">// Add a contact</span>
+<span class="keyword">await</span> claw<span class="punctuation">.</span><span class="property">contacts</span><span class="punctuation">.</span><span class="function">create</span><span class="punctuation">({</span>
+  <span class="property">name</span><span class="punctuation">:</span> <span class="string">"Sarah Chen"</span><span class="punctuation">,</span>
+  <span class="property">email</span><span class="punctuation">:</span> <span class="string">"sarah@co.io"</span><span class="punctuation">,</span>
+  <span class="property">tags</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="string">"lead"</span><span class="punctuation">]</span>
+<span class="punctuation">});</span>
+
+<span class="comment">// Enrich profile</span>
+<span class="keyword">await</span> claw<span class="punctuation">.</span><span class="property">contacts</span>
+  <span class="punctuation">.</span><span class="function">enrich</span><span class="punctuation">(</span><span class="string">"sarah@co.io"</span><span class="punctuation">);</span>
+
+<span class="comment">// Schedule follow-up</span>
+<span class="keyword">await</span> claw<span class="punctuation">.</span><span class="property">contacts</span>
+  <span class="punctuation">.</span><span class="function">followUp</span><span class="punctuation">(</span><span class="string">"sarah@co.io"</span><span class="punctuation">,</span>
+    <span class="punctuation">{</span> <span class="property">in</span><span class="punctuation">:</span> <span class="string">"3 days"</span> <span class="punctuation">}</span>
+  <span class="punctuation">);</span></code></pre>
+          </div>
+        </div>
       </div>
     </div>
   </section>
@@ -607,8 +693,39 @@ console<span class="punctuation">.</span><span class="function">log</span><span 
         <h2 class="section__title">AI-Powered Support, Zero Wait Time</h2>
         <p class="section__desc">Agents triage tickets, draft replies, escalate critical issues, and resolve conversations. A full Zendesk-class inbox where every seat is an autonomous agent.</p>
       </div>
-      <div class="chat-preview-wrap">
-        <div class="demo-panel demo-panel--helpdesk" id="demo-helpdesk"></div>
+      <div class="demo-stack demo-stack--wide">
+        <div class="demo-stack__layer demo-stack__layer--front">
+          <div class="demo-panel demo-panel--helpdesk" id="demo-helpdesk"></div>
+        </div>
+        <div class="demo-stack__layer demo-stack__layer--back demo-stack__layer--narrow">
+          <div class="code-block">
+            <div class="code-block__header">
+              <span class="code-block__dot"></span>
+              <span class="code-block__dot"></span>
+              <span class="code-block__dot"></span>
+              <span class="code-block__filename">helpdesk.ts</span>
+            </div>
+            <pre><code><span class="comment">// Open tickets</span>
+<span class="keyword">const</span> tickets <span class="punctuation">=</span> <span class="keyword">await</span> claw
+  <span class="punctuation">.</span><span class="property">helpdesk</span><span class="punctuation">.</span><span class="function">list</span><span class="punctuation">({</span>
+    <span class="property">status</span><span class="punctuation">:</span> <span class="string">"open"</span>
+  <span class="punctuation">});</span>
+
+<span class="comment">// Auto-triage</span>
+<span class="keyword">await</span> claw<span class="punctuation">.</span><span class="property">helpdesk</span>
+  <span class="punctuation">.</span><span class="function">triage</span><span class="punctuation">(</span><span class="string">"T-1042"</span><span class="punctuation">);</span>
+
+<span class="comment">// Draft a reply</span>
+<span class="keyword">const</span> reply <span class="punctuation">=</span> <span class="keyword">await</span> claw
+  <span class="punctuation">.</span><span class="property">helpdesk</span><span class="punctuation">.</span><span class="function">draft</span><span class="punctuation">(</span>
+    <span class="string">"T-1042"</span>
+  <span class="punctuation">);</span>
+
+<span class="comment">// Resolve</span>
+<span class="keyword">await</span> claw<span class="punctuation">.</span><span class="property">helpdesk</span>
+  <span class="punctuation">.</span><span class="function">resolve</span><span class="punctuation">(</span><span class="string">"T-1042"</span><span class="punctuation">);</span></code></pre>
+          </div>
+        </div>
       </div>
     </div>
   </section>
@@ -623,13 +740,41 @@ console<span class="punctuation">.</span><span class="function">log</span><span 
         <h2 class="section__title">Your Content Calendar, on Autopilot</h2>
         <p class="section__desc">AI agents draft posts, schedule across platforms, reply to comments, and track engagement. A full Buffer-class dashboard where every action is agent-driven.</p>
       </div>
-      <div class="chat-preview-wrap">
-        <div class="demo-panel demo-panel--social" id="demo-social"></div>
+      <div class="demo-stack demo-stack--wide">
+        <div class="demo-stack__layer demo-stack__layer--front">
+          <div class="demo-panel demo-panel--social" id="demo-social"></div>
+        </div>
+        <div class="demo-stack__layer demo-stack__layer--back demo-stack__layer--narrow">
+          <div class="code-block">
+            <div class="code-block__header">
+              <span class="code-block__dot"></span>
+              <span class="code-block__dot"></span>
+              <span class="code-block__dot"></span>
+              <span class="code-block__filename">social.ts</span>
+            </div>
+            <pre><code><span class="comment">// Schedule a post</span>
+<span class="keyword">await</span> claw<span class="punctuation">.</span><span class="property">social</span><span class="punctuation">.</span><span class="function">schedule</span><span class="punctuation">({</span>
+  <span class="property">platform</span><span class="punctuation">:</span> <span class="string">"instagram"</span><span class="punctuation">,</span>
+  <span class="property">content</span><span class="punctuation">:</span> <span class="string">"Launch day!"</span><span class="punctuation">,</span>
+  <span class="property">time</span><span class="punctuation">:</span> <span class="string">"9:00 AM"</span><span class="punctuation">,</span>
+<span class="punctuation">});</span>
+
+<span class="comment">// Get analytics</span>
+<span class="keyword">const</span> stats <span class="punctuation">=</span> <span class="keyword">await</span> claw
+  <span class="punctuation">.</span><span class="property">social</span><span class="punctuation">.</span><span class="function">analytics</span><span class="punctuation">(</span>
+    <span class="string">"instagram"</span>
+  <span class="punctuation">);</span>
+
+<span class="comment">// Auto-reply</span>
+<span class="keyword">await</span> claw<span class="punctuation">.</span><span class="property">social</span>
+  <span class="punctuation">.</span><span class="function">autoReply</span><span class="punctuation">({</span>
+    <span class="property">platforms</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="string">"x"</span><span class="punctuation">,</span> <span class="string">"ig"</span><span class="punctuation">]</span>
+  <span class="punctuation">});</span></code></pre>
+          </div>
+        </div>
       </div>
     </div>
   </section>
-
-  <!-- CHAT PREVIEW -->
 
   <section class="section section--alt" id="section-chat">
     <div class="section__aurora-orb" style="bottom: 10%; left: 10%;"></div>
@@ -639,8 +784,35 @@ console<span class="punctuation">.</span><span class="function">log</span><span 
         <h2 class="section__title">Built-in Conversational UI</h2>
         <p class="section__desc">A full streaming chat interface out of the box. Markdown, voice notes, context chips, and multi-session support.</p>
       </div>
-      <div class="chat-preview-wrap">
-        <div class="demo-panel demo-panel--chat" id="demo-chat"></div>
+      <div class="demo-stack demo-stack--chat">
+        <div class="demo-stack__layer demo-stack__layer--front">
+          <div class="demo-panel demo-panel--chat" id="demo-chat"></div>
+        </div>
+        <div class="demo-stack__layer demo-stack__layer--back demo-stack__layer--narrow">
+          <div class="code-block">
+            <div class="code-block__header">
+              <span class="code-block__dot"></span>
+              <span class="code-block__dot"></span>
+              <span class="code-block__dot"></span>
+              <span class="code-block__filename">chat.ts</span>
+            </div>
+            <pre><code><span class="comment">// List conversations</span>
+<span class="keyword">const</span> sessions <span class="punctuation">=</span> <span class="keyword">await</span> claw
+  <span class="punctuation">.</span><span class="property">chat</span><span class="punctuation">.</span><span class="function">sessions</span><span class="punctuation">();</span>
+
+<span class="comment">// Send a message</span>
+<span class="keyword">await</span> claw<span class="punctuation">.</span><span class="property">chat</span><span class="punctuation">.</span><span class="function">send</span><span class="punctuation">(</span><span class="string">"Hello!"</span><span class="punctuation">);</span>
+
+<span class="comment">// Stream response</span>
+<span class="keyword">for await</span> <span class="punctuation">(</span><span class="keyword">const</span> chunk <span class="keyword">of</span>
+  claw<span class="punctuation">.</span><span class="property">chat</span><span class="punctuation">.</span><span class="function">stream</span><span class="punctuation">())</span> <span class="punctuation">{</span>
+  render<span class="punctuation">(</span>chunk<span class="punctuation">);</span>
+<span class="punctuation">}</span>
+
+<span class="comment">// Mount full UI</span>
+claw<span class="punctuation">.</span><span class="property">chat</span><span class="punctuation">.</span><span class="function">mount</span><span class="punctuation">(</span><span class="string">"#app"</span><span class="punctuation">);</span></code></pre>
+          </div>
+        </div>
       </div>
     </div>
   </section>
