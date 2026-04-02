@@ -3400,6 +3400,1077 @@ function mountSocialMedia(container) {
   scheduleAnimations();
 }
 
+
+// ─── Knowledge Base / Wiki Demo ──────────────────────────────────────────────
+
+function mountKnowledgeBase(container) {
+  // Robot avatars via RoboHash
+  const robo = (seed) => `https://robohash.org/${encodeURIComponent(seed)}?set=set1&size=80x80&bgset=bg2`;
+
+  const AGENTS = {
+    wiki:   { name: "Wiki Agent",   color: "#6366f1", avatar: robo("wiki-agent-claw-7") },
+    docs:   { name: "Docs Agent",   color: "#3b82f6", avatar: robo("docs-agent-claw-3") },
+    review: { name: "Review Agent", color: "#34d399", avatar: robo("review-agent-claw-9") },
+    qa:     { name: "QA Agent",     color: "#f59e0b", avatar: robo("qa-agent-claw-5") },
+  };
+
+  // ── Page tree ──
+  const pages = [
+    { id: "auth", icon: "doc", title: "Authentication Flow", indent: 0 },
+    { id: "sso", icon: "doc", title: "SSO Integration Guide", indent: 1 },
+    { id: "tokens", icon: "doc", title: "Token Refresh Strategy", indent: 1 },
+    { id: "api", icon: "folder", title: "API Reference", indent: 0 },
+    { id: "rate", icon: "doc", title: "Rate Limiting", indent: 1 },
+    { id: "webhooks", icon: "doc", title: "Webhook Patterns", indent: 1 },
+    { id: "deploy", icon: "doc", title: "Deploy Runbook", indent: 0 },
+    { id: "onboard", icon: "doc", title: "New Hire Onboarding", indent: 0 },
+    { id: "incidents", icon: "doc", title: "Incident Response", indent: 0 },
+  ];
+
+  // ── Article content (real text, rendered as HTML) ──
+  const articleContent = {
+    "auth": {
+      title: "Authentication Flow",
+      lastEditor: "wiki",
+      lastEdited: "2h ago",
+      body: `<h2>Overview</h2>
+<p>ClawJS supports multiple authentication strategies out of the box. The default flow uses <strong>OAuth 2.0 Authorization Code</strong> with PKCE, which is the recommended approach for web applications.</p>
+
+<h3>How It Works</h3>
+<ol>
+<li>The client redirects the user to the <code>/authorize</code> endpoint with a code challenge.</li>
+<li>After successful login, the provider redirects back with an authorization code.</li>
+<li>The client exchanges the code for an access token and a refresh token.</li>
+<li>Subsequent API calls include the access token in the <code>Authorization</code> header.</li>
+</ol>
+
+<h3>Configuration</h3>
+<pre><code>const auth = claw.auth({
+  provider: "okta",
+  clientId: process.env.OKTA_CLIENT_ID,
+  redirectUri: "https://app.example.com/callback",
+  scopes: ["openid", "profile", "email"],
+});</code></pre>
+
+<h3>Session Management</h3>
+<p>Sessions are stored server-side in an encrypted cookie. The default TTL is 24 hours, configurable via <code>auth.sessionTTL</code>. When a session expires, the refresh token is used automatically to obtain a new access token without requiring the user to log in again.</p>
+
+<blockquote>Note: If the refresh token itself has expired, the user will be redirected to the login page. Configure <code>refreshTokenTTL</code> to control this window.</blockquote>`,
+    },
+    "sso": {
+      title: "SSO Integration Guide",
+      lastEditor: "docs",
+      lastEdited: "5h ago",
+      body: `<h2>SAML 2.0 Setup</h2>
+<p>To configure SSO with a SAML provider, you need the Identity Provider (IdP) metadata URL and an X.509 signing certificate.</p>
+
+<h3>Step 1: Register ClawJS as a Service Provider</h3>
+<p>In your IdP admin panel (Okta, Azure AD, OneLogin), create a new SAML app with the following settings:</p>
+<ul>
+<li><strong>ACS URL:</strong> <code>https://your-domain.com/api/auth/saml/callback</code></li>
+<li><strong>Entity ID:</strong> <code>https://your-domain.com</code></li>
+<li><strong>Name ID Format:</strong> <code>emailAddress</code></li>
+</ul>
+
+<h3>Step 2: Configure ClawJS</h3>
+<pre><code>claw.auth.saml({
+  entryPoint: "https://idp.example.com/sso",
+  issuer: "https://your-domain.com",
+  cert: fs.readFileSync("./idp-cert.pem", "utf-8"),
+});</code></pre>
+
+<p>After configuration, users visiting <code>/login</code> will be redirected to the IdP. On successful authentication, they are routed back to the ACS URL with a SAML assertion that ClawJS validates and converts to a session.</p>`,
+    },
+    "tokens": {
+      title: "Token Refresh Strategy",
+      lastEditor: "review",
+      lastEdited: "1d ago",
+      body: `<h2>Refresh Token Flow</h2>
+<p>Access tokens are short-lived (default: 15 minutes). Refresh tokens have a longer TTL (default: 7 days) and are used to obtain new access tokens without re-authentication.</p>
+
+<h3>Automatic Refresh</h3>
+<p>The ClawJS client SDK handles token refresh transparently. When an API call receives a <code>401</code>, the SDK automatically attempts a refresh before retrying the request.</p>
+
+<pre><code>// This happens automatically under the hood:
+if (response.status === 401) {
+  const newToken = await auth.refresh();
+  return retry(request, newToken);
+}</code></pre>
+
+<h3>Token Rotation</h3>
+<p>For enhanced security, enable refresh token rotation. Each time a refresh token is used, a new one is issued and the old one is invalidated.</p>
+
+<pre><code>claw.auth({ rotateRefreshTokens: true });</code></pre>
+
+<blockquote>Warning: With rotation enabled, using a previously rotated token will invalidate ALL tokens for that session (replay detection). This is a security feature.</blockquote>`,
+    },
+    "rate": {
+      title: "Rate Limiting",
+      lastEditor: "docs",
+      lastEdited: "8h ago",
+      body: `<h2>Rate Limiting Best Practices</h2>
+<p>ClawJS includes a configurable rate limiter based on the <strong>token bucket algorithm</strong>. It applies per-client or per-endpoint limits to prevent abuse and ensure fair usage.</p>
+
+<h3>Default Limits</h3>
+<table>
+<thead><tr><th>Plan</th><th>Requests/sec</th><th>Burst</th></tr></thead>
+<tbody>
+<tr><td>Free</td><td>10</td><td>20</td></tr>
+<tr><td>Pro</td><td>100</td><td>200</td></tr>
+<tr><td>Enterprise</td><td>1,000</td><td>2,000</td></tr>
+</tbody>
+</table>
+
+<h3>Custom Configuration</h3>
+<pre><code>claw.rateLimit({
+  windowMs: 60_000,
+  max: 100,
+  keyGenerator: (req) => req.headers["x-api-key"],
+});</code></pre>
+
+<p>When a client exceeds the limit, the API returns <code>429 Too Many Requests</code> with a <code>Retry-After</code> header indicating when the next request will be accepted.</p>`,
+    },
+    "webhooks": {
+      title: "Webhook Patterns",
+      lastEditor: "wiki",
+      lastEdited: "1d ago",
+      body: `<h2>Webhook Delivery</h2>
+<p>ClawJS delivers webhooks with <strong>at-least-once</strong> semantics. Every event is persisted before delivery, and failed deliveries are retried with exponential backoff.</p>
+
+<h3>Retry Schedule</h3>
+<p>Failed deliveries are retried at: 1m, 5m, 30m, 2h, 12h. After 5 failed attempts, the webhook is marked as failed and an alert is sent to the configured notification channel.</p>
+
+<h3>Signature Verification</h3>
+<pre><code>const isValid = claw.webhooks.verify(
+  payload,
+  headers["x-claw-signature"],
+  process.env.WEBHOOK_SECRET
+);</code></pre>
+
+<p>Always verify webhook signatures before processing. The signature is an HMAC-SHA256 hash of the raw request body using your webhook secret.</p>
+
+<h3>Idempotency</h3>
+<p>Every webhook includes an <code>x-claw-delivery-id</code> header. Use this to deduplicate events on your end, since retries will carry the same delivery ID.</p>`,
+    },
+    "deploy": {
+      title: "Deploy Runbook",
+      lastEditor: "review",
+      lastEdited: "12h ago",
+      body: `<h2>Production Deploy Process</h2>
+<p>All production deploys follow a canary strategy. Changes roll out to 5% of traffic first, then 25%, then 100% over a 30-minute window.</p>
+
+<h3>Pre-Deploy Checklist</h3>
+<ul>
+<li>All CI checks green on the release branch</li>
+<li>Staging environment tested and signed off</li>
+<li>Database migrations reviewed and tested</li>
+<li>Rollback plan documented in the deploy ticket</li>
+<li>On-call engineer confirmed and available</li>
+</ul>
+
+<h3>Rollback</h3>
+<pre><code>claw deploy rollback --to=v2.0.3 --reason="elevated error rate"</code></pre>
+
+<p>Rollbacks are instant (traffic shift, not re-deploy). The previous container image is already warm in the cluster. Average rollback time: under 30 seconds.</p>`,
+    },
+    "onboard": {
+      title: "New Hire Onboarding",
+      lastEditor: "qa",
+      lastEdited: "2d ago",
+      body: `<h2>Welcome to the Team</h2>
+<p>This guide walks you through your first week. Each day has clear goals. Your onboarding buddy will check in daily to help you stay on track.</p>
+
+<h3>Day 1: Access & Setup</h3>
+<ul>
+<li>Set up your laptop (macOS setup guide linked below)</li>
+<li>Configure VPN access using the credentials from IT</li>
+<li>Clone the monorepo and run <code>make setup</code></li>
+<li>Join Slack channels: #engineering, #standups, #incidents</li>
+</ul>
+
+<h3>Day 2: Architecture Overview</h3>
+<ul>
+<li>Read the Architecture Decision Records (ADRs) in <code>/docs/adr</code></li>
+<li>Pair with your buddy on a small bug fix</li>
+<li>Set up your local development environment with seed data</li>
+</ul>
+
+<h3>Day 3-5: First Contribution</h3>
+<p>Pick a "good first issue" from the backlog. Your buddy will help you through the PR process, CI checks, and code review norms.</p>`,
+    },
+    "incidents": {
+      title: "Incident Response",
+      lastEditor: "wiki",
+      lastEdited: "3h ago",
+      body: `<h2>Incident Response Playbook</h2>
+<p>When an incident is detected (via alert or user report), follow this process. Speed matters, but clear communication matters more.</p>
+
+<h3>Severity Levels</h3>
+<table>
+<thead><tr><th>Level</th><th>Description</th><th>Response Time</th></tr></thead>
+<tbody>
+<tr><td>P1</td><td>Service down, all users affected</td><td>Immediate</td></tr>
+<tr><td>P2</td><td>Major feature broken, many users affected</td><td>15 minutes</td></tr>
+<tr><td>P3</td><td>Minor feature broken, workaround exists</td><td>1 hour</td></tr>
+<tr><td>P4</td><td>Cosmetic or low-impact issue</td><td>Next business day</td></tr>
+</tbody>
+</table>
+
+<h3>Communication Template</h3>
+<pre><code>[INCIDENT] P{level} - {title}
+Status: Investigating / Identified / Resolved
+Impact: {description of user impact}
+Next update: {time}</code></pre>
+
+<p>Post a status update every 15 minutes for P1/P2 incidents. After resolution, schedule a blameless post-mortem within 48 hours.</p>`,
+    },
+  };
+
+  // ── Discussion threads ──
+  const discussions = {
+    "auth": [
+      { agent: "review", text: "Verified the PKCE flow against RFC 7636. The implementation is correct. One suggestion: mention that the code verifier must be between 43 and 128 characters.", time: "2h ago" },
+      { agent: "qa", text: "Tested with expired refresh tokens. The redirect works, but the error message could be clearer. Should we add a troubleshooting section?", time: "5h ago" },
+      { agent: "docs", text: "Added a note about cookie settings for cross-domain deployments. SameSite=None requires Secure flag.", time: "1d ago" },
+    ],
+    "sso": [
+      { agent: "wiki", text: "Updated the Okta screenshots. Their admin panel changed in the March update.", time: "5h ago" },
+      { agent: "qa", text: "Tested with Azure AD and Google Workspace. Both work. OneLogin needs the audience restriction field set explicitly.", time: "1d ago" },
+    ],
+    "rate": [
+      { agent: "docs", text: "Added the table with default limits per plan. This was the most common support question last month.", time: "8h ago" },
+      { agent: "review", text: "The token bucket explanation is solid. Might be worth adding a diagram showing how burst capacity refills over time.", time: "1d ago" },
+    ],
+    "webhooks": [
+      { agent: "wiki", text: "Clarified the retry schedule. Previous version said '5 retries' but didn't list the intervals.", time: "1d ago" },
+      { agent: "qa", text: "Verified signature verification with both raw and parsed bodies. Important: must use raw body, not parsed JSON.", time: "2d ago" },
+    ],
+    "deploy": [
+      { agent: "review", text: "Confirmed the rollback time. Tested 3 rollbacks in staging, average was 22 seconds.", time: "12h ago" },
+      { agent: "wiki", text: "Added the pre-deploy checklist. Previously this was only in the Notion doc, now it lives here.", time: "1d ago" },
+    ],
+    "tokens": [
+      { agent: "review", text: "The rotation section is critical for security. Good call adding the replay detection warning.", time: "1d ago" },
+    ],
+    "onboard": [
+      { agent: "qa", text: "New hires consistently miss the VPN step. Moved it higher and added bold formatting.", time: "2d ago" },
+      { agent: "wiki", text: "Linked to the architecture overview page. Previously new hires had to search for it.", time: "3d ago" },
+    ],
+    "incidents": [
+      { agent: "review", text: "Approved. The severity table matches what we agreed on in the last retrospective.", time: "3h ago" },
+      { agent: "docs", text: "Added the communication template. On-call engineers were asking for a copy-paste format.", time: "6h ago" },
+    ],
+  };
+
+  let selectedPage = "auth";
+
+  // ── Icons ──
+  const ICONS = {
+    doc: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>`,
+    folder: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>`,
+    comment: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>`,
+    edit: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`,
+    bot: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><line x1="12" y1="7" x2="12" y2="11"/><line x1="8" y1="16" x2="8" y2="16.01"/><line x1="16" y1="16" x2="16" y2="16.01"/></svg>`,
+    upvote: `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="18 15 12 9 6 15"/></svg>`,
+    clock: `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`,
+    search: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>`,
+  };
+
+  // ── Build shell ──
+  const shell = h("div", { className: "kb-shell" });
+
+  // ── Top bar ──
+  const topbar = h("div", { className: "kb-topbar" });
+  const topLeft = h("div", { className: "kb-topbar__left" });
+  topLeft.innerHTML = `<img src="/logo.png" alt="" class="kb-topbar__logo"><span class="kb-topbar__brand">ClawJS</span><span class="kb-topbar__sep">/</span><span class="kb-topbar__page">Wiki</span>`;
+
+  const searchBar = h("div", { className: "kb-topbar__search" });
+  searchBar.innerHTML = ICONS.search;
+  const searchInput = h("input", { className: "kb-topbar__search-input", type: "text", placeholder: "Search wiki..." });
+  searchBar.append(searchInput);
+
+  topbar.append(topLeft, searchBar);
+  shell.append(topbar);
+
+  // ── Body: page tree + content ──
+  const body = h("div", { className: "kb-body" });
+
+  // ── LEFT: Page tree ──
+  const tree = h("nav", { className: "kb-tree" });
+  const treeLabel = h("div", { className: "kb-tree__label" }, "Pages");
+  tree.append(treeLabel);
+
+  const treeList = h("div", { className: "kb-tree__list" });
+  const treeEls = {};
+
+  pages.forEach((p) => {
+    const item = h("div", { className: `kb-tree__item ${p.id === selectedPage ? "kb-tree__item--active" : ""}` });
+    item.style.paddingLeft = `${12 + p.indent * 16}px`;
+    item.dataset.id = p.id;
+    const icon = h("span", { className: "kb-tree__icon" });
+    icon.innerHTML = ICONS[p.icon];
+    item.append(icon, h("span", { className: "kb-tree__title" }, p.title));
+    if (p.icon === "folder") item.classList.add("kb-tree__item--folder");
+    else {
+      item.addEventListener("click", () => {
+        selectedPage = p.id;
+        renderTree();
+        renderContent();
+      });
+    }
+    treeEls[p.id] = item;
+    treeList.append(item);
+  });
+  tree.append(treeList);
+  body.append(tree);
+
+  // ── RIGHT: Article content ──
+  const content = h("div", { className: "kb-content" });
+  body.append(content);
+
+  shell.append(body);
+  container.append(shell);
+
+  // ── Render tree ──
+  function renderTree() {
+    Object.entries(treeEls).forEach(([id, el]) => {
+      el.classList.toggle("kb-tree__item--active", id === selectedPage);
+    });
+  }
+
+  // ── Render content ──
+  function renderContent() {
+    const article = articleContent[selectedPage];
+    if (!article) { content.innerHTML = ""; return; }
+    content.innerHTML = "";
+
+    // Page header
+    const header = h("div", { className: "kb-content__header" });
+    const titleEl = h("h1", { className: "kb-content__title" }, article.title);
+    header.append(titleEl);
+
+    const meta = h("div", { className: "kb-content__meta" });
+    const agentData = AGENTS[article.lastEditor];
+    meta.innerHTML = `<span class="kb-content__editor">${ICONS.bot}<img src="${agentData.avatar}" alt="" class="kb-content__editor-avatar"><span style="color:${agentData.color}">${agentData.name}</span></span><span class="kb-content__time">${ICONS.clock} Edited ${article.lastEdited}</span>`;
+    header.append(meta);
+    content.append(header);
+
+    // Article body
+    const bodyEl = h("div", { className: "kb-content__body kb-prose" });
+    bodyEl.innerHTML = article.body;
+    content.append(bodyEl);
+
+    // Discussion
+    const disc = h("div", { className: "kb-disc" });
+    const discHeader = h("div", { className: "kb-disc__header" });
+    const discTitle = h("span", { className: "kb-disc__title" });
+    const comments = discussions[selectedPage] || [];
+    discTitle.innerHTML = `${ICONS.comment} Discussion <span class="kb-disc__count">${comments.length}</span>`;
+    discHeader.append(discTitle);
+    disc.append(discHeader);
+
+    const discList = h("div", { className: "kb-disc__list" });
+    comments.forEach((c) => discList.append(renderDiscComment(c)));
+    disc.append(discList);
+
+    // Compose bar
+    const compose = h("div", { className: "kb-disc__compose" });
+    compose.innerHTML = `<span class="kb-disc__compose-idle">Agents monitoring this page...</span>`;
+    disc.append(compose);
+
+    content.append(disc);
+    content.scrollTop = 0;
+    fadeIn(content);
+  }
+
+  // ── Render a discussion comment ──
+  function renderDiscComment(c) {
+    const item = h("div", { className: "kb-disc__item" });
+    const agentData = AGENTS[c.agent];
+    const avatar = h("img", { className: "kb-disc__avatar", src: agentData.avatar, alt: "" });
+    const body = h("div", { className: "kb-disc__body" });
+    const nameRow = h("div", { className: "kb-disc__meta" });
+    const nameEl = h("span", { className: "kb-disc__name" });
+    nameEl.style.color = agentData.color;
+    nameEl.innerHTML = `${ICONS.bot} ${agentData.name}`;
+    const timeEl = h("span", { className: "kb-disc__time" }, c.time);
+    nameRow.append(nameEl, timeEl);
+    body.append(nameRow);
+    body.append(h("p", { className: "kb-disc__text" }, c.text));
+    item.append(avatar, body);
+    return item;
+  }
+
+  // ── Smooth scroll helper ──
+  function smoothScrollTo(target) {
+    if (!target) return;
+    const rect = target.getBoundingClientRect();
+    const contentRect = content.getBoundingClientRect();
+    const offset = rect.top - contentRect.top + content.scrollTop - contentRect.height / 3;
+    content.scrollTo({ top: Math.max(0, offset), behavior: "smooth" });
+  }
+
+  // ── Add a new comment with animation ──
+  function addDiscComment(agentKey, text) {
+    const discList = content.querySelector(".kb-disc__list");
+    if (!discList) return;
+
+    const c = { agent: agentKey, text, time: "Just now" };
+    if (!discussions[selectedPage]) discussions[selectedPage] = [];
+    discussions[selectedPage].unshift(c);
+
+    const el = renderDiscComment(c);
+    el.style.opacity = "0";
+    el.style.transform = "translateY(-6px)";
+    discList.insertBefore(el, discList.firstChild);
+
+    // Scroll to the discussion area so you see the comment appear
+    smoothScrollTo(el);
+
+    requestAnimationFrame(() => {
+      el.style.transition = "opacity 350ms ease, transform 350ms ease";
+      el.style.opacity = "1";
+      el.style.transform = "translateY(0)";
+    });
+
+    // Update count
+    const countEl = content.querySelector(".kb-disc__count");
+    if (countEl) countEl.textContent = String(discussions[selectedPage].length);
+  }
+
+  // ── Show typing indicator in compose bar ──
+  function showTyping(agentKey) {
+    const compose = content.querySelector(".kb-disc__compose");
+    if (!compose) return;
+    const agentData = AGENTS[agentKey];
+    compose.innerHTML = `<img src="${agentData.avatar}" alt="" class="kb-disc__compose-avatar"><span class="kb-disc__compose-text" style="color:${agentData.color}">${agentData.name}</span><span class="kb-disc__compose-label">is writing...</span><span class="kb-disc__compose-dots"><span></span><span></span><span></span></span>`;
+    compose.classList.add("kb-disc__compose--active");
+    // Scroll down to show the compose bar
+    smoothScrollTo(compose);
+  }
+
+  function hideTyping() {
+    const compose = content.querySelector(".kb-disc__compose");
+    if (!compose) return;
+    compose.classList.remove("kb-disc__compose--active");
+    compose.innerHTML = `<span class="kb-disc__compose-idle">Agents monitoring this page...</span>`;
+  }
+
+  // ── Floating robot cursor: shows a robot avatar near where editing happens ──
+  function showRobotCursor(agentKey, targetEl) {
+    removeRobotCursor();
+    if (!targetEl) return;
+    const agentData = AGENTS[agentKey];
+    const cursor = h("div", { className: "kb-robot-cursor" });
+    cursor.innerHTML = `<img src="${agentData.avatar}" alt="" class="kb-robot-cursor__img"><span class="kb-robot-cursor__label" style="color:${agentData.color}">${agentData.name}</span>`;
+    cursor.style.opacity = "0";
+
+    // Position the cursor to the left of the target element
+    targetEl.style.position = "relative";
+    targetEl.prepend(cursor);
+
+    requestAnimationFrame(() => {
+      cursor.style.transition = "opacity 400ms ease, transform 400ms cubic-bezier(0.16,1,0.3,1)";
+      cursor.style.opacity = "1";
+    });
+  }
+
+  function removeRobotCursor() {
+    const existing = content.querySelector(".kb-robot-cursor");
+    if (existing) {
+      existing.style.transition = "opacity 300ms ease";
+      existing.style.opacity = "0";
+      setTimeout(() => existing.remove(), 300);
+    }
+  }
+
+  // ── Show "agent is editing" banner on the article ──
+  function showEditBanner(agentKey, section) {
+    const existing = content.querySelector(".kb-edit-banner");
+    if (existing) existing.remove();
+    const agentData = AGENTS[agentKey];
+    const banner = h("div", { className: "kb-edit-banner" });
+    banner.innerHTML = `${ICONS.edit}<img src="${agentData.avatar}" alt="" class="kb-edit-banner__avatar"><span><strong style="color:${agentData.color}">${agentData.name}</strong> is editing <em>${section}</em>...</span>`;
+    const header = content.querySelector(".kb-content__header");
+    if (header) header.after(banner);
+    banner.style.opacity = "0";
+    requestAnimationFrame(() => {
+      banner.style.transition = "opacity 300ms ease";
+      banner.style.opacity = "1";
+    });
+  }
+
+  function removeEditBanner() {
+    const banner = content.querySelector(".kb-edit-banner");
+    if (!banner) return;
+    banner.style.transition = "opacity 300ms ease";
+    banner.style.opacity = "0";
+    setTimeout(() => banner.remove(), 300);
+  }
+
+  // ── Inline toast notification (slides in from top-right, non-blocking) ──
+  function showToast(agentKey, text, duration) {
+    const agentData = AGENTS[agentKey];
+    const toast = h("div", { className: "kb-toast" });
+    const avatar = h("img", { className: "kb-toast__avatar", src: agentData.avatar, alt: "" });
+    const body = h("div", { className: "kb-toast__body" });
+    const nameEl = h("span", { className: "kb-toast__name" });
+    nameEl.style.color = agentData.color;
+    nameEl.textContent = agentData.name;
+    const textEl = h("span", { className: "kb-toast__text" }, text);
+    body.append(nameEl, textEl);
+    toast.append(avatar, body);
+
+    // Stack: push existing toasts down
+    const existing = shell.querySelectorAll(".kb-toast");
+    existing.forEach((t, i) => {
+      if (i >= 2) { t.remove(); return; }
+      t.style.transform = `translateY(${(i + 1) * 42}px)`;
+      t.style.opacity = "0.5";
+    });
+
+    toast.style.transform = "translateX(110%)";
+    shell.append(toast);
+
+    requestAnimationFrame(() => {
+      toast.style.transition = "transform 400ms cubic-bezier(0.16,1,0.3,1), opacity 300ms ease";
+      toast.style.transform = "translateX(0)";
+    });
+
+    setTimeout(() => {
+      toast.style.transition = "transform 350ms ease, opacity 300ms ease";
+      toast.style.transform = "translateX(110%)";
+      toast.style.opacity = "0";
+      setTimeout(() => toast.remove(), 350);
+    }, duration || 3000);
+  }
+
+  // ── Typewriter effect: append text to a specific element inside the prose ──
+  function typeIntoArticle(agentKey, selector, textToAppend, callback) {
+    const target = content.querySelector(selector);
+    if (!target) { if (callback) callback(); return; }
+
+    // Scroll to the target first
+    smoothScrollTo(target);
+
+    // Show robot cursor near the element
+    showRobotCursor(agentKey, target);
+
+    // Highlight + add glow to the target element
+    target.classList.add("kb-prose--typing");
+    target.classList.add("kb-prose--highlight");
+
+    let idx = 0;
+    const interval = setInterval(() => {
+      if (idx < textToAppend.length) {
+        target.textContent += textToAppend[idx];
+        idx++;
+        // Keep scrolling to follow the text
+        const rect = target.getBoundingClientRect();
+        const contentRect = content.getBoundingClientRect();
+        if (rect.bottom > contentRect.bottom - 50) {
+          content.scrollBy({ top: 18, behavior: "smooth" });
+        }
+      } else {
+        clearInterval(interval);
+        target.classList.remove("kb-prose--typing");
+        setTimeout(() => {
+          target.classList.remove("kb-prose--highlight");
+          removeRobotCursor();
+        }, 600);
+        if (callback) callback();
+      }
+    }, 30);
+  }
+
+  // ── Insert a new paragraph with typing into the prose ──
+  function typeNewParagraph(agentKey, afterSelector, text, callback) {
+    const after = content.querySelector(afterSelector);
+    if (!after) { if (callback) callback(); return; }
+
+    const newP = h("p", {});
+    newP.classList.add("kb-prose--highlight", "kb-prose--typing");
+    after.after(newP);
+
+    smoothScrollTo(newP);
+    showRobotCursor(agentKey, newP);
+
+    let idx = 0;
+    const interval = setInterval(() => {
+      if (idx < text.length) {
+        newP.textContent += text[idx];
+        idx++;
+        const rect = newP.getBoundingClientRect();
+        const contentRect = content.getBoundingClientRect();
+        if (rect.bottom > contentRect.bottom - 50) {
+          content.scrollBy({ top: 18, behavior: "smooth" });
+        }
+      } else {
+        clearInterval(interval);
+        newP.classList.remove("kb-prose--typing");
+        setTimeout(() => {
+          newP.classList.remove("kb-prose--highlight");
+          removeRobotCursor();
+        }, 600);
+        if (callback) callback();
+      }
+    }, 30);
+  }
+
+  // ── Flash a page in the tree ──
+  function flashPage(pageId) {
+    const el = treeEls[pageId];
+    if (el) {
+      el.classList.add("kb-tree__item--flash");
+      setTimeout(() => el.classList.remove("kb-tree__item--flash"), 1000);
+    }
+  }
+
+  // ── Animation sequence ──
+  const animations = [
+    // 1. Toast + comment from Review agent
+    { delay: 1500, action: "toast", agent: "review", text: "reviewing Authentication Flow...", duration: 3000 },
+    { delay: 2500, action: "comment", agent: "review", text: "Verified the PKCE implementation against RFC 7636. The code verifier length constraint (43-128 chars) should be mentioned explicitly." },
+
+    // 2. Wiki agent edits the article
+    { delay: 7500, action: "scroll-top" },
+    { delay: 8000, action: "toast", agent: "wiki", text: "editing Session Management...", duration: 6000 },
+    { delay: 8500, action: "edit-start", agent: "wiki", section: "Session Management" },
+
+    // 3. Robot cursor appears, types new paragraph
+    { delay: 10000, action: "type-new", agent: "wiki", afterSelector: ".kb-prose blockquote", text: "For production deployments, always set the Secure and HttpOnly flags on session cookies. This prevents XSS attacks from accessing session data." },
+
+    // 4. Edit finishes
+    { delay: 16000, action: "edit-end" },
+
+    // 5. QA agent comments
+    { delay: 17500, action: "toast", agent: "qa", text: "tested auth flow in 3 browsers", duration: 2500 },
+    { delay: 18000, action: "comment", agent: "qa", text: "Tested with expired refresh tokens across Chrome, Firefox, and Safari. The redirect works correctly in all three." },
+
+    // 6. Docs agent is working on another page
+    { delay: 22000, action: "flash", pageId: "deploy" },
+    { delay: 22000, action: "toast", agent: "docs", text: "updated Deploy Runbook checklist", duration: 2500 },
+
+    // 7. Navigate to Rate Limiting
+    { delay: 25500, action: "navigate", pageId: "rate" },
+
+    // 8. Docs agent edits rate limiting
+    { delay: 27500, action: "toast", agent: "docs", text: "editing Custom Configuration...", duration: 5500 },
+    { delay: 28000, action: "edit-start", agent: "docs", section: "Custom Configuration" },
+    { delay: 29500, action: "type", agent: "docs", selector: ".kb-prose p:last-of-type", text: " Pro tip: use the x-api-key header as the rate limit key for public APIs, so each consumer gets their own bucket." },
+    { delay: 35500, action: "edit-end" },
+
+    // 9. Review agent approves
+    { delay: 37000, action: "toast", agent: "review", text: "approved Rate Limiting page", duration: 2500 },
+    { delay: 37500, action: "comment", agent: "review", text: "Burst capacity numbers verified against load tests from last sprint. Approved." },
+
+    // 10. Navigate back
+    { delay: 41500, action: "flash", pageId: "auth" },
+    { delay: 43000, action: "navigate", pageId: "auth" },
+  ];
+
+  // Save initial state
+  const initialDiscussions = {};
+  Object.keys(discussions).forEach((k) => { initialDiscussions[k] = [...discussions[k]]; });
+
+  function scheduleAnimations() {
+    // Reset state
+    Object.keys(initialDiscussions).forEach((k) => { discussions[k] = [...initialDiscussions[k]]; });
+    selectedPage = "auth";
+    // Clean up stale toasts and cursors
+    shell.querySelectorAll(".kb-toast").forEach((t) => t.remove());
+    removeRobotCursor();
+    removeEditBanner();
+    renderTree();
+    renderContent();
+
+    animations.forEach((a) => {
+      setTimeout(() => {
+        if (a.action === "comment") {
+          showTyping(a.agent);
+          setTimeout(() => {
+            hideTyping();
+            addDiscComment(a.agent, a.text);
+          }, 1800);
+        }
+
+        if (a.action === "edit-start") {
+          showEditBanner(a.agent, a.section);
+          content.scrollTo({ top: 0, behavior: "smooth" });
+        }
+
+        if (a.action === "edit-end") {
+          removeEditBanner();
+          removeRobotCursor();
+        }
+
+        if (a.action === "type") {
+          typeIntoArticle(a.agent, a.selector, a.text);
+        }
+
+        if (a.action === "type-new") {
+          typeNewParagraph(a.agent, a.afterSelector, a.text);
+        }
+
+        if (a.action === "flash") {
+          flashPage(a.pageId);
+        }
+
+        if (a.action === "navigate") {
+          selectedPage = a.pageId;
+          renderTree();
+          renderContent();
+        }
+
+        if (a.action === "toast") {
+          showToast(a.agent, a.text, a.duration);
+        }
+
+        if (a.action === "scroll-top") {
+          content.scrollTo({ top: 0, behavior: "smooth" });
+        }
+      }, a.delay);
+    });
+
+    setTimeout(scheduleAnimations, 48000);
+  }
+
+  scheduleAnimations();
+}
+
+
+// ─── Workflow Builder Demo ───────────────────────────────────────────────────
+
+function mountWorkflowBuilder(container) {
+  const robo = (seed) => `https://robohash.org/${encodeURIComponent(seed)}?set=set1&size=80x80&bgset=bg2`;
+  const AGENTS = {
+    architect: { name: "Architect Agent", color: "#6366f1", avatar: robo("wf-architect-claw-2") },
+    optimizer: { name: "Optimizer Agent", color: "#3b82f6", avatar: robo("wf-optimizer-claw-4") },
+    monitor:   { name: "Monitor Agent",   color: "#34d399", avatar: robo("wf-monitor-claw-6") },
+    debugger:  { name: "Debug Agent",     color: "#f59e0b", avatar: robo("wf-debug-claw-8") },
+  };
+
+  const NODE_TYPES = {
+    trigger:   { label: "Trigger",   color: "#a855f7", icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>` },
+    condition: { label: "Condition", color: "#f59e0b", icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>` },
+    action:    { label: "Action",    color: "#3b82f6", icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="m9 12 2 2 4-4"/></svg>` },
+    api:       { label: "API Call",  color: "#34d399", icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.66 0 3-4.03 3-9s-1.34-9-3-9m0 18c-1.66 0-3-4.03-3-9s1.34-9 3-9m-9 9a9 9 0 019-9"/></svg>` },
+    transform: { label: "Transform", color: "#f472b6", icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>` },
+    delay:     { label: "Delay",     color: "#71717a", icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>` },
+    output:    { label: "Output",    color: "#ef4444", icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>` },
+    agent:     { label: "AI Agent",  color: "#6366f1", icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M12 2a4 4 0 0 0-4 4v5h8V6a4 4 0 0 0-4-4z"/><circle cx="9" cy="16" r="1" fill="currentColor"/><circle cx="15" cy="16" r="1" fill="currentColor"/></svg>` },
+  };
+
+  const WF_ICONS = {
+    play: `<svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>`,
+    plus: `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`,
+  };
+
+  const workflows = [
+    { id: "wf-1", name: "Lead Nurture Pipeline", status: "running", executions: 1247 },
+    { id: "wf-2", name: "Slack Alert on Deploy", status: "running", executions: 892 },
+    { id: "wf-3", name: "Customer Onboarding", status: "paused", executions: 456 },
+    { id: "wf-4", name: "Invoice Processing", status: "running", executions: 2341 },
+    { id: "wf-5", name: "Bug Triage & Assign", status: "error", executions: 178 },
+  ];
+
+  const flowNodes = {
+    "wf-1": [
+      { id: "n1", type: "trigger",   label: "Webhook",      x: 20,  y: 160, desc: "POST /api/leads" },
+      { id: "n2", type: "agent",     label: "Enrich Lead",  x: 170, y: 160, desc: "AI enrichment" },
+      { id: "n3", type: "condition", label: "Score > 80?",  x: 320, y: 160, desc: "Lead scoring" },
+      { id: "n4", type: "action",    label: "Add to CRM",   x: 470, y: 80,  desc: "HubSpot deal" },
+      { id: "n5", type: "api",       label: "Send Email",   x: 470, y: 240, desc: "Welcome drip" },
+      { id: "n6", type: "output",    label: "Notify Slack", x: 470, y: 360, desc: "#sales-pipeline" },
+    ],
+    "wf-2": [
+      { id: "n1", type: "trigger",   label: "GitHub Push",  x: 20,  y: 160, desc: "main branch" },
+      { id: "n2", type: "condition", label: "CI Passed?",   x: 180, y: 160, desc: "Check status" },
+      { id: "n3", type: "action",    label: "Build Image",  x: 350, y: 80,  desc: "Docker build" },
+      { id: "n4", type: "api",       label: "Deploy K8s",   x: 500, y: 80,  desc: "Rolling update" },
+      { id: "n5", type: "output",    label: "Slack Notify", x: 500, y: 240, desc: "#deploys" },
+      { id: "n6", type: "action",    label: "Rollback",     x: 350, y: 240, desc: "Revert deploy" },
+    ],
+    "wf-3": [
+      { id: "n1", type: "trigger",   label: "New Signup",     x: 20,  y: 160, desc: "User created" },
+      { id: "n2", type: "action",    label: "Welcome Email",  x: 170, y: 160, desc: "Drip #1" },
+      { id: "n3", type: "delay",     label: "Wait 1 day",     x: 320, y: 160, desc: "Engagement delay" },
+      { id: "n4", type: "condition", label: "Activated?",     x: 470, y: 160, desc: "First action" },
+      { id: "n5", type: "action",    label: "Setup Guide",    x: 470, y: 60,  desc: "Send tutorial" },
+      { id: "n6", type: "api",       label: "Schedule Call",  x: 470, y: 260, desc: "Calendly invite" },
+    ],
+    "wf-4": [
+      { id: "n1", type: "trigger",   label: "Email Inbox",    x: 20,  y: 160, desc: "invoices@co" },
+      { id: "n2", type: "agent",     label: "Extract Data",   x: 180, y: 160, desc: "AI parsing" },
+      { id: "n3", type: "condition", label: "Amount > $5k?",  x: 350, y: 160, desc: "Threshold" },
+      { id: "n4", type: "action",    label: "Auto-Approve",   x: 500, y: 80,  desc: "Mark approved" },
+      { id: "n5", type: "action",    label: "Request Review", x: 500, y: 240, desc: "Manager approval" },
+    ],
+    "wf-5": [
+      { id: "n1", type: "trigger",   label: "New Issue",      x: 20,  y: 160, desc: "GitHub issue" },
+      { id: "n2", type: "agent",     label: "Triage Agent",   x: 180, y: 160, desc: "AI triage" },
+      { id: "n3", type: "condition", label: "P0 / P1?",       x: 350, y: 160, desc: "Priority check" },
+      { id: "n4", type: "action",    label: "Page Oncall",    x: 500, y: 80,  desc: "PagerDuty" },
+      { id: "n5", type: "action",    label: "Add to Board",   x: 500, y: 240, desc: "Linear backlog" },
+    ],
+  };
+
+  const flowEdges = {
+    "wf-1": [["n1","n2"],["n2","n3"],["n3","n4","Yes"],["n3","n5","No"],["n4","n6"],["n5","n6"]],
+    "wf-2": [["n1","n2"],["n2","n3","Yes"],["n2","n6","No"],["n3","n4"],["n4","n5"],["n6","n5"]],
+    "wf-3": [["n1","n2"],["n2","n3"],["n3","n4"],["n4","n5","Yes"],["n4","n6","No"]],
+    "wf-4": [["n1","n2"],["n2","n3"],["n3","n4","Yes"],["n3","n5","No"]],
+    "wf-5": [["n1","n2"],["n2","n3"],["n3","n4","Yes"],["n3","n5","No"]],
+  };
+
+  let selectedWf = "wf-1";
+  let executionTimer = null;
+
+  const shell = h("div", { className: "wf-shell" });
+
+  // Top bar
+  const topbar = h("div", { className: "wf-topbar" });
+  const topLeft = h("div", { className: "wf-topbar__left" });
+  topLeft.innerHTML = `<img src="/logo.png" alt="" class="wf-topbar__logo"><span class="wf-topbar__brand">ClawJS</span><span class="wf-topbar__sep">/</span><span class="wf-topbar__page">Workflows</span>`;
+  const topRight = h("div", { className: "wf-topbar__meta" });
+  const metricsBar = h("div", { className: "wf-topbar__metrics" });
+  metricsBar.innerHTML = `<span class="wf-metric"><span class="wf-metric__dot wf-metric__dot--flows"></span><span class="wf-metric__val">5</span><span class="wf-metric__label">Flows</span></span><span class="wf-metric"><span class="wf-metric__dot wf-metric__dot--exec"></span><span class="wf-metric__val">5.1k</span><span class="wf-metric__label">Runs</span></span><span class="wf-metric"><span class="wf-metric__dot wf-metric__dot--up"></span><span class="wf-metric__val">97.4%</span><span class="wf-metric__label">Success</span></span>`;
+  topRight.append(metricsBar);
+  topbar.append(topLeft, topRight);
+  shell.append(topbar);
+
+  // Body
+  const body = h("div", { className: "wf-body" });
+
+  // LEFT: sidebar
+  const sidebar = h("div", { className: "wf-sidebar" });
+  const sidebarHeader = h("div", { className: "wf-sidebar__header" });
+  sidebarHeader.innerHTML = `<span class="wf-sidebar__title">Workflows</span><button class="wf-sidebar__add">${WF_ICONS.plus}</button>`;
+  sidebar.append(sidebarHeader);
+  const wfList = h("div", { className: "wf-sidebar__list" });
+  sidebar.append(wfList);
+  body.append(sidebar);
+
+  // CENTER: canvas
+  const canvasWrap = h("div", { className: "wf-canvas-wrap" });
+  const canvasHeader = h("div", { className: "wf-canvas__header" });
+  const canvasTitle = h("span", { className: "wf-canvas__name" });
+  const canvasActions = h("div", { className: "wf-canvas__actions" });
+  canvasHeader.append(canvasTitle, canvasActions);
+  canvasWrap.append(canvasHeader);
+  const canvas = h("div", { className: "wf-canvas" });
+  const svgNS = "http://www.w3.org/2000/svg";
+  const svgLayer = document.createElementNS(svgNS, "svg");
+  svgLayer.classList.add("wf-canvas__svg");
+  svgLayer.setAttribute("width", "100%");
+  svgLayer.setAttribute("height", "100%");
+  canvas.append(svgLayer);
+  const nodesLayer = h("div", { className: "wf-canvas__nodes" });
+  canvas.append(nodesLayer);
+  canvasWrap.append(canvas);
+  body.append(canvasWrap);
+
+  // Toast container (overlays on canvas)
+  const toastContainer = h("div", { className: "wf-toasts" });
+  canvasWrap.append(toastContainer);
+
+  shell.append(body);
+  container.append(shell);
+
+  // Show toast notification
+  function showToast(agentKey, text) {
+    const agent = AGENTS[agentKey];
+    const toast = h("div", { className: "wf-toast" });
+    toast.style.setProperty("--toast-color", agent.color);
+    const avatar = h("img", { className: "wf-toast__avatar", src: agent.avatar, alt: "" });
+    const content = h("div", { className: "wf-toast__content" });
+    content.append(h("span", { className: "wf-toast__name" }, agent.name), h("span", { className: "wf-toast__text" }, text));
+    toast.append(avatar, content);
+    toastContainer.append(toast);
+    requestAnimationFrame(() => toast.classList.add("wf-toast--visible"));
+    setTimeout(() => {
+      toast.classList.remove("wf-toast--visible");
+      toast.classList.add("wf-toast--exit");
+      setTimeout(() => toast.remove(), 400);
+    }, 3000);
+    while (toastContainer.children.length > 3) toastContainer.firstChild.remove();
+  }
+
+  // Render workflow list
+  function renderWorkflowList() {
+    wfList.innerHTML = "";
+    workflows.forEach((wf) => {
+      const item = h("div", { className: `wf-item ${wf.id === selectedWf ? "wf-item--active" : ""}` });
+      const statusDot = h("span", { className: `wf-item__dot wf-item__dot--${wf.status}` });
+      const info = h("div", { className: "wf-item__info" });
+      info.append(h("span", { className: "wf-item__name" }, wf.name), h("span", { className: "wf-item__meta" }, `${wf.executions.toLocaleString()} runs`));
+      item.append(statusDot, info);
+      item.addEventListener("click", () => { selectedWf = wf.id; renderWorkflowList(); renderCanvas(); });
+      wfList.append(item);
+    });
+  }
+
+  // Render canvas
+  function renderCanvas() {
+    if (executionTimer) { clearTimeout(executionTimer); executionTimer = null; }
+    const wf = workflows.find((w) => w.id === selectedWf);
+    canvasTitle.textContent = wf.name;
+    canvasActions.innerHTML = "";
+    const statusBadge = h("span", { className: `wf-canvas__status wf-canvas__status--${wf.status}` }, wf.status);
+    const runBtn = h("button", { className: "wf-canvas__run-btn" });
+    runBtn.innerHTML = `${WF_ICONS.play}<span>Run</span>`;
+    runBtn.addEventListener("click", () => startExecution());
+    canvasActions.append(statusBadge, runBtn);
+
+    nodesLayer.innerHTML = "";
+    while (svgLayer.firstChild) svgLayer.removeChild(svgLayer.firstChild);
+
+    // Arrow markers (single gray style for all edges)
+    const defs = document.createElementNS(svgNS, "defs");
+    const marker = document.createElementNS(svgNS, "marker");
+    marker.setAttribute("id", "wf-arrow-" + selectedWf);
+    marker.setAttribute("viewBox", "0 0 10 10");
+    marker.setAttribute("refX", "9"); marker.setAttribute("refY", "5");
+    marker.setAttribute("markerWidth", "6"); marker.setAttribute("markerHeight", "6");
+    marker.setAttribute("orient", "auto-start-reverse");
+    const ap = document.createElementNS(svgNS, "path");
+    ap.setAttribute("d", "M 0 0 L 10 5 L 0 10 z");
+    ap.setAttribute("fill", "var(--gray-700)");
+    marker.append(ap);
+    defs.append(marker);
+    svgLayer.append(defs);
+
+    const nodes = flowNodes[selectedWf] || [];
+    const edges = flowEdges[selectedWf] || [];
+    const NW = 120, NH = 50;
+
+    // Edges
+    edges.forEach((edge) => {
+      const from = nodes.find((n) => n.id === edge[0]);
+      const to = nodes.find((n) => n.id === edge[1]);
+      if (!from || !to) return;
+      const x1 = from.x + NW, y1 = from.y + NH / 2;
+      const x2 = to.x, y2 = to.y + NH / 2;
+      const dx = x2 - x1;
+
+      const path = document.createElementNS(svgNS, "path");
+      if (Math.abs(y1 - y2) < 4) {
+        path.setAttribute("d", `M${x1},${y1} L${x2},${y2}`);
+      } else {
+        // Smooth bezier curve
+        const cpx = dx * 0.4;
+        path.setAttribute("d", `M${x1},${y1} C${x1 + cpx},${y1} ${x2 - cpx},${y2} ${x2},${y2}`);
+      }
+      path.setAttribute("fill", "none");
+      path.setAttribute("stroke", "var(--gray-800)");
+      path.setAttribute("stroke-width", "1");
+      path.setAttribute("marker-end", `url(#wf-arrow-${selectedWf})`);
+      path.classList.add("wf-edge");
+      path.dataset.from = edge[0]; path.dataset.to = edge[1];
+      svgLayer.append(path);
+      if (edge[2]) {
+        const mx = (x1 + x2) / 2;
+        const my = (y1 + y2) / 2 - 8;
+        const text = document.createElementNS(svgNS, "text");
+        text.setAttribute("x", mx); text.setAttribute("y", my);
+        text.setAttribute("text-anchor", "middle");
+        text.setAttribute("fill", "var(--gray-700)");
+        text.setAttribute("font-size", "7");
+        text.setAttribute("font-family", "var(--font-mono)");
+        text.textContent = edge[2];
+        svgLayer.append(text);
+      }
+    });
+
+    // Nodes
+    nodes.forEach((node) => {
+      const type = NODE_TYPES[node.type];
+      const el = h("div", { className: "wf-node" });
+      el.style.left = node.x + "px"; el.style.top = node.y + "px";
+      el.style.setProperty("--node-color", type.color);
+      el.dataset.id = node.id;
+      const iconWrap = h("div", { className: "wf-node__icon" });
+      iconWrap.innerHTML = type.icon; iconWrap.style.color = type.color;
+      const info = h("div", { className: "wf-node__info" });
+      info.append(h("span", { className: "wf-node__label" }, node.label), h("span", { className: "wf-node__desc" }, node.desc));
+      el.append(iconWrap, info);
+      nodesLayer.append(el);
+    });
+
+    setTimeout(() => startExecution(), 1500);
+  }
+
+  // Execution animation
+  function startExecution() {
+    const nodes = flowNodes[selectedWf] || [];
+    const edges = flowEdges[selectedWf] || [];
+    if (!nodes.length) return;
+
+    nodesLayer.querySelectorAll(".wf-node").forEach((el) => {
+      el.classList.remove("wf-node--done", "wf-node--executing");
+    });
+    svgLayer.querySelectorAll(".wf-edge").forEach((el) => {
+      el.classList.remove("wf-edge--active");
+    });
+
+    // BFS order
+    const order = [], visited = new Set(), queue = [nodes[0].id];
+    while (queue.length) {
+      const c = queue.shift();
+      if (visited.has(c)) continue;
+      visited.add(c); order.push(c);
+      edges.forEach((e) => { if (e[0] === c && !visited.has(e[1])) queue.push(e[1]); });
+    }
+
+    let step = 0;
+    function executeStep() {
+      if (step >= order.length) { executionTimer = setTimeout(() => startExecution(), 4000); return; }
+      const nodeId = order[step];
+      const nodeEl = nodesLayer.querySelector(`[data-id="${nodeId}"]`);
+      if (nodeEl) { nodeEl.classList.add("wf-node--executing"); }
+      edges.forEach((e) => {
+        if (e[1] === nodeId) {
+          const ee = svgLayer.querySelector(`.wf-edge[data-from="${e[0]}"][data-to="${e[1]}"]`);
+          if (ee) { ee.classList.add("wf-edge--active"); }
+        }
+      });
+      const nd = nodes.find((n) => n.id === nodeId);
+      executionTimer = setTimeout(() => {
+        if (nodeEl) {
+          nodeEl.classList.remove("wf-node--executing");
+          nodeEl.classList.add("wf-node--done");
+        }
+        // Show toast on key steps
+        if (step === 0 || step === Math.floor(order.length / 2) || step === order.length - 1) {
+          const ak = Object.keys(AGENTS);
+          showToast(ak[step % ak.length], `${nd.label} completed: ${nd.desc}`);
+        }
+        step++; executionTimer = setTimeout(executeStep, 600);
+      }, 800);
+    }
+    showToast("monitor", `Running: ${workflows.find((w) => w.id === selectedWf).name}`);
+    executionTimer = setTimeout(executeStep, 400);
+  }
+
+  renderWorkflowList();
+  renderCanvas();
+
+  // Scheduled agent toasts
+  function scheduleAgentActions() {
+    const actions = [
+      { delay: 8000,  agent: "optimizer", text: "Analyzing bottleneck in Invoice Processing..." },
+      { delay: 14000, agent: "architect", text: "Suggesting: add retry logic to API nodes" },
+      { delay: 22000, agent: "debugger",  text: "Latency spike fixed. Caching deployed" },
+      { delay: 28000, agent: "monitor",   text: "Executions +12% vs yesterday" },
+      { delay: 35000, agent: "architect", text: "Auto-created error handler for Deploy flow" },
+    ];
+    actions.forEach((a) => setTimeout(() => showToast(a.agent, a.text), a.delay));
+    setTimeout(scheduleAgentActions, 40000);
+  }
+  scheduleAgentActions();
+}
+
+
 // ─── Mount all demos ─────────────────────────────────────────────────────────
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -3423,4 +4494,8 @@ document.addEventListener("DOMContentLoaded", () => {
   if (org) mountOrgChart(org);
   const sm = document.getElementById("demo-social");
   if (sm) mountSocialMedia(sm);
+  const kb = document.getElementById("demo-kb");
+  if (kb) mountKnowledgeBase(kb);
+  const wf = document.getElementById("demo-workflows");
+  if (wf) mountWorkflowBuilder(wf);
 });
