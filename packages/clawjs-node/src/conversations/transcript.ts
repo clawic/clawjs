@@ -1,7 +1,8 @@
 import { randomUUID } from "crypto";
-import type { Attachment, ContextChip, Message, SessionRecord } from "@clawjs/core";
+import type { Attachment, ContextChip, DocumentRef, Message, SessionRecord } from "@clawjs/core";
 
 import type { TranscriptEventInput, TranscriptMessageInput } from "./types.ts";
+import { resolveLegacyDocumentRefs } from "../documents/store.ts";
 
 export const SESSION_FILE_EXTENSION = ".jsonl";
 export const DEFAULT_SESSION_TITLE = "New session";
@@ -80,10 +81,36 @@ export function normalizeContextChip(input: unknown): ContextChip | null {
   return chip;
 }
 
+export function normalizeDocumentRef(input: unknown): DocumentRef | null {
+  if (!input || typeof input !== "object") return null;
+  const record = input as Record<string, unknown>;
+  const documentId = typeof record.documentId === "string" ? normalizeWhitespace(record.documentId) : "";
+  const name = typeof record.name === "string" ? normalizeWhitespace(record.name) : "";
+  const mimeType = typeof record.mimeType === "string" ? normalizeWhitespace(record.mimeType) : "";
+  const sizeBytes = typeof record.sizeBytes === "number" && Number.isFinite(record.sizeBytes) ? record.sizeBytes : NaN;
+  if (!documentId || !name || !mimeType || Number.isNaN(sizeBytes)) {
+    return null;
+  }
+
+  return {
+    documentId,
+    name,
+    mimeType,
+    sizeBytes,
+    ...(typeof record.sha256 === "string" && record.sha256.trim() ? { sha256: record.sha256.trim() } : {}),
+  };
+}
+
 function normalizeAttachments(input: unknown): Attachment[] | undefined {
   if (!Array.isArray(input)) return undefined;
   const attachments = input.map(normalizeAttachment).filter(Boolean) as Attachment[];
   return attachments.length > 0 ? attachments : undefined;
+}
+
+function normalizeDocuments(input: unknown): DocumentRef[] | undefined {
+  if (!Array.isArray(input)) return undefined;
+  const documents = input.map(normalizeDocumentRef).filter(Boolean) as DocumentRef[];
+  return documents.length > 0 ? documents : undefined;
 }
 
 function normalizeContextChips(input: unknown): ContextChip[] | undefined {
@@ -111,9 +138,10 @@ export function normalizeTranscriptMessage(input: TranscriptMessageInput | unkno
       : rawText;
 
   const attachments = normalizeAttachments(record.attachments);
+  const documents = normalizeDocuments(record.documents);
   const contextChips = normalizeContextChips(record.contextChips);
 
-  if (!content && !attachments?.length) return null;
+  if (!content && !attachments?.length && !documents?.length) return null;
 
   const message: Message = {
     id: randomUUID(),
@@ -121,8 +149,13 @@ export function normalizeTranscriptMessage(input: TranscriptMessageInput | unkno
     content: content || "(empty message)",
     createdAt: Date.now(),
     ...(attachments ? { attachments } : {}),
+    ...(documents ? { documents } : {}),
     ...(contextChips ? { contextChips } : {}),
   };
+
+  if (!documents && attachments?.length) {
+    message.documents = resolveLegacyDocumentRefs(message.id, attachments);
+  }
 
   return message;
 }
@@ -148,12 +181,14 @@ export function normalizeTranscriptEvents(raw: string): Message[] {
       role: event.role,
       content: event.content,
       attachments: event.attachments,
+      documents: event.documents,
       contextChips: event.contextChips,
     };
 
     const normalizedMessageInput: TranscriptMessageInput = {
       ...(messageInput || {}),
       ...(Array.isArray(event.attachments) ? { attachments: event.attachments } : {}),
+      ...(Array.isArray(event.documents) ? { documents: event.documents } : {}),
       ...(Array.isArray(event.contextChips) ? { contextChips: event.contextChips } : {}),
     };
 

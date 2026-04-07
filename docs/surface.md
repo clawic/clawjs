@@ -481,6 +481,30 @@ The docs check script validates that every current export from
     writeWorkspaceFilePreservingManagedBlocks
     writeWorkspaceStateSnapshot
     zeroclawAdapter
+    BeginDocumentUploadInput
+    CleanupOpenClawAuthLoginStateOptions
+    CleanupOpenClawAuthLoginStateResult
+    cleanupOpenClawAuthLoginState
+    ConversationDocumentRef
+    createDocumentStore
+    createTemporaryDownloadPath
+    DocumentDownloadResult
+    DocumentSearchInput
+    DocumentStore
+    filterOpenClawProviderAuthByIntent
+    getOpenClawOAuthProviderSummary
+    hasConfirmedOpenClawOAuthSubscription
+    isOpenClawProviderEnabled
+    normalizeDocumentRef
+    OpenClawDirectAuthState
+    OpenClawProviderIntentConfig
+    OpenClawProviderIntentMap
+    readDirectOpenClawAuthState
+    readOpenClawProviderIntentMap
+    RegisterDocumentPathInput
+    requiresExplicitProviderEnable
+    resolveLegacyDocumentRefs
+    UploadDocumentInput
 
 ## @clawjs/core Exports
 
@@ -680,3 +704,14 @@ The docs check script validates that every current export from
     workspaceStateSnapshotSchema
     WorkspaceSurfaceDescriptor
     WorkspaceToolDescriptor
+    DocumentIndexStatus
+    DocumentOrigin
+    DocumentRecord
+    DocumentRef
+    DocumentSearchResult
+    DocumentStorageDescriptor
+    EffectiveAccessPolicy
+    Project
+    ProjectAgentAssignment
+    ProjectResourceRef
+    ProjectSecretRef

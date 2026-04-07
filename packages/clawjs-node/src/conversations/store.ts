@@ -179,6 +179,7 @@ export class ConversationStore {
         content: [{ type: "text", text: message.content }],
       },
       ...(Array.isArray(message.attachments) && message.attachments.length > 0 ? { attachments: message.attachments } : {}),
+      ...(Array.isArray(message.documents) && message.documents.length > 0 ? { documents: message.documents } : {}),
       ...(Array.isArray(message.contextChips) && message.contextChips.length > 0 ? { contextChips: message.contextChips } : {}),
     };
 
@@ -200,6 +201,7 @@ export class ConversationStore {
         content: message.content,
         createdAt,
         ...(message.attachments ? { attachments: message.attachments } : {}),
+        ...(message.documents ? { documents: message.documents } : {}),
         ...(message.contextChips ? { contextChips: message.contextChips } : {}),
       }),
       messages: [{
@@ -208,6 +210,7 @@ export class ConversationStore {
         content: message.content,
         createdAt,
         ...(message.attachments ? { attachments: message.attachments } : {}),
+        ...(message.documents ? { documents: message.documents } : {}),
         ...(message.contextChips ? { contextChips: message.contextChips } : {}),
       }],
     };

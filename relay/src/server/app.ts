@@ -100,6 +100,17 @@ async function readRequestBody(request: FastifyRequest): Promise<Record<string, 
   return (await request.body ?? {}) as Record<string, unknown>;
 }
 
+function normalizeUploadData(value: unknown): string {
+  if (typeof value !== "string") return "";
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+  if (trimmed.startsWith("data:")) {
+    const [, base64Data = ""] = trimmed.split(",", 2);
+    return base64Data;
+  }
+  return trimmed;
+}
+
 function parseProjectResourceRefs(value: unknown): ProjectResourceRef[] {
   if (!Array.isArray(value)) return [];
   return value.flatMap((entry) => {
@@ -1360,6 +1371,126 @@ export async function buildRelayApp(options: RelayAppOptions = {}) {
     }
   });
 
+  app.post(`${workspacePrefix}/sessions/:sessionId/stream`, async (request, reply) => {
+    const claims = await requireClaims(request, reply, auth, "chat:stream");
+    if (!claims) return;
+    const params = request.params as WorkspaceParams;
+    try {
+      authorizeWorkspace(claims, params);
+    } catch (error) {
+      await reply.code(403).send({ error: "Forbidden", message: error instanceof Error ? error.message : String(error) });
+      return;
+    }
+    const body = await readRequestBody(request);
+    reply.hijack();
+    reply.raw.statusCode = 200;
+    reply.raw.setHeader("content-type", "text/event-stream; charset=utf-8");
+    reply.raw.setHeader("cache-control", "no-cache, no-transform");
+    reply.raw.setHeader("connection", "keep-alive");
+
+    let streamedText = "";
+    const writeEvent = (event: string, payload: Record<string, unknown>) => {
+      reply.raw.write(`event: ${event}\n`);
+      reply.raw.write(`data: ${JSON.stringify(payload)}\n\n`);
+    };
+
+    try {
+      await registry.invoke({
+        tenantId: params.tenantId,
+        agentId: params.agentId,
+        workspaceId: params.workspaceId,
+        operation: "sessions.stream",
+        payload: {
+          sessionId: params.sessionId,
+          ...(typeof body.message === "string" ? { message: body.message } : {}),
+          ...(typeof body.systemPrompt === "string" ? { systemPrompt: body.systemPrompt } : {}),
+          ...(typeof body.transport === "string" ? { transport: body.transport } : {}),
+          ...(Array.isArray(body.documentIds) ? { documentIds: body.documentIds } : {}),
+        },
+        onStream: (stream) => {
+          const payload = stream.payload;
+          if (typeof payload.delta === "string") streamedText += payload.delta;
+          writeEvent(stream.event, payload);
+        },
+      });
+      db.recordUsage({
+        tenantId: params.tenantId,
+        agentId: params.agentId,
+        workspaceId: params.workspaceId,
+        tokensIn: tokensFromText(typeof body.message === "string" ? body.message : ""),
+        tokensOut: tokensFromText(streamedText),
+      });
+      writeEvent("complete", { ok: true });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      writeEvent("error", { error: message });
+    } finally {
+      reply.raw.end();
+    }
+  });
+
+  app.post(`${projectWorkspacePrefix}/sessions/:sessionId/stream`, async (request, reply) => {
+    const claims = await requireClaims(request, reply, auth, "chat:stream");
+    if (!claims) return;
+    const params = request.params as ProjectAgentParams;
+    const assignment = db.getProjectAssignment(params.tenantId, params.projectId, params.agentId);
+    if (!assignment) {
+      return await reply.code(404).send({ error: "project_agent_assignment_not_found" });
+    }
+    try {
+      authorizeWorkspace(claims, assignmentWorkspaceParams(params, assignment.workspaceId));
+    } catch (error) {
+      await reply.code(403).send({ error: "Forbidden", message: error instanceof Error ? error.message : String(error) });
+      return;
+    }
+    const body = await readRequestBody(request);
+    reply.hijack();
+    reply.raw.statusCode = 200;
+    reply.raw.setHeader("content-type", "text/event-stream; charset=utf-8");
+    reply.raw.setHeader("cache-control", "no-cache, no-transform");
+    reply.raw.setHeader("connection", "keep-alive");
+
+    let streamedText = "";
+    const writeEvent = (event: string, payload: Record<string, unknown>) => {
+      reply.raw.write(`event: ${event}\n`);
+      reply.raw.write(`data: ${JSON.stringify(payload)}\n\n`);
+    };
+
+    try {
+      await registry.invoke({
+        tenantId: params.tenantId,
+        agentId: params.agentId,
+        workspaceId: assignment.workspaceId,
+        operation: "sessions.stream",
+        payload: {
+          sessionId: params.sessionId,
+          ...(typeof body.message === "string" ? { message: body.message } : {}),
+          ...(typeof body.systemPrompt === "string" ? { systemPrompt: body.systemPrompt } : {}),
+          ...(typeof body.transport === "string" ? { transport: body.transport } : {}),
+          ...(Array.isArray(body.documentIds) ? { documentIds: body.documentIds } : {}),
+        },
+        onStream: (stream) => {
+          const payload = stream.payload;
+          if (typeof payload.delta === "string") streamedText += payload.delta;
+          writeEvent(stream.event, payload);
+        },
+      });
+      db.recordUsage({
+        tenantId: params.tenantId,
+        agentId: params.agentId,
+        workspaceId: assignment.workspaceId,
+        tokensIn: tokensFromText(typeof body.message === "string" ? body.message : ""),
+        tokensOut: tokensFromText(streamedText),
+      });
+      writeEvent("complete", { ok: true });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      writeEvent("error", { error: message });
+    } finally {
+      reply.raw.end();
+    }
+  });
+
   app.post(`${workspacePrefix}/sessions/:sessionId/generate-title`, async (request, reply) => {
     const params = request.params as WorkspaceParams;
     const result = await invokeWorkspace(
@@ -1390,6 +1521,282 @@ export async function buildRelayApp(options: RelayAppOptions = {}) {
     );
     if (!result) return;
     return result;
+  });
+
+  app.get(`${workspacePrefix}/documents`, async (request, reply) => {
+    const query = request.query as { sessionId?: string };
+    const result = await invokeWorkspace(
+      request as FastifyRequest<{ Params: WorkspaceParams }>,
+      reply,
+      auth,
+      registry,
+      db,
+      "workspace:data",
+      "documents.list",
+      {
+        ...(typeof query.sessionId === "string" ? { sessionId: query.sessionId } : {}),
+      },
+    );
+    if (!result) return;
+    return result;
+  });
+
+  app.get(`${projectWorkspacePrefix}/documents`, async (request, reply) => {
+    const query = request.query as { sessionId?: string };
+    const result = await invokeProjectAssignment(
+      request as FastifyRequest<{ Params: ProjectAgentParams }>,
+      reply,
+      auth,
+      registry,
+      db,
+      "workspace:data",
+      "documents.list",
+      {
+        ...(typeof query.sessionId === "string" ? { sessionId: query.sessionId } : {}),
+      },
+    );
+    if (!result) return;
+    return result;
+  });
+
+  app.get(`${workspacePrefix}/documents:search`, async (request, reply) => {
+    const query = request.query as { q?: string; limit?: string; sessionId?: string };
+    const result = await invokeWorkspace(
+      request as FastifyRequest<{ Params: WorkspaceParams }>,
+      reply,
+      auth,
+      registry,
+      db,
+      "workspace:data",
+      "documents.search",
+      {
+        q: query.q ?? "",
+        ...(query.limit ? { limit: Number(query.limit) } : {}),
+        ...(typeof query.sessionId === "string" ? { sessionId: query.sessionId } : {}),
+      },
+    );
+    if (!result) return;
+    return result;
+  });
+
+  app.get(`${projectWorkspacePrefix}/documents:search`, async (request, reply) => {
+    const query = request.query as { q?: string; limit?: string; sessionId?: string };
+    const result = await invokeProjectAssignment(
+      request as FastifyRequest<{ Params: ProjectAgentParams }>,
+      reply,
+      auth,
+      registry,
+      db,
+      "workspace:data",
+      "documents.search",
+      {
+        q: query.q ?? "",
+        ...(query.limit ? { limit: Number(query.limit) } : {}),
+        ...(typeof query.sessionId === "string" ? { sessionId: query.sessionId } : {}),
+      },
+    );
+    if (!result) return;
+    return result;
+  });
+
+  app.get(`${workspacePrefix}/documents/:documentId`, async (request, reply) => {
+    const params = request.params as WorkspaceParams & { documentId: string };
+    const result = await invokeWorkspace(
+      request as FastifyRequest<{ Params: WorkspaceParams }>,
+      reply,
+      auth,
+      registry,
+      db,
+      "workspace:data",
+      "documents.get",
+      { documentId: params.documentId },
+    );
+    if (!result) return;
+    return result;
+  });
+
+  app.get(`${projectWorkspacePrefix}/documents/:documentId`, async (request, reply) => {
+    const params = request.params as ProjectAgentParams & { documentId: string };
+    const result = await invokeProjectAssignment(
+      request as FastifyRequest<{ Params: ProjectAgentParams }>,
+      reply,
+      auth,
+      registry,
+      db,
+      "workspace:data",
+      "documents.get",
+      { documentId: params.documentId },
+    );
+    if (!result) return;
+    return result;
+  });
+
+  app.post(`${workspacePrefix}/documents/register`, async (request, reply) => {
+    const body = await readRequestBody(request);
+    const result = await invokeWorkspace(
+      request as FastifyRequest<{ Params: WorkspaceParams }>,
+      reply,
+      auth,
+      registry,
+      db,
+      "workspace:data",
+      "documents.register",
+      body,
+    );
+    if (!result) return;
+    return result;
+  });
+
+  app.post(`${projectWorkspacePrefix}/documents/register`, async (request, reply) => {
+    const body = await readRequestBody(request);
+    const result = await invokeProjectAssignment(
+      request as FastifyRequest<{ Params: ProjectAgentParams }>,
+      reply,
+      auth,
+      registry,
+      db,
+      "workspace:data",
+      "documents.register",
+      body,
+    );
+    if (!result) return;
+    return result;
+  });
+
+  app.post(`${workspacePrefix}/documents/upload`, async (request, reply) => {
+    const body = await readRequestBody(request);
+    const begin = await invokeWorkspace(
+      request as FastifyRequest<{ Params: WorkspaceParams }>,
+      reply,
+      auth,
+      registry,
+      db,
+      "workspace:data",
+      "documents.upload.begin",
+      {
+        name: body.name,
+        mimeType: body.mimeType,
+        ...(typeof body.origin === "string" ? { origin: body.origin } : {}),
+        ...(typeof body.sessionId === "string" ? { sessionId: body.sessionId } : {}),
+      },
+    );
+    if (!begin) return;
+    const uploadId = typeof begin.uploadId === "string" ? begin.uploadId : "";
+    const chunk = normalizeUploadData(body.data);
+    const chunkResult = await invokeWorkspace(
+      request as FastifyRequest<{ Params: WorkspaceParams }>,
+      reply,
+      auth,
+      registry,
+      db,
+      "workspace:data",
+      "documents.upload.chunk",
+      { uploadId, chunk },
+    );
+    if (!chunkResult) return;
+    const commit = await invokeWorkspace(
+      request as FastifyRequest<{ Params: WorkspaceParams }>,
+      reply,
+      auth,
+      registry,
+      db,
+      "workspace:data",
+      "documents.upload.commit",
+      { uploadId },
+    );
+    if (!commit) return;
+    return commit;
+  });
+
+  app.post(`${projectWorkspacePrefix}/documents/upload`, async (request, reply) => {
+    const body = await readRequestBody(request);
+    const begin = await invokeProjectAssignment(
+      request as FastifyRequest<{ Params: ProjectAgentParams }>,
+      reply,
+      auth,
+      registry,
+      db,
+      "workspace:data",
+      "documents.upload.begin",
+      {
+        name: body.name,
+        mimeType: body.mimeType,
+        ...(typeof body.origin === "string" ? { origin: body.origin } : {}),
+        ...(typeof body.sessionId === "string" ? { sessionId: body.sessionId } : {}),
+      },
+    );
+    if (!begin) return;
+    const uploadId = typeof begin.uploadId === "string" ? begin.uploadId : "";
+    const chunk = normalizeUploadData(body.data);
+    const chunkResult = await invokeProjectAssignment(
+      request as FastifyRequest<{ Params: ProjectAgentParams }>,
+      reply,
+      auth,
+      registry,
+      db,
+      "workspace:data",
+      "documents.upload.chunk",
+      { uploadId, chunk },
+    );
+    if (!chunkResult) return;
+    const commit = await invokeProjectAssignment(
+      request as FastifyRequest<{ Params: ProjectAgentParams }>,
+      reply,
+      auth,
+      registry,
+      db,
+      "workspace:data",
+      "documents.upload.commit",
+      { uploadId },
+    );
+    if (!commit) return;
+    return commit;
+  });
+
+  app.get(`${workspacePrefix}/documents/:documentId/download`, async (request, reply) => {
+    const params = request.params as WorkspaceParams & { documentId: string };
+    const result = await invokeWorkspace(
+      request as FastifyRequest<{ Params: WorkspaceParams }>,
+      reply,
+      auth,
+      registry,
+      db,
+      "workspace:data",
+      "documents.download",
+      { documentId: params.documentId },
+    );
+    if (!result) return;
+    const document = (result.document ?? null) as { name?: string; mimeType?: string } | null;
+    const contentBase64 = typeof result.contentBase64 === "string" ? result.contentBase64 : "";
+    if (!document || !contentBase64) {
+      return await reply.code(404).send({ error: "document_not_found" });
+    }
+    reply.header("content-type", document.mimeType ?? "application/octet-stream");
+    reply.header("content-disposition", `attachment; filename="${document.name ?? params.documentId}"`);
+    return Buffer.from(contentBase64, "base64");
+  });
+
+  app.get(`${projectWorkspacePrefix}/documents/:documentId/download`, async (request, reply) => {
+    const params = request.params as ProjectAgentParams & { documentId: string };
+    const result = await invokeProjectAssignment(
+      request as FastifyRequest<{ Params: ProjectAgentParams }>,
+      reply,
+      auth,
+      registry,
+      db,
+      "workspace:data",
+      "documents.download",
+      { documentId: params.documentId },
+    );
+    if (!result) return;
+    const document = (result.document ?? null) as { name?: string; mimeType?: string } | null;
+    const contentBase64 = typeof result.contentBase64 === "string" ? result.contentBase64 : "";
+    if (!document || !contentBase64) {
+      return await reply.code(404).send({ error: "document_not_found" });
+    }
+    reply.header("content-type", document.mimeType ?? "application/octet-stream");
+    reply.header("content-disposition", `attachment; filename="${document.name ?? params.documentId}"`);
+    return Buffer.from(contentBase64, "base64");
   });
 
   app.post(`${workspacePrefix}/chat/feedback`, async (request, reply) => {

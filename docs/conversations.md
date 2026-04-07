@@ -19,6 +19,22 @@ The Node API exposes:
 - `claw.conversations.updateSessionTitle(sessionId, title)`
 - `claw.conversations.generateTitle({ sessionId, transport? })`
 
+Messages can now include `documents`, which are lightweight refs:
+
+```ts
+type DocumentRef = {
+  documentId: string;
+  name: string;
+  mimeType: string;
+  sizeBytes: number;
+  sha256?: string;
+};
+```
+
+Use `claw.documents.upload()` or `claw.documents.register()` first, then attach the
+returned refs to the message. ClawJS keeps the canonical blob in the workspace and
+persists only document refs in `.clawjs/conversations/<session-id>.jsonl`.
+
 CLI equivalents:
 
 ```bash

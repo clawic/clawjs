@@ -34,6 +34,7 @@ export * from "./observed/store.ts";
 export * from "./runtime/index.ts";
 export * from "./models/index.ts";
 export * from "./doctor/run.ts";
+export * from "./documents/index.ts";
 export * from "./watch/index.ts";
 export * from "./watch/events.ts";
 export * from "./watch/status.ts";

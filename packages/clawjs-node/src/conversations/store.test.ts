@@ -58,6 +58,26 @@ test("getSession returns hydrated messages and preview", () => {
   assert.equal(loaded?.messages[0]?.contextChips?.[0]?.label, "Taylor");
 });
 
+test("getSession preserves document references on persisted messages", () => {
+  const { store } = createStore();
+  const session = store.createSession();
+  store.appendMessage(session.sessionId, {
+    role: "user",
+    content: "See attached",
+    createdAt: 1_000,
+    documents: [{
+      documentId: "document-1",
+      name: "budget.txt",
+      mimeType: "text/plain",
+      sizeBytes: 128,
+    }],
+  });
+
+  const loaded = store.getSession(session.sessionId);
+  assert.equal(loaded?.messages[0]?.documents?.[0]?.documentId, "document-1");
+  assert.equal(loaded?.messages[0]?.documents?.[0]?.name, "budget.txt");
+});
+
 test("searchSessions matches title, preview, and message content", () => {
   const { store } = createStore();
   const titleSession = store.createSession("Quarterly planning");

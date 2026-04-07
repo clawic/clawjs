@@ -524,8 +524,16 @@ export class RelayConnectorRuntime {
         const title = typeof payload?.title === "string" ? payload.title : undefined;
         const message = typeof payload?.message === "string" ? payload.message : undefined;
         const session = claw.conversations.createSession(title);
-        if (message) {
-          claw.conversations.appendMessage(session.sessionId, { role: "user", content: message });
+        const documentIds = Array.isArray(payload?.documentIds)
+          ? payload.documentIds.filter((value): value is string => typeof value === "string" && value.trim().length > 0)
+          : [];
+        const documents = documentIds.length > 0 ? await claw.documents.resolveRefs(documentIds) : undefined;
+        if (message || documents?.length) {
+          claw.conversations.appendMessage(session.sessionId, {
+            role: "user",
+            content: message ?? "",
+            ...(documents?.length ? { documents } : {}),
+          });
         }
         return { session: claw.conversations.getSession(session.sessionId) };
       }
@@ -549,7 +557,15 @@ export class RelayConnectorRuntime {
         const sessionId = String(payload?.sessionId ?? "");
         const role = payload?.role === "assistant" ? "assistant" : "user";
         const content = String(payload?.content ?? "");
-        const session = claw.conversations.appendMessage(sessionId, { role, content });
+        const documentIds = Array.isArray(payload?.documentIds)
+          ? payload.documentIds.filter((value): value is string => typeof value === "string" && value.trim().length > 0)
+          : [];
+        const documents = documentIds.length > 0 ? await claw.documents.resolveRefs(documentIds) : undefined;
+        const session = claw.conversations.appendMessage(sessionId, {
+          role,
+          content,
+          ...(documents?.length ? { documents } : {}),
+        });
         return { session };
       }
       case "sessions.generate-title": {
@@ -560,8 +576,16 @@ export class RelayConnectorRuntime {
       case "sessions.reply": {
         const sessionId = String(payload?.sessionId ?? "");
         const message = typeof payload?.message === "string" ? payload.message : undefined;
-        if (message) {
-          claw.conversations.appendMessage(sessionId, { role: "user", content: message });
+        const documentIds = Array.isArray(payload?.documentIds)
+          ? payload.documentIds.filter((value): value is string => typeof value === "string" && value.trim().length > 0)
+          : [];
+        const documents = documentIds.length > 0 ? await claw.documents.resolveRefs(documentIds) : undefined;
+        if (message || documents?.length) {
+          claw.conversations.appendMessage(sessionId, {
+            role: "user",
+            content: message ?? "",
+            ...(documents?.length ? { documents } : {}),
+          });
         }
         let reply = "";
         for await (const chunk of claw.conversations.streamAssistantReply({
@@ -579,8 +603,16 @@ export class RelayConnectorRuntime {
       case "sessions.stream": {
         const sessionId = String(payload?.sessionId ?? "");
         const message = typeof payload?.message === "string" ? payload.message : undefined;
-        if (message) {
-          claw.conversations.appendMessage(sessionId, { role: "user", content: message });
+        const documentIds = Array.isArray(payload?.documentIds)
+          ? payload.documentIds.filter((value): value is string => typeof value === "string" && value.trim().length > 0)
+          : [];
+        const documents = documentIds.length > 0 ? await claw.documents.resolveRefs(documentIds) : undefined;
+        if (message || documents?.length) {
+          claw.conversations.appendMessage(sessionId, {
+            role: "user",
+            content: message ?? "",
+            ...(documents?.length ? { documents } : {}),
+          });
         }
         for await (const event of claw.conversations.streamAssistantReplyEvents({
           sessionId,
@@ -597,6 +629,68 @@ export class RelayConnectorRuntime {
         return {
           ok: true,
           session: claw.conversations.getSession(sessionId),
+        };
+      }
+      case "documents.list": {
+        const sessionId = typeof payload?.sessionId === "string" ? payload.sessionId : undefined;
+        return { documents: await claw.documents.list({ ...(sessionId ? { sessionId } : {}) }) };
+      }
+      case "documents.get": {
+        const documentId = String(payload?.documentId ?? "");
+        return { document: await claw.documents.get(documentId) };
+      }
+      case "documents.search": {
+        const query = String(payload?.q ?? payload?.query ?? "");
+        const limit = typeof payload?.limit === "number" ? payload.limit : undefined;
+        const sessionId = typeof payload?.sessionId === "string" ? payload.sessionId : undefined;
+        return { documents: await claw.documents.search({ query, limit, ...(sessionId ? { sessionId } : {}) }) };
+      }
+      case "documents.register": {
+        const filePath = String(payload?.filePath ?? "");
+        const name = typeof payload?.name === "string" ? payload.name : undefined;
+        const mimeType = typeof payload?.mimeType === "string" ? payload.mimeType : undefined;
+        const origin = typeof payload?.origin === "string" ? payload.origin : undefined;
+        const sessionId = typeof payload?.sessionId === "string" ? payload.sessionId : undefined;
+        return {
+          document: await claw.documents.register({
+            filePath,
+            ...(name ? { name } : {}),
+            ...(mimeType ? { mimeType } : {}),
+            ...(origin ? { origin: origin as "user_upload" | "assistant_generated" | "channel_ingested" | "imported" } : {}),
+            ...(sessionId ? { sessionId } : {}),
+          }),
+        };
+      }
+      case "documents.upload.begin": {
+        const name = String(payload?.name ?? "document");
+        const mimeType = String(payload?.mimeType ?? "application/octet-stream");
+        const origin = typeof payload?.origin === "string" ? payload.origin : undefined;
+        const sessionId = typeof payload?.sessionId === "string" ? payload.sessionId : undefined;
+        return await claw.documents.beginUpload({
+          name,
+          mimeType,
+          ...(origin ? { origin: origin as "user_upload" | "assistant_generated" | "channel_ingested" | "imported" } : {}),
+          ...(sessionId ? { sessionId } : {}),
+        });
+      }
+      case "documents.upload.chunk": {
+        const uploadId = String(payload?.uploadId ?? "");
+        const chunk = String(payload?.chunk ?? "");
+        return await claw.documents.appendUploadChunk(uploadId, chunk);
+      }
+      case "documents.upload.commit": {
+        const uploadId = String(payload?.uploadId ?? "");
+        return { document: await claw.documents.commitUpload(uploadId) };
+      }
+      case "documents.download": {
+        const documentId = String(payload?.documentId ?? "");
+        const download = await claw.documents.download(documentId);
+        if (!download) {
+          return { document: null };
+        }
+        return {
+          document: download.document,
+          contentBase64: download.buffer.toString("base64"),
         };
       }
       case "sessions.delete-all": {

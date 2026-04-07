@@ -20,15 +20,18 @@ export function buildSystemPromptWithContext(systemPrompt?: string, contextBlock
   return sections.join("\n\n").trim();
 }
 
-export function formatOpenClawConversation(messages: Array<Pick<Message, "role" | "content" | "attachments" | "contextChips">>): string {
+export function formatOpenClawConversation(messages: Array<Pick<Message, "role" | "content" | "attachments" | "documents" | "contextChips">>): string {
   return messages
     .map((message) => {
       const lines = [`${message.role.toUpperCase()}: ${message.content.trim()}`];
       if (message.contextChips?.length) {
         lines.push(`Context: ${message.contextChips.map((chip) => chip.label).join(", ")}`);
       }
-      if (message.attachments?.length) {
-        lines.push(`Attachments: ${message.attachments.map((attachment) => attachment.name).join(", ")}`);
+      const documentNames = message.documents?.map((document) => document.name)
+        ?? message.attachments?.map((attachment) => attachment.name)
+        ?? [];
+      if (documentNames.length > 0) {
+        lines.push(`Attachments: ${documentNames.join(", ")}`);
       }
       return lines.join("\n");
     })
@@ -38,7 +41,7 @@ export function formatOpenClawConversation(messages: Array<Pick<Message, "role" 
 export function buildOpenClawCliPrompt(input: {
   systemPrompt?: string;
   contextBlocks?: PromptContextBlock[];
-  messages: Array<Pick<Message, "role" | "content" | "attachments" | "contextChips">>;
+  messages: Array<Pick<Message, "role" | "content" | "attachments" | "documents" | "contextChips">>;
 }): string {
   const mergedSystemPrompt = buildSystemPromptWithContext(input.systemPrompt, input.contextBlocks);
   const sections = [

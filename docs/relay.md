@@ -278,10 +278,28 @@ That includes:
 - `POST /sessions/:sessionId/messages`
 - `POST /sessions/:sessionId/reply`
 - `GET /sessions/:sessionId/stream`
+- `POST /sessions/:sessionId/stream`
 - `POST /sessions/:sessionId/generate-title`
 - `POST /chat/feedback`
 
 Note the exact search route: `sessions:search`. The current server does not expose `/sessions/search`.
+
+`POST /sessions/:sessionId/messages`, `POST /sessions/:sessionId/reply`, and
+`POST /sessions/:sessionId/stream` accept `documentIds` in the JSON payload. The
+legacy `GET /sessions/:sessionId/stream` route remains text-only for compatibility.
+
+### Documents
+
+- `GET /documents`
+- `GET /documents:search`
+- `GET /documents/:documentId`
+- `GET /documents/:documentId/download`
+- `POST /documents/register`
+- `POST /documents/upload`
+
+Document routes exist under both workspace-scoped and project-scoped prefixes. The
+relay streams upload bytes through the connector and does not persist document blobs
+in its own SQLite database.
 
 ### Workspace data resources
 
@@ -333,7 +351,7 @@ The relay also exposes admin cleanup for relay-side telemetry:
 
 ## Streaming Semantics
 
-`GET /sessions/:sessionId/stream` is an SSE endpoint.
+`GET /sessions/:sessionId/stream` and `POST /sessions/:sessionId/stream` are SSE endpoints.
 
 The relay forwards stream frames emitted by the connector and writes them as SSE events:
 
@@ -346,11 +364,15 @@ The relay forwards stream frames emitted by the connector and writes them as SSE
 
 After the connector call completes, the relay emits one final `complete` event with `{ ok: true }`.
 
-The request currently accepts these query parameters:
+The legacy `GET` route accepts these query parameters:
 
 - `message`
 - `systemPrompt`
 - `transport`
+
+The `POST` route accepts the same fields in JSON plus:
+
+- `documentIds`
 
 Relay-side usage telemetry for replies and streams is estimated from text length with a simple `ceil(chars / 4)` heuristic. It is operational telemetry, not billing-grade accounting.
 

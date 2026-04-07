@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 
 import type {
+  Attachment,
   AuthState,
   BindingDefinition,
   ChannelDescriptor,
@@ -11,6 +12,9 @@ import type {
   ConversationSearchResult,
   ConversationTransport,
   DefaultModelRef,
+  DocumentRecord,
+  DocumentRef,
+  DocumentSearchResult,
   IntentDomain,
   MemoryDescriptor,
   ModelCatalog,
@@ -103,6 +107,7 @@ import { ConversationStore } from "./conversations/store.ts";
 import { streamRuntimeConversation, streamRuntimeConversationEvents, type ConversationStreamEvent } from "./conversations/stream.ts";
 import { generateRuntimeConversationTitle } from "./conversations/title.ts";
 import { createWorkspaceDataStore, type WorkspaceDataStore } from "./data/store.ts";
+import { createDocumentStore, resolveLegacyDocumentRefs } from "./documents/store.ts";
 import { generateRuntimeText, type GenerateTextInput, type GenerateTextResult } from "./inference/generate-text.ts";
 import {
   createGenerationStore,
@@ -635,7 +640,7 @@ export interface ClawInstance {
   };
   conversations: {
     createSession: (title?: string) => ReturnType<ConversationStore["createSession"]>;
-    appendMessage: ConversationStore["appendMessage"];
+    appendMessage: (sessionId: string, message: Parameters<ConversationStore["appendMessage"]>[1]) => ReturnType<ConversationStore["appendMessage"]>;
     listSessions: ConversationStore["listSessions"];
     searchSessions: (input: ConversationSearchInput) => Promise<ConversationSearchResult[]>;
     getSession: ConversationStore["getSession"];
@@ -662,6 +667,38 @@ export interface ClawInstance {
       gatewayRetries?: number;
       signal?: AbortSignal;
     }) => AsyncGenerator<{ sessionId: string; messageId?: string; delta: string; done: boolean }>;
+  };
+  documents: {
+    list: (options?: { sessionId?: string }) => Promise<DocumentRecord[]>;
+    get: (documentId: string) => Promise<DocumentRecord | null>;
+    search: (input: { query: string; limit?: number; sessionId?: string }) => Promise<DocumentSearchResult[]>;
+    upload: (input: {
+      name: string;
+      mimeType: string;
+      data: string | Uint8Array;
+      origin?: DocumentRecord["origin"];
+      sessionId?: string;
+      createdByMessageId?: string;
+    }) => Promise<DocumentRecord>;
+    register: (input: {
+      filePath: string;
+      name?: string;
+      mimeType?: string;
+      origin?: DocumentRecord["origin"];
+      sessionId?: string;
+      createdByMessageId?: string;
+    }) => Promise<DocumentRecord>;
+    beginUpload: (input: {
+      name: string;
+      mimeType: string;
+      origin?: DocumentRecord["origin"];
+      sessionId?: string;
+      createdByMessageId?: string;
+    }) => Promise<{ uploadId: string }>;
+    appendUploadChunk: (uploadId: string, chunkBase64: string) => Promise<{ uploadId: string; appended: number }>;
+    commitUpload: (uploadId: string) => Promise<DocumentRecord>;
+    download: (documentId: string) => Promise<{ document: DocumentRecord; filePath: string; buffer: Buffer } | null>;
+    resolveRefs: (documentIds: string[]) => Promise<DocumentRef[]>;
   };
   data: WorkspaceDataStore;
   orchestration: {
@@ -710,6 +747,14 @@ function extractSessionIdFromSourcePath(sourcePath?: string): string | null {
   return fileName.slice(0, -".jsonl".length) || null;
 }
 
+function extractDocumentIdFromSourcePath(sourcePath?: string): string | null {
+  const trimmed = sourcePath?.trim();
+  if (!trimmed) return null;
+  const fileName = path.basename(trimmed);
+  if (!fileName.endsWith(".md")) return null;
+  return fileName.slice(0, -".md".length) || null;
+}
+
 export async function createClaw(options: CreateClawOptions): Promise<ClawInstance> {
   const filesystem = new NodeFileSystemHost();
   const baseProcessHost = new NodeProcessHost();
@@ -719,6 +764,7 @@ export async function createClaw(options: CreateClawOptions): Promise<ClawInstan
   const runtimeAgentId = options.workspace.runtimeAgentId ?? logicalAgentId;
   const conversationStore = new ConversationStore(workspaceDir, { filesystem });
   const dataStore = createWorkspaceDataStore(workspaceDir, filesystem);
+  const documentStore = createDocumentStore(workspaceDir, filesystem);
   const adapter = getRuntimeAdapter(options.runtime.adapter);
   const runtimeEnv = adapter.id === "openclaw"
     ? withOpenClawCommandEnv(options.runtime.env, {
@@ -1227,6 +1273,114 @@ export async function createClaw(options: CreateClawOptions): Promise<ClawInstan
       limit: input.limit,
       includeMessages: input.includeMessages,
     });
+  }
+
+  function prepareMessageDocuments(
+    sessionId: string,
+    message: Parameters<ConversationStore["appendMessage"]>[1],
+  ): Parameters<ConversationStore["appendMessage"]>[1] {
+    const directDocuments = Array.isArray(message.documents) ? [...message.documents] : [];
+    const attachments = Array.isArray(message.attachments) ? message.attachments : [];
+    if (attachments.length === 0) {
+      return {
+        ...message,
+        ...(directDocuments.length > 0 ? { documents: directDocuments } : {}),
+      };
+    }
+
+    const uploadedDocuments: DocumentRef[] = [];
+    const legacyAttachments: Attachment[] = [];
+
+    for (const attachment of attachments) {
+      if (typeof attachment.data === "string" && attachment.data.trim()) {
+        const document = documentStore.upload({
+          name: attachment.name,
+          mimeType: attachment.mimeType,
+          data: attachment.data,
+          origin: "user_upload",
+          workspaceId: options.workspace.workspaceId,
+          ...(options.workspace.projectId ? { projectId: options.workspace.projectId } : {}),
+          agentId: options.workspace.agentId,
+          sessionId,
+        });
+        uploadedDocuments.push({
+          documentId: document.documentId,
+          name: document.name,
+          mimeType: document.mimeType,
+          sizeBytes: document.sizeBytes,
+          ...(document.sha256 ? { sha256: document.sha256 } : {}),
+        });
+        continue;
+      }
+      legacyAttachments.push(attachment);
+    }
+
+    const legacyDocuments = legacyAttachments.length > 0
+      ? resolveLegacyDocumentRefs(message.id ?? `legacy-${sessionId}`, legacyAttachments)
+      : [];
+
+    return {
+      ...message,
+      ...(legacyAttachments.length > 0 ? { attachments: legacyAttachments } : {}),
+      documents: [...directDocuments, ...uploadedDocuments, ...legacyDocuments],
+    };
+  }
+
+  function searchDocumentsLocally(input: { query: string; limit?: number; sessionId?: string }): DocumentSearchResult[] {
+    return documentStore.search(input);
+  }
+
+  async function searchDocumentsWithOpenClawMemory(input: { query: string; limit?: number; sessionId?: string }): Promise<DocumentSearchResult[]> {
+    const hits = await runOpenClawMemorySearch(input.query, processHost, {
+      agentId: runtimeAgentId,
+      limit: input.limit,
+      env: resolvedRuntimeOptions.env,
+    });
+
+    const bestHitByDocument = new Map<string, DocumentSearchResult>();
+    for (const hit of hits) {
+      const documentId = extractDocumentIdFromSourcePath(hit.path);
+      if (!documentId) continue;
+      const document = documentStore.get(documentId);
+      if (!document) continue;
+      if (input.sessionId && document.sessionId !== input.sessionId) continue;
+
+      const candidate: DocumentSearchResult = {
+        ...document,
+        snippet: hit.text,
+        score: hit.score ?? 0,
+        ...(hit.path ? { sourcePath: hit.path } : {}),
+        ...(typeof hit.startLine === "number" ? { startLine: hit.startLine } : {}),
+        ...(typeof hit.endLine === "number" ? { endLine: hit.endLine } : {}),
+      };
+
+      const existing = bestHitByDocument.get(documentId);
+      if (!existing || candidate.score > existing.score) {
+        bestHitByDocument.set(documentId, candidate);
+      }
+    }
+
+    return [...bestHitByDocument.values()]
+      .sort((left, right) => (
+        right.score - left.score
+        || right.createdAt - left.createdAt
+        || left.documentId.localeCompare(right.documentId)
+      ))
+      .slice(0, Math.max(1, input.limit ?? 20));
+  }
+
+  async function searchDocuments(input: { query: string; limit?: number; sessionId?: string }): Promise<DocumentSearchResult[]> {
+    const normalizedQuery = input.query.trim();
+    if (!normalizedQuery) return [];
+    if (adapter.id === "openclaw") {
+      try {
+        const memoryHits = await searchDocumentsWithOpenClawMemory({ ...input, query: normalizedQuery });
+        if (memoryHits.length > 0) return memoryHits;
+      } catch {
+        // Fall back to local index search when OpenClaw memory is unavailable or not configured.
+      }
+    }
+    return searchDocumentsLocally({ ...input, query: normalizedQuery });
   }
 
   async function searchSessionsWithOpenClawMemory(input: ConversationSearchInput): Promise<ConversationSearchResult[]> {
@@ -3243,7 +3397,8 @@ export async function createClaw(options: CreateClawOptions): Promise<ClawInstan
         return session;
       },
       appendMessage: (sessionId, message) => {
-        const session = conversationStore.appendMessage(sessionId, message);
+        const preparedMessage = prepareMessageDocuments(sessionId, message);
+        const session = conversationStore.appendMessage(sessionId, preparedMessage);
         appendAuditEvent("conversations.message_appended", "conversations", {
           sessionId,
           role: message.role,
@@ -3406,6 +3561,33 @@ export async function createClaw(options: CreateClawOptions): Promise<ClawInstan
           });
         }
       },
+    },
+    documents: {
+      list: async (options) => documentStore.list(options),
+      get: async (documentId) => documentStore.get(documentId),
+      search: async (input) => searchDocuments(input),
+      upload: async (input) => documentStore.upload({
+        ...input,
+        workspaceId: options.workspace.workspaceId,
+        ...(options.workspace.projectId ? { projectId: options.workspace.projectId } : {}),
+        agentId: options.workspace.agentId,
+      }),
+      register: async (input) => documentStore.registerPath({
+        ...input,
+        workspaceId: options.workspace.workspaceId,
+        ...(options.workspace.projectId ? { projectId: options.workspace.projectId } : {}),
+        agentId: options.workspace.agentId,
+      }),
+      beginUpload: async (input) => documentStore.beginUpload({
+        ...input,
+        workspaceId: options.workspace.workspaceId,
+        ...(options.workspace.projectId ? { projectId: options.workspace.projectId } : {}),
+        agentId: options.workspace.agentId,
+      }),
+      appendUploadChunk: async (uploadId, chunkBase64) => documentStore.appendUploadChunk(uploadId, chunkBase64),
+      commitUpload: async (uploadId) => documentStore.commitUpload(uploadId),
+      download: async (documentId) => documentStore.download(documentId),
+      resolveRefs: async (documentIds) => documentStore.resolveRefs(documentIds),
     },
     data: dataStore,
     orchestration: {

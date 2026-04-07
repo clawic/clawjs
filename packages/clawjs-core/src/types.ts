@@ -996,6 +996,43 @@ export interface Attachment {
   preview?: string;
 }
 
+export type DocumentOrigin = "user_upload" | "assistant_generated" | "channel_ingested" | "imported";
+export type DocumentIndexStatus = "pending" | "indexed" | "unsupported" | "error";
+
+export interface DocumentStorageDescriptor {
+  kind: "workspace_path" | "blob";
+  path: string;
+}
+
+export interface DocumentRef {
+  documentId: string;
+  name: string;
+  mimeType: string;
+  sizeBytes: number;
+  sha256?: string;
+}
+
+export interface DocumentRecord extends DocumentRef {
+  workspaceId?: string;
+  projectId?: string;
+  agentId?: string;
+  origin: DocumentOrigin;
+  storage: DocumentStorageDescriptor;
+  createdAt: number;
+  createdByMessageId?: string;
+  sessionId?: string;
+  indexStatus: DocumentIndexStatus;
+  textPath?: string;
+}
+
+export interface DocumentSearchResult extends DocumentRecord {
+  snippet: string;
+  score: number;
+  sourcePath?: string;
+  startLine?: number;
+  endLine?: number;
+}
+
 export interface ContextChip {
   type: string;
   id: string;
@@ -1015,6 +1052,7 @@ export interface Message {
   content: string;
   createdAt: number;
   attachments?: Attachment[];
+  documents?: DocumentRef[];
   contextChips?: ContextChip[];
 }
 

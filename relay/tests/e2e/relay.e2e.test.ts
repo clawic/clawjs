@@ -17,12 +17,33 @@ interface SessionRecord {
   updatedAt: number;
   messageCount: number;
   preview: string;
-  messages: Array<{ role: string; content: string }>;
+  messages: Array<{
+    role: string;
+    content: string;
+    documents?: Array<{ documentId: string; name: string; mimeType: string; sizeBytes: number }>;
+  }>;
+}
+
+interface RelayDocumentRecord {
+  documentId: string;
+  name: string;
+  mimeType: string;
+  sizeBytes: number;
+  sha256?: string;
+  origin: string;
+  storage: { kind: string; path: string };
+  createdAt: number;
+  sessionId?: string;
+  indexStatus: string;
+  textPath?: string;
+  contentBase64: string;
 }
 
 const state = {
   sessionsByWorkspace: new Map<string, Map<string, SessionRecord>>(),
   workspaceFilesByWorkspace: new Map<string, Map<string, string>>(),
+  documentsByWorkspace: new Map<string, Map<string, RelayDocumentRecord>>(),
+  uploadSessionsByWorkspace: new Map<string, Map<string, { name: string; mimeType: string; sessionId?: string; chunks: string[] }>>(),
   tasks: [] as Array<Record<string, unknown>>,
   notes: [] as Array<Record<string, unknown>>,
   memory: [] as Array<Record<string, unknown>>,
@@ -49,6 +70,20 @@ function workspaceFilesForWorkspace(workspaceId: string): Map<string, string> {
   return state.workspaceFilesByWorkspace.get(workspaceId)!;
 }
 
+function documentsForWorkspace(workspaceId: string): Map<string, RelayDocumentRecord> {
+  if (!state.documentsByWorkspace.has(workspaceId)) {
+    state.documentsByWorkspace.set(workspaceId, new Map());
+  }
+  return state.documentsByWorkspace.get(workspaceId)!;
+}
+
+function uploadsForWorkspace(workspaceId: string): Map<string, { name: string; mimeType: string; sessionId?: string; chunks: string[] }> {
+  if (!state.uploadSessionsByWorkspace.has(workspaceId)) {
+    state.uploadSessionsByWorkspace.set(workspaceId, new Map());
+  }
+  return state.uploadSessionsByWorkspace.get(workspaceId)!;
+}
+
 function randomId(prefix: string): string {
   return `${prefix}-${Math.random().toString(36).slice(2, 10)}`;
 }
@@ -60,6 +95,15 @@ function summarizeSession(session: SessionRecord): SessionRecord {
     updatedAt: session.updatedAt || session.createdAt,
     messageCount: session.messages.length,
     preview: lastMessage?.content ?? "",
+  };
+}
+
+function documentRef(document: RelayDocumentRecord) {
+  return {
+    documentId: document.documentId,
+    name: document.name,
+    mimeType: document.mimeType,
+    sizeBytes: document.sizeBytes,
   };
 }
 
@@ -97,6 +141,17 @@ function startFakeConnector(url: string, connectorToken: string, agentId = "demo
     const targetWorkspaceId = String(message.workspaceId ?? "main");
     const workspaceSessions = sessionsForWorkspace(targetWorkspaceId);
     const workspaceFiles = workspaceFilesForWorkspace(targetWorkspaceId);
+    const workspaceDocuments = documentsForWorkspace(targetWorkspaceId);
+    const workspaceUploads = uploadsForWorkspace(targetWorkspaceId);
+    const resolveDocumentIds = (value: unknown) => (
+      Array.isArray(value)
+        ? value
+          .filter((entry): entry is string => typeof entry === "string" && entry.trim().length > 0)
+          .map((documentId) => workspaceDocuments.get(documentId))
+          .filter(Boolean)
+          .map((document) => documentRef(document as RelayDocumentRecord))
+        : []
+    );
     switch (message.operation) {
       case "workspace.status":
         respond({ status: { workspaceId: message.workspaceId, online: true } });
@@ -131,8 +186,13 @@ function startFakeConnector(url: string, connectorToken: string, agentId = "demo
           preview: "",
           messages: [],
         };
-        if (typeof message.payload?.message === "string") {
-          created.messages.push({ role: "user", content: message.payload.message });
+        const documents = resolveDocumentIds(message.payload?.documentIds);
+        if (typeof message.payload?.message === "string" || documents.length > 0) {
+          created.messages.push({
+            role: "user",
+            content: String(message.payload?.message ?? ""),
+            ...(documents.length > 0 ? { documents } : {}),
+          });
         }
         const summary = summarizeSession(created);
         workspaceSessions.set(summary.sessionId, summary);
@@ -158,7 +218,12 @@ function startFakeConnector(url: string, connectorToken: string, agentId = "demo
       case "sessions.append-message": {
         const session = workspaceSessions.get(sessionId);
         if (session) {
-          session.messages.push({ role: String(message.payload?.role ?? "user"), content: String(message.payload?.content ?? "") });
+          const documents = resolveDocumentIds(message.payload?.documentIds);
+          session.messages.push({
+            role: String(message.payload?.role ?? "user"),
+            content: String(message.payload?.content ?? ""),
+            ...(documents.length > 0 ? { documents } : {}),
+          });
           session.updatedAt = Date.now();
           const summary = summarizeSession(session);
           workspaceSessions.set(sessionId, summary);
@@ -170,8 +235,13 @@ function startFakeConnector(url: string, connectorToken: string, agentId = "demo
       }
       case "sessions.reply": {
         const session = workspaceSessions.get(sessionId)!;
-        if (typeof message.payload?.message === "string") {
-          session.messages.push({ role: "user", content: message.payload.message });
+        const documents = resolveDocumentIds(message.payload?.documentIds);
+        if (typeof message.payload?.message === "string" || documents.length > 0) {
+          session.messages.push({
+            role: "user",
+            content: String(message.payload?.message ?? ""),
+            ...(documents.length > 0 ? { documents } : {}),
+          });
         }
         session.messages.push({ role: "assistant", content: "pong from relay" });
         session.updatedAt = Date.now();
@@ -181,6 +251,18 @@ function startFakeConnector(url: string, connectorToken: string, agentId = "demo
         return;
       }
       case "sessions.stream": {
+        const session = workspaceSessions.get(sessionId);
+        const documents = resolveDocumentIds(message.payload?.documentIds);
+        if (session && (typeof message.payload?.message === "string" || documents.length > 0)) {
+          session.messages.push({
+            role: "user",
+            content: String(message.payload?.message ?? ""),
+            ...(documents.length > 0 ? { documents } : {}),
+          });
+          session.messages.push({ role: "assistant", content: "hello world" });
+          session.updatedAt = Date.now();
+          workspaceSessions.set(sessionId, summarizeSession(session));
+        }
         socket.send(JSON.stringify({
           type: "stream",
           requestId: message.requestId,
@@ -212,6 +294,113 @@ function startFakeConnector(url: string, connectorToken: string, agentId = "demo
           payload: { type: "title", title: "hello world" },
         }));
         respond({ ok: true });
+        return;
+      }
+      case "documents.list":
+        respond({ documents: [...workspaceDocuments.values()].sort((left, right) => right.createdAt - left.createdAt) });
+        return;
+      case "documents.get":
+        respond({ document: workspaceDocuments.get(String(message.payload?.documentId ?? "")) ?? null });
+        return;
+      case "documents.search": {
+        const query = String(message.payload?.q ?? "").toLowerCase();
+        const sessionFilter = typeof message.payload?.sessionId === "string" ? message.payload.sessionId : undefined;
+        const documents = [...workspaceDocuments.values()]
+          .filter((document) => !sessionFilter || document.sessionId === sessionFilter)
+          .map((document) => {
+            const content = Buffer.from(document.contentBase64, "base64").toString("utf8");
+            const haystack = `${document.name}\n${content}`.toLowerCase();
+            if (!query || !haystack.includes(query)) return null;
+            return {
+              ...document,
+              snippet: content.includes(query) ? content : `${document.name}: ${content}`.trim(),
+              score: 10,
+              sourcePath: document.storage.path,
+            };
+          })
+          .filter(Boolean);
+        respond({ documents });
+        return;
+      }
+      case "documents.register": {
+        const filePath = String(message.payload?.filePath ?? "");
+        const name = String(message.payload?.name ?? (path.basename(filePath) || "registered.txt"));
+        const mimeType = String(message.payload?.mimeType ?? "text/plain");
+        const sessionIdForDocument = typeof message.payload?.sessionId === "string" ? message.payload.sessionId : undefined;
+        const contentBase64 = Buffer.from(`registered:${filePath}`, "utf8").toString("base64");
+        const document: RelayDocumentRecord = {
+          documentId: randomId("document"),
+          name,
+          mimeType,
+          sizeBytes: Buffer.from(contentBase64, "base64").byteLength,
+          origin: String(message.payload?.origin ?? "imported"),
+          storage: { kind: "workspace_path", path: filePath },
+          createdAt: Date.now(),
+          ...(sessionIdForDocument ? { sessionId: sessionIdForDocument } : {}),
+          indexStatus: "indexed",
+          textPath: `.clawjs/documents/index/${path.basename(filePath)}.md`,
+          contentBase64,
+        };
+        workspaceDocuments.set(document.documentId, document);
+        respond({ document });
+        return;
+      }
+      case "documents.upload.begin": {
+        const uploadId = randomId("upload");
+        workspaceUploads.set(uploadId, {
+          name: String(message.payload?.name ?? "document.txt"),
+          mimeType: String(message.payload?.mimeType ?? "application/octet-stream"),
+          ...(typeof message.payload?.sessionId === "string" ? { sessionId: message.payload.sessionId } : {}),
+          chunks: [],
+        });
+        respond({ uploadId });
+        return;
+      }
+      case "documents.upload.chunk": {
+        const uploadId = String(message.payload?.uploadId ?? "");
+        const upload = workspaceUploads.get(uploadId);
+        if (!upload) {
+          respond({ uploadId, appended: 0 });
+          return;
+        }
+        const chunk = String(message.payload?.chunk ?? "");
+        upload.chunks.push(chunk);
+        workspaceUploads.set(uploadId, upload);
+        respond({ uploadId, appended: Buffer.from(chunk, "base64").byteLength });
+        return;
+      }
+      case "documents.upload.commit": {
+        const uploadId = String(message.payload?.uploadId ?? "");
+        const upload = workspaceUploads.get(uploadId);
+        if (!upload) {
+          respond({ document: null });
+          return;
+        }
+        const contentBase64 = upload.chunks.join("");
+        const existing = [...workspaceDocuments.values()].find((document) => document.contentBase64 === contentBase64);
+        const documentId = randomId("document");
+        const document: RelayDocumentRecord = {
+          documentId,
+          name: upload.name,
+          mimeType: upload.mimeType,
+          sizeBytes: Buffer.from(contentBase64, "base64").byteLength,
+          sha256: existing?.sha256 ?? `sha-${contentBase64.slice(0, 12)}`,
+          origin: "user_upload",
+          storage: existing?.storage ?? { kind: "blob", path: `documents/blobs/${documentId}` },
+          createdAt: Date.now(),
+          ...(upload.sessionId ? { sessionId: upload.sessionId } : {}),
+          indexStatus: "indexed",
+          textPath: `.clawjs/documents/index/${documentId}.md`,
+          contentBase64,
+        };
+        workspaceDocuments.set(document.documentId, document);
+        workspaceUploads.delete(uploadId);
+        respond({ document });
+        return;
+      }
+      case "documents.download": {
+        const document = workspaceDocuments.get(String(message.payload?.documentId ?? ""));
+        respond(document ? { document, contentBase64: document.contentBase64 } : { document: null });
         return;
       }
       case "sessions.generate-title":
@@ -563,10 +752,88 @@ describe("relay e2e", () => {
     const sessionId = sessionPayload.session.sessionId;
     assert.ok(sessionId);
 
+    const documentContent = Buffer.from("budget alpha", "utf8").toString("base64");
+    const uploadDocument = await fetch(`${baseUrl}/v1/tenants/demo-tenant/agents/demo-agent/workspaces/main/documents/upload`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${userTokens.accessToken}`,
+      },
+      body: JSON.stringify({
+        name: "budget.txt",
+        mimeType: "text/plain",
+        data: documentContent,
+        sessionId,
+      }),
+    });
+    assert.equal(uploadDocument.status, 200);
+    const uploadPayload = await uploadDocument.json() as { document: RelayDocumentRecord };
+    assert.ok(uploadPayload.document.documentId);
+
+    const uploadDuplicateDocument = await fetch(`${baseUrl}/v1/tenants/demo-tenant/agents/demo-agent/workspaces/main/documents/upload`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${userTokens.accessToken}`,
+      },
+      body: JSON.stringify({
+        name: "budget-copy.txt",
+        mimeType: "text/plain",
+        data: documentContent,
+        sessionId,
+      }),
+    });
+    assert.equal(uploadDuplicateDocument.status, 200);
+    const duplicateUploadPayload = await uploadDuplicateDocument.json() as { document: RelayDocumentRecord };
+    assert.notEqual(duplicateUploadPayload.document.documentId, uploadPayload.document.documentId);
+    assert.equal(duplicateUploadPayload.document.storage.path, uploadPayload.document.storage.path);
+
+    const registerDocument = await fetch(`${baseUrl}/v1/tenants/demo-tenant/agents/demo-agent/workspaces/main/documents/register`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${userTokens.accessToken}`,
+      },
+      body: JSON.stringify({
+        filePath: "reports/plan.txt",
+        name: "plan.txt",
+        mimeType: "text/plain",
+        sessionId,
+      }),
+    });
+    assert.equal(registerDocument.status, 200);
+    const registeredPayload = await registerDocument.json() as { document: RelayDocumentRecord };
+    assert.equal(registeredPayload.document.storage.kind, "workspace_path");
+
+    const listDocuments = await fetch(`${baseUrl}/v1/tenants/demo-tenant/agents/demo-agent/workspaces/main/documents?sessionId=${encodeURIComponent(sessionId)}`, {
+      headers: { Authorization: `Bearer ${userTokens.accessToken}` },
+    });
+    assert.equal(listDocuments.status, 200);
+    const listedDocuments = await listDocuments.json() as { documents: RelayDocumentRecord[] };
+    assert.equal(listedDocuments.documents.length, 3);
+
+    const appendDocumentMessage = await fetch(`${baseUrl}/v1/tenants/demo-tenant/agents/demo-agent/workspaces/main/sessions/${sessionId}/messages`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${userTokens.accessToken}`,
+      },
+      body: JSON.stringify({
+        role: "user",
+        content: "review attached budget",
+        documentIds: [uploadPayload.document.documentId],
+      }),
+    });
+    assert.equal(appendDocumentMessage.status, 200);
+
     const readSession = await fetch(`${baseUrl}/v1/tenants/demo-tenant/agents/demo-agent/workspaces/main/sessions/${sessionId}`, {
       headers: { Authorization: `Bearer ${userTokens.accessToken}` },
     });
     assert.equal(readSession.status, 200);
+    const readSessionPayload = await readSession.json() as { session: SessionRecord };
+    assert.equal(readSessionPayload.session.messages.some((message) => (
+      message.documents?.some((document) => document.documentId === uploadPayload.document.documentId)
+    )), true);
 
     const patchSession = await fetch(`${baseUrl}/v1/tenants/demo-tenant/agents/demo-agent/workspaces/main/sessions/${sessionId}`, {
       method: "PATCH",
@@ -595,6 +862,42 @@ describe("relay e2e", () => {
     const streamText = await streamResponse.text();
     assert.match(streamText, /event: chunk/);
     assert.match(streamText, /hello world/);
+
+    const streamPostResponse = await fetch(`${baseUrl}/v1/tenants/demo-tenant/agents/demo-agent/workspaces/main/sessions/${sessionId}/stream`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${userTokens.accessToken}`,
+      },
+      body: JSON.stringify({
+        message: "streaming with docs",
+        documentIds: [uploadPayload.document.documentId],
+      }),
+    });
+    const streamPostText = await streamPostResponse.text();
+    assert.match(streamPostText, /event: chunk/);
+    assert.match(streamPostText, /hello world/);
+
+    const searchDocuments = await fetch(`${baseUrl}/v1/tenants/demo-tenant/agents/demo-agent/workspaces/main/documents:search?q=${encodeURIComponent("budget")}&sessionId=${encodeURIComponent(sessionId)}`, {
+      headers: { Authorization: `Bearer ${userTokens.accessToken}` },
+    });
+    assert.equal(searchDocuments.status, 200);
+    const searchPayload = await searchDocuments.json() as {
+      documents: Array<RelayDocumentRecord & { snippet: string; score: number; sourcePath: string }>;
+    };
+    assert.equal(searchPayload.documents.some((document) => document.documentId === uploadPayload.document.documentId), true);
+
+    const getDocument = await fetch(`${baseUrl}/v1/tenants/demo-tenant/agents/demo-agent/workspaces/main/documents/${uploadPayload.document.documentId}`, {
+      headers: { Authorization: `Bearer ${userTokens.accessToken}` },
+    });
+    assert.equal(getDocument.status, 200);
+
+    const downloadDocument = await fetch(`${baseUrl}/v1/tenants/demo-tenant/agents/demo-agent/workspaces/main/documents/${uploadPayload.document.documentId}/download`, {
+      headers: { Authorization: `Bearer ${userTokens.accessToken}` },
+    });
+    assert.equal(downloadDocument.status, 200);
+    const downloadedText = Buffer.from(await downloadDocument.arrayBuffer()).toString("utf8");
+    assert.equal(downloadedText, "budget alpha");
 
     const taskCreate = await fetch(`${baseUrl}/v1/tenants/demo-tenant/agents/demo-agent/workspaces/main/tasks`, {
       method: "POST",

@@ -79,6 +79,7 @@ const same = await createClaw({
 | `claw.inference` | `generateText` |
 | `claw.secrets` | `list`, `describe`, `doctorKeychain`, `ensureHttpReference`, `ensureTelegramBotReference` |
 | `claw.conversations` | session CRUD, title generation, structured reply streaming, chunk streaming |
+| `claw.documents` | list, get, search, upload, register, chunked upload, download, ref resolution |
 | `claw.data` | `document`, `collection`, `asset`, `rootDir` |
 | `claw.orchestration` | `snapshot` |
 | `claw.watch` | `file`, `transcript`, `runtimeStatus`, `providerStatus`, `events`, `eventsIterator` |
@@ -374,6 +375,26 @@ const sessions = claw.conversations.listSessions();
 claw.conversations.updateSessionTitle(session.sessionId, "Runtime layout");
 await claw.conversations.generateTitle({ sessionId: session.sessionId });
 
+const document = await claw.documents.upload({
+  name: "brief.txt",
+  mimeType: "text/plain",
+  data: Buffer.from("alpha notes").toString("base64"),
+  sessionId: session.sessionId,
+});
+
+claw.conversations.appendMessage(session.sessionId, {
+  role: "user",
+  content: "Use the attached brief.",
+  documents: [{
+    documentId: document.documentId,
+    name: document.name,
+    mimeType: document.mimeType,
+    sizeBytes: document.sizeBytes,
+  }],
+});
+
+const hits = await claw.documents.search({ query: "alpha", sessionId: session.sessionId });
+
 for await (const event of claw.conversations.streamAssistantReplyEvents({
   sessionId: session.sessionId,
   transport: "auto",
@@ -387,6 +408,10 @@ for await (const chunk of claw.conversations.streamAssistantReply({
   if (!chunk.done) process.stdout.write(chunk.delta);
 }
 ```
+
+Conversation messages now normalize persisted file references into `message.documents`.
+Legacy `attachments` are still accepted as input, but persisted transcripts and relay
+responses expose document refs instead of embedding file payloads in the transcript.
 ## Data Store and Orchestration
 
 ```ts
