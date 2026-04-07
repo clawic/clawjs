@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- General -->
+    <string name="general_chat">聊天</string>
+    <string name="general_search">搜索</string>
+    <string name="general_delete">删除</string>
+    <string name="general_cancel">取消</string>
+    <string name="general_create">创建</string>
+    <string name="general_close">关闭</string>
+    <string name="general_chats">聊天</string>
+    <string name="general_documents">文档</string>
+
+    <!-- Home -->
+    <string name="home_projects">项目</string>
+    <string name="home_conversations">对话</string>
+    <string name="home_see_all">查看全部</string>
+    <string name="home_all_projects">所有项目</string>
+    <string name="home_new_chat">新聊天</string>
+    <string name="home_select_agent">选择一个代理进行聊天</string>
+
+    <!-- Chat -->
+    <string name="chat_thinking">思考中</string>
+    <string name="chat_message_placeholder">消息</string>
+    <string name="chat_waiting">等待中...</string>
+    <string name="chat_send_message_to">发送消息给%1$s...</string>
+
+    <!-- Agent -->
+    <string name="agent_new_agent">新建智能体</string>
+    <string name="agent_create_agent">创建智能体</string>
+    <string name="agent_no_conversations">暂无对话</string>
+    <string name="agent_custom_agent">自定义智能体</string>
+    <string name="agent_start_conversation_with">与%1$s开始对话</string>
+
+    <!-- Agent Form -->
+    <string name="agent_form_name">名称</string>
+    <string name="agent_form_name_placeholder">例如：市场营销、法务、财务...</string>
+    <string name="agent_form_role">角色</string>
+    <string name="agent_form_role_placeholder">例如：内容撰写、分析师...</string>
+    <string name="agent_form_description">描述</string>
+    <string name="agent_form_description_placeholder">这个智能体做什么...</string>
+
+    <!-- Project -->
+    <string name="project_no_conversations">暂无对话</string>
+    <string name="project_start_conversation_in">在%1$s中开始对话</string>
+
+    <!-- Settings -->
+    <string name="settings_title">设置</string>
+    <string name="settings_appearance">外观</string>
+    <string name="settings_language">语言</string>
+    <string name="settings_language_system">跟随系统</string>
+    <string name="settings_notifications">通知</string>
+    <string name="settings_sound">声音</string>
+    <string name="settings_haptics">触感反馈</string>
+    <string name="settings_data">数据</string>
+    <string name="settings_conversations">对话</string>
+    <string name="settings_agents">智能体</string>
+    <string name="settings_delete_all_conversations">删除所有对话</string>
+    <string name="settings_delete_all_alert">这将永久删除所有对话。此操作无法撤销。</string>
+    <string name="settings_about">关于</string>
+    <string name="settings_version">版本</string>
+    <string name="settings_build">构建号</string>
+    <string name="settings_app_subtitle">ClawJS - AI聊天助手</string>
+
+    <!-- Appearance -->
+    <string name="appearance_system">跟随系统</string>
+    <string name="appearance_light">浅色</string>
+    <string name="appearance_dark">深色</string>
+</resources>

@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- General -->
+    <string name="general_chat">محادثة</string>
+    <string name="general_search">بحث</string>
+    <string name="general_delete">حذف</string>
+    <string name="general_cancel">إلغاء</string>
+    <string name="general_create">إنشاء</string>
+    <string name="general_close">إغلاق</string>
+    <string name="general_chats">المحادثات</string>
+    <string name="general_documents">المستندات</string>
+
+    <!-- Home -->
+    <string name="home_projects">المشاريع</string>
+    <string name="home_conversations">المحادثات</string>
+    <string name="home_see_all">عرض الكل</string>
+    <string name="home_all_projects">جميع المشاريع</string>
+    <string name="home_new_chat">محادثة جديدة</string>
+    <string name="home_select_agent">اختر وكيلاً للمحادثة</string>
+
+    <!-- Chat -->
+    <string name="chat_thinking">يفكر</string>
+    <string name="chat_message_placeholder">رسالة</string>
+    <string name="chat_waiting">في الانتظار...</string>
+    <string name="chat_send_message_to">إرسال رسالة إلى %1$s...</string>
+
+    <!-- Agent -->
+    <string name="agent_new_agent">وكيل جديد</string>
+    <string name="agent_create_agent">إنشاء وكيل</string>
+    <string name="agent_no_conversations">لا توجد محادثات</string>
+    <string name="agent_custom_agent">وكيل مخصص</string>
+    <string name="agent_start_conversation_with">بدء محادثة مع %1$s</string>
+
+    <!-- Agent Form -->
+    <string name="agent_form_name">الاسم</string>
+    <string name="agent_form_name_placeholder">مثال: التسويق، القانون، المالية...</string>
+    <string name="agent_form_role">الدور</string>
+    <string name="agent_form_role_placeholder">مثال: كاتب محتوى، محلل...</string>
+    <string name="agent_form_description">الوصف</string>
+    <string name="agent_form_description_placeholder">ماذا يفعل هذا الوكيل...</string>
+
+    <!-- Project -->
+    <string name="project_no_conversations">لا توجد محادثات</string>
+    <string name="project_start_conversation_in">بدء محادثة في %1$s</string>
+
+    <!-- Settings -->
+    <string name="settings_title">الإعدادات</string>
+    <string name="settings_appearance">المظهر</string>
+    <string name="settings_language">اللغة</string>
+    <string name="settings_language_system">الافتراضي للنظام</string>
+    <string name="settings_notifications">الإشعارات</string>
+    <string name="settings_sound">الصوت</string>
+    <string name="settings_haptics">اللمس</string>
+    <string name="settings_data">البيانات</string>
+    <string name="settings_conversations">المحادثات</string>
+    <string name="settings_agents">الوكلاء</string>
+    <string name="settings_delete_all_conversations">حذف جميع المحادثات</string>
+    <string name="settings_delete_all_alert">سيؤدي هذا إلى حذف جميع المحادثات نهائياً. لا يمكن التراجع عن هذا الإجراء.</string>
+    <string name="settings_about">حول</string>
+    <string name="settings_version">الإصدار</string>
+    <string name="settings_build">البناء</string>
+    <string name="settings_app_subtitle">ClawJS - مساعد محادثة بالذكاء الاصطناعي</string>
+
+    <!-- Appearance -->
+    <string name="appearance_system">النظام</string>
+    <string name="appearance_light">فاتح</string>
+    <string name="appearance_dark">داكن</string>
+</resources>

@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- General -->
+    <string name="general_chat">Chat</string>
+    <string name="general_search">Rechercher</string>
+    <string name="general_delete">Supprimer</string>
+    <string name="general_cancel">Annuler</string>
+    <string name="general_create">Créer</string>
+    <string name="general_close">Fermer</string>
+    <string name="general_chats">Chats</string>
+    <string name="general_documents">Documents</string>
+
+    <!-- Home -->
+    <string name="home_projects">Projets</string>
+    <string name="home_conversations">Conversations</string>
+    <string name="home_see_all">Tout voir</string>
+    <string name="home_all_projects">Tous les projets</string>
+    <string name="home_new_chat">Nouveau Chat</string>
+    <string name="home_select_agent">Choisissez un agent pour discuter</string>
+
+    <!-- Chat -->
+    <string name="chat_thinking">Réflexion</string>
+    <string name="chat_message_placeholder">Message</string>
+    <string name="chat_waiting">En attente...</string>
+    <string name="chat_send_message_to">Envoyer un message à %1$s...</string>
+
+    <!-- Agent -->
+    <string name="agent_new_agent">Nouvel Agent</string>
+    <string name="agent_create_agent">Créer un Agent</string>
+    <string name="agent_no_conversations">Aucune conversation</string>
+    <string name="agent_custom_agent">Agent personnalisé</string>
+    <string name="agent_start_conversation_with">Démarrer une conversation avec %1$s</string>
+
+    <!-- Agent Form -->
+    <string name="agent_form_name">Nom</string>
+    <string name="agent_form_name_placeholder">Ex : Marketing, Juridique, Finance...</string>
+    <string name="agent_form_role">Rôle</string>
+    <string name="agent_form_role_placeholder">Ex : Rédacteur, Analyste...</string>
+    <string name="agent_form_description">Description</string>
+    <string name="agent_form_description_placeholder">Que fait cet agent...</string>
+
+    <!-- Project -->
+    <string name="project_no_conversations">Aucune conversation</string>
+    <string name="project_start_conversation_in">Démarrer une conversation dans %1$s</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Réglages</string>
+    <string name="settings_appearance">Apparence</string>
+    <string name="settings_language">Langue</string>
+    <string name="settings_language_system">Par defaut du systeme</string>
+    <string name="settings_notifications">Notifications</string>
+    <string name="settings_sound">Son</string>
+    <string name="settings_haptics">Vibrations</string>
+    <string name="settings_data">Données</string>
+    <string name="settings_conversations">Conversations</string>
+    <string name="settings_agents">Agents</string>
+    <string name="settings_delete_all_conversations">Supprimer toutes les conversations</string>
+    <string name="settings_delete_all_alert">Cela supprimera définitivement toutes les conversations. Cette action est irréversible.</string>
+    <string name="settings_about">À propos</string>
+    <string name="settings_version">Version</string>
+    <string name="settings_build">Build</string>
+    <string name="settings_app_subtitle">ClawJS - Assistant de Chat IA</string>
+
+    <!-- Appearance -->
+    <string name="appearance_system">Système</string>
+    <string name="appearance_light">Clair</string>
+    <string name="appearance_dark">Sombre</string>
+</resources>

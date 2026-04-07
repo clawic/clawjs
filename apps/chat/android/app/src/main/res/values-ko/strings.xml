@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- General -->
+    <string name="general_chat">채팅</string>
+    <string name="general_search">검색</string>
+    <string name="general_delete">삭제</string>
+    <string name="general_cancel">취소</string>
+    <string name="general_create">만들기</string>
+    <string name="general_close">닫기</string>
+    <string name="general_chats">채팅</string>
+    <string name="general_documents">문서</string>
+
+    <!-- Home -->
+    <string name="home_projects">프로젝트</string>
+    <string name="home_conversations">대화</string>
+    <string name="home_see_all">모두 보기</string>
+    <string name="home_all_projects">모든 프로젝트</string>
+    <string name="home_new_chat">새 채팅</string>
+    <string name="home_select_agent">채팅할 에이전트를 선택하세요</string>
+
+    <!-- Chat -->
+    <string name="chat_thinking">생각 중</string>
+    <string name="chat_message_placeholder">메시지</string>
+    <string name="chat_waiting">대기 중...</string>
+    <string name="chat_send_message_to">%1$s에게 메시지 보내기...</string>
+
+    <!-- Agent -->
+    <string name="agent_new_agent">새 에이전트</string>
+    <string name="agent_create_agent">에이전트 만들기</string>
+    <string name="agent_no_conversations">대화 없음</string>
+    <string name="agent_custom_agent">사용자 지정 에이전트</string>
+    <string name="agent_start_conversation_with">%1$s와 대화 시작하기</string>
+
+    <!-- Agent Form -->
+    <string name="agent_form_name">이름</string>
+    <string name="agent_form_name_placeholder">예: 마케팅, 법무, 재무...</string>
+    <string name="agent_form_role">역할</string>
+    <string name="agent_form_role_placeholder">예: 콘텐츠 작성자, 분석가...</string>
+    <string name="agent_form_description">설명</string>
+    <string name="agent_form_description_placeholder">이 에이전트의 기능...</string>
+
+    <!-- Project -->
+    <string name="project_no_conversations">대화 없음</string>
+    <string name="project_start_conversation_in">%1$s에서 대화 시작하기</string>
+
+    <!-- Settings -->
+    <string name="settings_title">설정</string>
+    <string name="settings_appearance">외관</string>
+    <string name="settings_language">언어</string>
+    <string name="settings_language_system">시스템 기본값</string>
+    <string name="settings_notifications">알림</string>
+    <string name="settings_sound">소리</string>
+    <string name="settings_haptics">햅틱</string>
+    <string name="settings_data">데이터</string>
+    <string name="settings_conversations">대화</string>
+    <string name="settings_agents">에이전트</string>
+    <string name="settings_delete_all_conversations">모든 대화 삭제</string>
+    <string name="settings_delete_all_alert">모든 대화가 영구적으로 삭제됩니다. 이 작업은 되돌릴 수 없습니다.</string>
+    <string name="settings_about">정보</string>
+    <string name="settings_version">버전</string>
+    <string name="settings_build">빌드</string>
+    <string name="settings_app_subtitle">ClawJS - AI 채팅 어시스턴트</string>
+
+    <!-- Appearance -->
+    <string name="appearance_system">시스템</string>
+    <string name="appearance_light">라이트</string>
+    <string name="appearance_dark">다크</string>
+</resources>
