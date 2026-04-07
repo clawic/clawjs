@@ -13,6 +13,10 @@ import { deriveAssignmentWorkspaceId, deriveRuntimeAgentId } from "../../src/sha
 interface SessionRecord {
   sessionId: string;
   title: string;
+  createdAt: number;
+  updatedAt: number;
+  messageCount: number;
+  preview: string;
   messages: Array<{ role: string; content: string }>;
 }
 
@@ -47,6 +51,16 @@ function workspaceFilesForWorkspace(workspaceId: string): Map<string, string> {
 
 function randomId(prefix: string): string {
   return `${prefix}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function summarizeSession(session: SessionRecord): SessionRecord {
+  const lastMessage = session.messages.at(-1);
+  return {
+    ...session,
+    updatedAt: session.updatedAt || session.createdAt,
+    messageCount: session.messages.length,
+    preview: lastMessage?.content ?? "",
+  };
 }
 
 function startFakeConnector(url: string, connectorToken: string, agentId = "demo-agent") {
@@ -91,19 +105,38 @@ function startFakeConnector(url: string, connectorToken: string, agentId = "demo
         respond({ integrations: { runtime: { adapter: "fake" }, channels: [] } });
         return;
       case "sessions.list":
-        respond({ sessions: [...workspaceSessions.values()].map((session) => ({ sessionId: session.sessionId, title: session.title })) });
+        respond({
+          sessions: [...workspaceSessions.values()].map((session) => {
+            const summary = summarizeSession(session);
+            workspaceSessions.set(summary.sessionId, summary);
+            return {
+              sessionId: summary.sessionId,
+              title: summary.title,
+              createdAt: summary.createdAt,
+              updatedAt: summary.updatedAt,
+              messageCount: summary.messageCount,
+              preview: summary.preview,
+            };
+          }),
+        });
         return;
       case "sessions.create": {
+        const createdAt = Date.now();
         const created: SessionRecord = {
           sessionId: randomId("session"),
           title: String(message.payload?.title ?? "New chat"),
+          createdAt,
+          updatedAt: createdAt,
+          messageCount: 0,
+          preview: "",
           messages: [],
         };
         if (typeof message.payload?.message === "string") {
           created.messages.push({ role: "user", content: message.payload.message });
         }
-        workspaceSessions.set(created.sessionId, created);
-        respond({ session: created });
+        const summary = summarizeSession(created);
+        workspaceSessions.set(summary.sessionId, summary);
+        respond({ session: summary });
         return;
       }
       case "sessions.get":
@@ -111,7 +144,11 @@ function startFakeConnector(url: string, connectorToken: string, agentId = "demo
         return;
       case "sessions.update": {
         const session = workspaceSessions.get(sessionId);
-        if (session) session.title = String(message.payload?.title ?? session.title);
+        if (session) {
+          session.title = String(message.payload?.title ?? session.title);
+          session.updatedAt = Date.now();
+          workspaceSessions.set(sessionId, summarizeSession(session));
+        }
         respond({ ok: true, title: session?.title ?? null });
         return;
       }
@@ -120,8 +157,15 @@ function startFakeConnector(url: string, connectorToken: string, agentId = "demo
         return;
       case "sessions.append-message": {
         const session = workspaceSessions.get(sessionId);
-        session?.messages.push({ role: String(message.payload?.role ?? "user"), content: String(message.payload?.content ?? "") });
-        respond({ session });
+        if (session) {
+          session.messages.push({ role: String(message.payload?.role ?? "user"), content: String(message.payload?.content ?? "") });
+          session.updatedAt = Date.now();
+          const summary = summarizeSession(session);
+          workspaceSessions.set(sessionId, summary);
+          respond({ session: summary });
+          return;
+        }
+        respond({ session: null });
         return;
       }
       case "sessions.reply": {
@@ -130,7 +174,10 @@ function startFakeConnector(url: string, connectorToken: string, agentId = "demo
           session.messages.push({ role: "user", content: message.payload.message });
         }
         session.messages.push({ role: "assistant", content: "pong from relay" });
-        respond({ reply: "pong from relay", session });
+        session.updatedAt = Date.now();
+        const summary = summarizeSession(session);
+        workspaceSessions.set(sessionId, summary);
+        respond({ reply: "pong from relay", session: summary });
         return;
       }
       case "sessions.stream": {
@@ -894,6 +941,127 @@ describe("relay e2e", () => {
     const betaLegacyPayload = await betaLegacySessions.json() as { sessions: Array<{ title: string }> };
     assert.equal(betaLegacyPayload.sessions.some((session) => session.title === "Beta deploy"), true);
     assert.equal(betaLegacyPayload.sessions.some((session) => session.title === "Deploy plan"), false);
+
+    socket.close();
+    await new Promise((resolve) => socket.once("close", () => resolve(null)));
+  });
+
+  test("project assignment routes expose the payload shape consumed by the ios client", async () => {
+    const userTokens = await login("user@relay.local", "relay-user");
+    const adminTokens = await login("admin@relay.local", "relay-admin");
+
+    const enrollmentResponse = await fetch(`${baseUrl}/v1/admin/connectors/enrollments`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${adminTokens.accessToken}`,
+      },
+      body: JSON.stringify({ tenantId: "demo-tenant", agentId: "ios-agent", description: "ios contract connector" }),
+    });
+    assert.equal(enrollmentResponse.status, 200);
+    const enrollment = await enrollmentResponse.json() as { enrollmentToken: string };
+
+    const connectorEnroll = await fetch(`${baseUrl}/v1/connector/enroll`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ enrollmentToken: enrollment.enrollmentToken }),
+    });
+    const connectorToken = (await connectorEnroll.json() as { connectorToken: string }).connectorToken;
+    const socket = startFakeConnector(baseUrl, connectorToken, "ios-agent");
+    await new Promise((resolve) => socket.once("message", () => resolve(null)));
+
+    const createProject = await fetch(`${baseUrl}/v1/tenants/demo-tenant/projects`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${adminTokens.accessToken}`,
+      },
+      body: JSON.stringify({
+        projectId: "ios-chat",
+        displayName: "iOS Chat",
+        description: "Native chat surface",
+      }),
+    });
+    assert.equal(createProject.status, 200);
+
+    const attachAgent = await fetch(`${baseUrl}/v1/tenants/demo-tenant/projects/ios-chat/agents/ios-agent`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${adminTokens.accessToken}`,
+      },
+      body: JSON.stringify({
+        agentDisplayName: "Support Agent",
+        agentRole: "support",
+        agentInstructions: "Handle mobile user chats.",
+        displayName: "iOS Chat / Support Agent",
+      }),
+    });
+    assert.equal(attachAgent.status, 200);
+
+    const createSession = await fetch(`${baseUrl}/v1/tenants/demo-tenant/projects/ios-chat/agents/ios-agent/sessions`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${userTokens.accessToken}`,
+      },
+      body: JSON.stringify({ title: "Mobile thread", message: "hello relay" }),
+    });
+    assert.equal(createSession.status, 200);
+    const createdSessionPayload = await createSession.json() as { session: SessionRecord };
+    assert.equal(createdSessionPayload.session.messageCount, 1);
+    assert.equal(createdSessionPayload.session.preview, "hello relay");
+
+    const listProjects = await fetch(`${baseUrl}/v1/tenants/demo-tenant/projects`, {
+      headers: { Authorization: `Bearer ${userTokens.accessToken}` },
+    });
+    assert.equal(listProjects.status, 200);
+    const projectsPayload = await listProjects.json() as {
+      projects: Array<{ projectId: string; displayName: string; description: string }>;
+    };
+    assert.equal(projectsPayload.projects.some((project) => project.projectId === "ios-chat" && project.displayName === "iOS Chat"), true);
+
+    const listProjectAgents = await fetch(`${baseUrl}/v1/tenants/demo-tenant/projects/ios-chat/agents`, {
+      headers: { Authorization: `Bearer ${userTokens.accessToken}` },
+    });
+    assert.equal(listProjectAgents.status, 200);
+    const agentsPayload = await listProjectAgents.json() as {
+      agents: Array<{ agentId: string; displayName: string; agent?: { displayName?: string; role?: string; description?: string } }>;
+    };
+    assert.equal(agentsPayload.agents[0]?.agentId, "ios-agent");
+    assert.equal(agentsPayload.agents[0]?.agent?.displayName, "Support Agent");
+    assert.equal(agentsPayload.agents[0]?.agent?.role, "support");
+
+    const listSessions = await fetch(`${baseUrl}/v1/tenants/demo-tenant/projects/ios-chat/agents/ios-agent/sessions`, {
+      headers: { Authorization: `Bearer ${userTokens.accessToken}` },
+    });
+    assert.equal(listSessions.status, 200);
+    const sessionsPayload = await listSessions.json() as {
+      sessions: Array<{ sessionId: string; title: string; createdAt: number; updatedAt: number; messageCount: number; preview: string }>;
+    };
+    assert.equal(sessionsPayload.sessions[0]?.sessionId, createdSessionPayload.session.sessionId);
+    assert.equal(typeof sessionsPayload.sessions[0]?.createdAt, "number");
+    assert.equal(typeof sessionsPayload.sessions[0]?.updatedAt, "number");
+    assert.equal(sessionsPayload.sessions[0]?.messageCount, 1);
+    assert.equal(sessionsPayload.sessions[0]?.preview, "hello relay");
+
+    const readSession = await fetch(`${baseUrl}/v1/tenants/demo-tenant/projects/ios-chat/agents/ios-agent/sessions/${createdSessionPayload.session.sessionId}`, {
+      headers: { Authorization: `Bearer ${userTokens.accessToken}` },
+    });
+    assert.equal(readSession.status, 200);
+    const sessionPayload = await readSession.json() as { session: SessionRecord };
+    assert.equal(sessionPayload.session.sessionId, createdSessionPayload.session.sessionId);
+    assert.equal(sessionPayload.session.messages.at(-1)?.content, "hello relay");
+    assert.equal(sessionPayload.session.messageCount, 1);
+
+    const streamResponse = await fetch(`${baseUrl}/v1/tenants/demo-tenant/projects/ios-chat/agents/ios-agent/sessions/${createdSessionPayload.session.sessionId}/stream?message=ship`, {
+      headers: { Authorization: `Bearer ${userTokens.accessToken}` },
+    });
+    assert.equal(streamResponse.status, 200);
+    const streamText = await streamResponse.text();
+    assert.match(streamText, /event: chunk/);
+    assert.match(streamText, /"delta":"hello "/);
+    assert.match(streamText, /event: complete/);
 
     socket.close();
     await new Promise((resolve) => socket.once("close", () => resolve(null)));

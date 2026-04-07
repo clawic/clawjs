@@ -1,0 +1,66 @@
+/* General */
+"general.app_name" = "ClawJS";
+"general.chat" = "Chat";
+"general.search" = "Search";
+"general.delete" = "Delete";
+"general.cancel" = "Cancel";
+"general.create" = "Create";
+"general.close" = "Close";
+"general.chats" = "Chats";
+"general.documents" = "Documents";
+
+/* Home */
+"home.projects" = "Projects";
+"home.conversations" = "Conversations";
+"home.see_all" = "See all";
+"home.all_projects" = "All Projects";
+"home.new_chat" = "New Chat";
+"home.select_agent" = "Select an agent to chat with";
+
+/* Chat */
+"chat.thinking" = "Thinking";
+"chat.message_placeholder" = "Message";
+"chat.waiting" = "Waiting...";
+"chat.send_message_to" = "Send a message to %@...";
+
+/* Agent */
+"agent.new_agent" = "New Agent";
+"agent.create_agent" = "Create Agent";
+"agent.no_conversations" = "No conversations";
+"agent.custom_agent" = "Custom agent";
+"agent.start_conversation_with" = "Start a conversation with %@";
+
+/* Agent Form */
+"agent_form.name" = "Name";
+"agent_form.name_placeholder" = "E.g.: Marketing, Legal, Finance...";
+"agent_form.role" = "Role";
+"agent_form.role_placeholder" = "E.g.: Content Writer, Analyst...";
+"agent_form.description" = "Description";
+"agent_form.description_placeholder" = "What does this agent do...";
+
+/* Project */
+"project.no_conversations" = "No conversations";
+"project.start_conversation_in" = "Start a conversation in %@";
+
+/* Settings */
+"settings.title" = "Settings";
+"settings.appearance" = "Appearance";
+"settings.language" = "Language";
+"settings.language_system" = "System Default";
+"settings.notifications" = "Notifications";
+"settings.sound" = "Sound";
+"settings.haptics" = "Haptics";
+"settings.data" = "Data";
+"settings.conversations" = "Conversations";
+"settings.agents" = "Agents";
+"settings.delete_all_conversations" = "Delete All Conversations";
+"settings.delete_all_alert" = "This will permanently delete all conversations. This action cannot be undone.";
+"settings.about" = "About";
+"settings.version" = "Version";
+"settings.build" = "Build";
+"settings.app_subtitle" = "ClawJS - AI Chat Assistant";
+
+/* Appearance */
+"appearance.system" = "System";
+"appearance.light" = "Light";
+"appearance.dark" = "Dark";

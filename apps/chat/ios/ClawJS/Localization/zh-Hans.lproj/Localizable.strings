@@ -1,0 +1,66 @@
+/* General */
+"general.app_name" = "ClawJS";
+"general.chat" = "聊天";
+"general.search" = "搜索";
+"general.delete" = "删除";
+"general.cancel" = "取消";
+"general.create" = "创建";
+"general.close" = "关闭";
+"general.chats" = "聊天";
+"general.documents" = "文档";
+
+/* Home */
+"home.projects" = "项目";
+"home.conversations" = "对话";
+"home.see_all" = "查看全部";
+"home.all_projects" = "所有项目";
+"home.new_chat" = "新聊天";
+"home.select_agent" = "选择一个代理进行聊天";
+
+/* Chat */
+"chat.thinking" = "思考中";
+"chat.message_placeholder" = "消息";
+"chat.waiting" = "等待中...";
+"chat.send_message_to" = "发送消息给%@...";
+
+/* Agent */
+"agent.new_agent" = "新建智能体";
+"agent.create_agent" = "创建智能体";
+"agent.no_conversations" = "暂无对话";
+"agent.custom_agent" = "自定义智能体";
+"agent.start_conversation_with" = "与%@开始对话";
+
+/* Agent Form */
+"agent_form.name" = "名称";
+"agent_form.name_placeholder" = "例如：市场营销、法务、财务...";
+"agent_form.role" = "角色";
+"agent_form.role_placeholder" = "例如：内容撰写、分析师...";
+"agent_form.description" = "描述";
+"agent_form.description_placeholder" = "这个智能体做什么...";
+
+/* Project */
+"project.no_conversations" = "暂无对话";
+"project.start_conversation_in" = "在%@中开始对话";
+
+/* Settings */
+"settings.title" = "设置";
+"settings.appearance" = "外观";
+"settings.language" = "语言";
+"settings.language_system" = "跟随系统";
+"settings.notifications" = "通知";
+"settings.sound" = "声音";
+"settings.haptics" = "触感反馈";
+"settings.data" = "数据";
+"settings.conversations" = "对话";
+"settings.agents" = "智能体";
+"settings.delete_all_conversations" = "删除所有对话";
+"settings.delete_all_alert" = "这将永久删除所有对话。此操作无法撤销。";
+"settings.about" = "关于";
+"settings.version" = "版本";
+"settings.build" = "构建号";
+"settings.app_subtitle" = "ClawJS - AI聊天助手";
+
+/* Appearance */
+"appearance.system" = "跟随系统";
+"appearance.light" = "浅色";
+"appearance.dark" = "深色";

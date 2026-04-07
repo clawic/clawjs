@@ -1,0 +1,66 @@
+/* General */
+"general.app_name" = "ClawJS";
+"general.chat" = "Chat";
+"general.search" = "Cerca";
+"general.delete" = "Elimina";
+"general.cancel" = "Annulla";
+"general.create" = "Crea";
+"general.close" = "Chiudi";
+"general.chats" = "Chat";
+"general.documents" = "Documenti";
+
+/* Home */
+"home.projects" = "Progetti";
+"home.conversations" = "Conversazioni";
+"home.see_all" = "Vedi tutti";
+"home.all_projects" = "Tutti i progetti";
+"home.new_chat" = "Nuova Chat";
+"home.select_agent" = "Seleziona un agente per chattare";
+
+/* Chat */
+"chat.thinking" = "Pensando";
+"chat.message_placeholder" = "Messaggio";
+"chat.waiting" = "In attesa...";
+"chat.send_message_to" = "Invia un messaggio a %@...";
+
+/* Agent */
+"agent.new_agent" = "Nuovo Agente";
+"agent.create_agent" = "Crea Agente";
+"agent.no_conversations" = "Nessuna conversazione";
+"agent.custom_agent" = "Agente personalizzato";
+"agent.start_conversation_with" = "Inizia una conversazione con %@";
+
+/* Agent Form */
+"agent_form.name" = "Nome";
+"agent_form.name_placeholder" = "Es.: Marketing, Legale, Finanza...";
+"agent_form.role" = "Ruolo";
+"agent_form.role_placeholder" = "Es.: Content Writer, Analista...";
+"agent_form.description" = "Descrizione";
+"agent_form.description_placeholder" = "Cosa fa questo agente...";
+
+/* Project */
+"project.no_conversations" = "Nessuna conversazione";
+"project.start_conversation_in" = "Inizia una conversazione in %@";
+
+/* Settings */
+"settings.title" = "Impostazioni";
+"settings.appearance" = "Aspetto";
+"settings.language" = "Lingua";
+"settings.language_system" = "Predefinito di sistema";
+"settings.notifications" = "Notifiche";
+"settings.sound" = "Suono";
+"settings.haptics" = "Feedback aptico";
+"settings.data" = "Dati";
+"settings.conversations" = "Conversazioni";
+"settings.agents" = "Agenti";
+"settings.delete_all_conversations" = "Elimina tutte le conversazioni";
+"settings.delete_all_alert" = "Tutte le conversazioni verranno eliminate in modo permanente. Questa azione non può essere annullata.";
+"settings.about" = "Info";
+"settings.version" = "Versione";
+"settings.build" = "Build";
+"settings.app_subtitle" = "ClawJS - Assistente Chat IA";
+
+/* Appearance */
+"appearance.system" = "Sistema";
+"appearance.light" = "Chiaro";
+"appearance.dark" = "Scuro";

@@ -1,0 +1,66 @@
+/* General */
+"general.app_name" = "ClawJS";
+"general.chat" = "채팅";
+"general.search" = "검색";
+"general.delete" = "삭제";
+"general.cancel" = "취소";
+"general.create" = "만들기";
+"general.close" = "닫기";
+"general.chats" = "채팅";
+"general.documents" = "문서";
+
+/* Home */
+"home.projects" = "프로젝트";
+"home.conversations" = "대화";
+"home.see_all" = "모두 보기";
+"home.all_projects" = "모든 프로젝트";
+"home.new_chat" = "새 채팅";
+"home.select_agent" = "채팅할 에이전트를 선택하세요";
+
+/* Chat */
+"chat.thinking" = "생각 중";
+"chat.message_placeholder" = "메시지";
+"chat.waiting" = "대기 중...";
+"chat.send_message_to" = "%@에게 메시지 보내기...";
+
+/* Agent */
+"agent.new_agent" = "새 에이전트";
+"agent.create_agent" = "에이전트 만들기";
+"agent.no_conversations" = "대화 없음";
+"agent.custom_agent" = "사용자 지정 에이전트";
+"agent.start_conversation_with" = "%@와 대화 시작하기";
+
+/* Agent Form */
+"agent_form.name" = "이름";
+"agent_form.name_placeholder" = "예: 마케팅, 법무, 재무...";
+"agent_form.role" = "역할";
+"agent_form.role_placeholder" = "예: 콘텐츠 작성자, 분석가...";
+"agent_form.description" = "설명";
+"agent_form.description_placeholder" = "이 에이전트의 기능...";
+
+/* Project */
+"project.no_conversations" = "대화 없음";
+"project.start_conversation_in" = "%@에서 대화 시작하기";
+
+/* Settings */
+"settings.title" = "설정";
+"settings.appearance" = "외관";
+"settings.language" = "언어";
+"settings.language_system" = "시스템 기본값";
+"settings.notifications" = "알림";
+"settings.sound" = "소리";
+"settings.haptics" = "햅틱";
+"settings.data" = "데이터";
+"settings.conversations" = "대화";
+"settings.agents" = "에이전트";
+"settings.delete_all_conversations" = "모든 대화 삭제";
+"settings.delete_all_alert" = "모든 대화가 영구적으로 삭제됩니다. 이 작업은 되돌릴 수 없습니다.";
+"settings.about" = "정보";
+"settings.version" = "버전";
+"settings.build" = "빌드";
+"settings.app_subtitle" = "ClawJS - AI 채팅 어시스턴트";
+
+/* Appearance */
+"appearance.system" = "시스템";
+"appearance.light" = "라이트";
+"appearance.dark" = "다크";

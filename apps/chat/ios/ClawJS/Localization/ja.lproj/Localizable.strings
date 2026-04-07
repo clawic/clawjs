@@ -1,0 +1,66 @@
+/* General */
+"general.app_name" = "ClawJS";
+"general.chat" = "チャット";
+"general.search" = "検索";
+"general.delete" = "削除";
+"general.cancel" = "キャンセル";
+"general.create" = "作成";
+"general.close" = "閉じる";
+"general.chats" = "チャット";
+"general.documents" = "ドキュメント";
+
+/* Home */
+"home.projects" = "プロジェクト";
+"home.conversations" = "会話";
+"home.see_all" = "すべて表示";
+"home.all_projects" = "すべてのプロジェクト";
+"home.new_chat" = "新しいチャット";
+"home.select_agent" = "チャットするエージェントを選択";
+
+/* Chat */
+"chat.thinking" = "考え中";
+"chat.message_placeholder" = "メッセージ";
+"chat.waiting" = "待機中...";
+"chat.send_message_to" = "%@にメッセージを送信...";
+
+/* Agent */
+"agent.new_agent" = "新しいエージェント";
+"agent.create_agent" = "エージェントを作成";
+"agent.no_conversations" = "会話はありません";
+"agent.custom_agent" = "カスタムエージェント";
+"agent.start_conversation_with" = "%@と会話を始める";
+
+/* Agent Form */
+"agent_form.name" = "名前";
+"agent_form.name_placeholder" = "例: マーケティング、法務、財務...";
+"agent_form.role" = "役割";
+"agent_form.role_placeholder" = "例: ライター、アナリスト...";
+"agent_form.description" = "説明";
+"agent_form.description_placeholder" = "このエージェントの機能...";
+
+/* Project */
+"project.no_conversations" = "会話はありません";
+"project.start_conversation_in" = "%@で会話を始める";
+
+/* Settings */
+"settings.title" = "設定";
+"settings.appearance" = "外観";
+"settings.language" = "言語";
+"settings.language_system" = "システムデフォルト";
+"settings.notifications" = "通知";
+"settings.sound" = "サウンド";
+"settings.haptics" = "触覚フィードバック";
+"settings.data" = "データ";
+"settings.conversations" = "会話";
+"settings.agents" = "エージェント";
+"settings.delete_all_conversations" = "すべての会話を削除";
+"settings.delete_all_alert" = "すべての会話が完全に削除されます。この操作は取り消せません。";
+"settings.about" = "情報";
+"settings.version" = "バージョン";
+"settings.build" = "ビルド";
+"settings.app_subtitle" = "ClawJS - AIチャットアシスタント";
+
+/* Appearance */
+"appearance.system" = "システム";
+"appearance.light" = "ライト";
+"appearance.dark" = "ダーク";
