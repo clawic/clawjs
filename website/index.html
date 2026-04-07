@@ -872,6 +872,52 @@ console<span class="punctuation">.</span><span class="function">log</span><span 
     </div>
   </section>
 
+  <!-- CALENDAR / SCHEDULING -->
+
+  <section class="section section--alt" id="section-calendar">
+    <div class="section__aurora-orb" style="top: 20%; left: -4%;"></div>
+    <div class="container">
+      <div class="section__header">
+        <p class="section__label">Scheduling</p>
+        <h2 class="section__title">AI Agents Own Your Calendar</h2>
+        <p class="section__desc">Scheduler agents find optimal meeting times, detect conflicts, auto-book prep slots, and keep your week balanced. A full calendar where every gap is an opportunity for an agent.</p>
+      </div>
+      <div class="demo-stack demo-stack--wide">
+        <div class="demo-stack__layer demo-stack__layer--front">
+          <div class="demo-panel demo-panel--calendar" id="demo-calendar"></div>
+        </div>
+        <div class="demo-stack__layer demo-stack__layer--back demo-stack__layer--narrow">
+          <div class="code-block">
+            <div class="code-block__header">
+              <span class="code-block__dot"></span>
+              <span class="code-block__dot"></span>
+              <span class="code-block__dot"></span>
+              <span class="code-block__filename">calendar.ts</span>
+            </div>
+            <pre><code><span class="comment">// Schedule a meeting</span>
+<span class="keyword">await</span> claw<span class="punctuation">.</span><span class="property">calendar</span><span class="punctuation">.</span><span class="function">schedule</span><span class="punctuation">({</span>
+  <span class="property">title</span><span class="punctuation">:</span> <span class="string">"Product Demo"</span><span class="punctuation">,</span>
+  <span class="property">duration</span><span class="punctuation">:</span> <span class="string">"1h"</span><span class="punctuation">,</span>
+  <span class="property">attendees</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="string">"alex"</span><span class="punctuation">]</span><span class="punctuation">,</span>
+<span class="punctuation">});</span>
+
+<span class="comment">// Find optimal time</span>
+<span class="keyword">const</span> slots <span class="punctuation">=</span> <span class="keyword">await</span> claw
+  <span class="punctuation">.</span><span class="property">calendar</span><span class="punctuation">.</span><span class="function">findSlots</span><span class="punctuation">({</span>
+    <span class="property">duration</span><span class="punctuation">:</span> <span class="string">"30m"</span><span class="punctuation">,</span>
+    <span class="property">prefer</span><span class="punctuation">:</span> <span class="string">"morning"</span>
+  <span class="punctuation">});</span>
+
+<span class="comment">// Check conflicts</span>
+<span class="keyword">const</span> conflicts <span class="punctuation">=</span> <span class="keyword">await</span> claw
+  <span class="punctuation">.</span><span class="property">calendar</span>
+  <span class="punctuation">.</span><span class="function">conflicts</span><span class="punctuation">(</span><span class="string">"today"</span><span class="punctuation">);</span></code></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- CHAT PREVIEW -->
 
   <section class="section section--alt" id="section-chat">
