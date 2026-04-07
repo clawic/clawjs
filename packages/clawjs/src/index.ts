@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import { spawn } from "child_process";
 import { fileURLToPath } from "url";
 
 import {
@@ -79,6 +80,7 @@ export function buildCliUsage(binName = DEFAULT_CLI_BIN): string {
     `  ${binName} audio generate|list|read|delete|backends`,
     `  ${binName} video generate|list|read|delete|backends`,
     `  ${binName} generations backends|register-command|remove-backend|create|list|read|delete`,
+    `  ${binName} database serve|login|namespace|collection|record|token|file`,
     `  ${binName} compat [--refresh] [--json]`,
     "",
     "Global options:",
@@ -321,6 +323,46 @@ function resolveCliPackageVersion(): string | null {
   }
 }
 
+function resolveDatabaseDirectory(flags: Record<string, string>, contextCwd: string): string {
+  if (flags["database-dir"]) {
+    return path.resolve(contextCwd, flags["database-dir"]);
+  }
+  if (process.env.CLAWJS_DATABASE_DIR?.trim()) {
+    return path.resolve(process.env.CLAWJS_DATABASE_DIR);
+  }
+  return path.resolve(fileURLToPath(new URL("../../../database", import.meta.url)));
+}
+
+async function runDelegatedDatabaseCli(
+  argv: string[],
+  flags: Record<string, string>,
+  context: CliContext,
+): Promise<number> {
+  const databaseDir = resolveDatabaseDirectory(flags, context.cwd);
+  if (!fs.existsSync(path.join(databaseDir, "package.json"))) {
+    context.stderr.write(`Database CLI not found at ${databaseDir}\n`);
+    return CLI_EXIT_FAILURE;
+  }
+
+  const distCliPath = path.join(databaseDir, "dist", "cli.js");
+  const command = fs.existsSync(distCliPath) ? process.execPath : "npm";
+  const args = fs.existsSync(distCliPath)
+    ? [distCliPath, ...argv.slice(1)]
+    : ["--prefix", databaseDir, "run", "cli", "--silent", "--", ...argv.slice(1)];
+
+  return await new Promise<number>((resolve, reject) => {
+    const child = spawn(command, args, {
+      cwd: context.cwd,
+      stdio: "inherit",
+      env: process.env,
+    });
+    child.on("error", reject);
+    child.on("exit", (code) => {
+      resolve(code ?? CLI_EXIT_FAILURE);
+    });
+  });
+}
+
 function parsePackageManager(value: string | undefined): SupportedPackageManager {
   return value === "pnpm" ? "pnpm" : "npm";
 }
@@ -412,6 +454,15 @@ export async function runCli(argv: string[], context: CliContext): Promise<numbe
   if (argv.includes("--help") || argv.includes("-h") || group === "help") {
     context.stdout.write(`${usage}\n`);
     return CLI_EXIT_OK;
+  }
+
+  if (group === "database") {
+    try {
+      return await runDelegatedDatabaseCli(argv, flags, context);
+    } catch (error) {
+      context.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
+      return CLI_EXIT_FAILURE;
+    }
   }
 
   const workspaceRoot = flags.workspace || context.cwd;

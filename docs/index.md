@@ -70,9 +70,11 @@ ClawJS keeps a stable internal layer under `.clawjs/` even when runtimes disagre
 
 - [Getting Started](/getting-started) for the official scaffold and workspace flow.
 - [CLI](/cli) for the current command surface, including productivity and media commands.
+- [Database service](/database) for the standalone namespace-based data service and admin console.
 - [Terminology](/terminology) for the canonical product vocabulary.
 - [Runtime](/runtime) for the adapter contract and capability model.
 - [Workspace](/workspace) for the stable `.clawjs` layout and the `@clawjs/workspace` productivity layer.
+- [Relay](/relay) for the public HTTPS relay, reverse connector flow, and remote workspace routing model.
 - [Files & Templates](/files) for template packs, bindings, and managed blocks.
 - [Conversations](/conversations) for session storage and stream events.
 - [Diagnostics & Repair](/diagnostics) for compat refresh and doctor flows.

@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Claw Database</title>
+    <link rel="stylesheet" href="/static/app.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <aside class="sidebar" data-testid="sidebar">
+        <div class="brand">
+          <span class="eyebrow">ClawJS</span>
+          <h1>Database</h1>
+          <p>Schema-first namespaces with namespace-first operations.</p>
+        </div>
+
+        <section class="panel" data-testid="namespace-panel">
+          <div class="panel-header">
+            <h2>Databases</h2>
+          </div>
+          <div id="namespace-list" class="list"></div>
+          <form id="namespace-form" class="stack" data-testid="namespace-form">
+            <input id="namespace-id" type="text" placeholder="namespace-id" />
+            <input id="namespace-display-name" type="text" placeholder="Display name" />
+            <button type="submit">Create database</button>
+          </form>
+        </section>
+
+        <section class="panel" data-testid="collection-panel">
+          <div class="panel-header">
+            <h2>Collections</h2>
+          </div>
+          <div id="collection-list" class="list"></div>
+          <form id="collection-form" class="stack" data-testid="collection-form">
+            <input id="collection-name" type="text" placeholder="collection_name" />
+            <input id="collection-display-name" type="text" placeholder="Display name" />
+            <textarea id="collection-fields" rows="7"></textarea>
+            <button type="submit">Create collection</button>
+          </form>
+        </section>
+      </aside>
+
+      <main class="content">
+        <section id="login-view" class="hero">
+          <div class="hero-card">
+            <span class="eyebrow">Admin console</span>
+            <h2>Sign in</h2>
+            <p>Default local credentials are pre-seeded for development.</p>
+            <form id="login-form" class="stack" data-testid="login-form">
+              <input id="login-email" type="email" value="admin@database.local" />
+              <input id="login-password" type="password" value="database-admin" />
+              <button type="submit" data-testid="login-submit">Open console</button>
+            </form>
+            <p id="login-error" class="error"></p>
+          </div>
+        </section>
+
+        <section id="app-view" class="hidden" data-testid="admin-console">
+          <header class="topbar">
+            <div>
+              <span class="eyebrow">Active database</span>
+              <h2 id="active-namespace-name">Main</h2>
+            </div>
+            <div class="meta-grid">
+              <div class="pill">
+                <span>Collection</span>
+                <strong id="active-collection-name">Select one</strong>
+              </div>
+              <div class="pill">
+                <span>Live feed</span>
+                <strong id="live-status">offline</strong>
+              </div>
+            </div>
+          </header>
+
+          <section class="grid">
+            <article class="card" data-testid="schema-card">
+              <div class="card-header">
+                <div>
+                  <span class="eyebrow">Schema editor</span>
+                  <h3 id="schema-title">Collection schema</h3>
+                </div>
+                <button id="schema-save">Save schema</button>
+              </div>
+              <textarea id="schema-editor" rows="14"></textarea>
+            </article>
+
+            <article class="card" data-testid="record-card">
+              <div class="card-header">
+                <div>
+                  <span class="eyebrow">Records</span>
+                  <h3>Data browser</h3>
+                </div>
+                <button id="records-refresh">Refresh</button>
+              </div>
+              <div id="records-table" class="table-wrap"></div>
+              <form id="record-form" class="stack" data-testid="record-form">
+                <input id="record-id" type="text" placeholder="record id for update" />
+                <textarea id="record-data" rows="8"></textarea>
+                <div class="row">
+                  <button type="submit" id="record-save">Save record</button>
+                  <button type="button" id="record-reset" class="secondary">Reset</button>
+                </div>
+              </form>
+            </article>
+
+            <article class="card" data-testid="token-card">
+              <div class="card-header">
+                <div>
+                  <span class="eyebrow">Roles and tokens</span>
+                  <h3>Scoped access</h3>
+                </div>
+              </div>
+              <form id="token-form" class="stack" data-testid="token-form">
+                <input id="token-label" type="text" placeholder="Token label" />
+                <input id="token-collection" type="text" placeholder="Optional collection scope" />
+                <input id="token-operations" type="text" value="schema:read,records:list,records:read,records:create,records:update,records:delete,files:read,files:write,realtime:subscribe" />
+                <button type="submit">Issue token</button>
+              </form>
+              <pre id="token-output" class="output"></pre>
+              <div id="token-list" class="list"></div>
+            </article>
+
+            <article class="card" data-testid="file-card">
+              <div class="card-header">
+                <div>
+                  <span class="eyebrow">Files</span>
+                  <h3>Assets</h3>
+                </div>
+              </div>
+              <form id="file-form" class="stack" data-testid="file-form">
+                <input id="file-input" type="file" />
+                <input id="file-record-id" type="text" placeholder="Optional record id" />
+                <button type="submit">Upload file</button>
+              </form>
+              <div id="file-list" class="list"></div>
+            </article>
+
+            <article class="card" data-testid="activity-card">
+              <div class="card-header">
+                <div>
+                  <span class="eyebrow">Realtime</span>
+                  <h3>Change feed</h3>
+                </div>
+              </div>
+              <div id="event-list" class="list event-list"></div>
+            </article>
+
+            <article class="card" data-testid="settings-card">
+              <div class="card-header">
+                <div>
+                  <span class="eyebrow">Settings and health</span>
+                  <h3>Service state</h3>
+                </div>
+                <button id="settings-refresh">Refresh</button>
+              </div>
+              <pre id="settings-output" class="output"></pre>
+            </article>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <script type="module" src="/static/app.js"></script>
+  </body>
+</html>

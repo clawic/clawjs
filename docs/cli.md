@@ -121,6 +121,19 @@ claw --runtime openclaw doctor
 files. `doctor` returns a combined runtime/workspace/managed-block
 report.
 
+## Database Bridge
+
+```bash
+claw database login --url http://127.0.0.1:4510 --email admin@database.local --password database-admin
+claw database namespace list --url http://127.0.0.1:4510 --token <admin-token>
+claw database collection create --namespace main --name leads --fields '[{"name":"name","type":"text","required":true}]' --url http://127.0.0.1:4510 --token <admin-token>
+claw database record create --namespace main --collection leads --data '{"name":"Ada"}' --url http://127.0.0.1:4510 --token <admin-token>
+```
+
+`claw database ...` delegates to the standalone CLI shipped inside the
+repo-local `database/` app. Use `--database-dir` or `CLAWJS_DATABASE_DIR`
+when the app lives outside the default monorepo path.
+
 ## Workspace Commands
 
 ```bash

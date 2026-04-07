@@ -45,6 +45,20 @@ Relay v1 adds:
 
 Docs: [docs/relay.md](docs/relay.md)
 
+## Database
+
+The repository also includes `database/`, a standalone namespace-based data service for remote agents and clients.
+
+Database v1 adds:
+
+- schema-first collections with protected built-ins for `people`, `tasks`, `events`, and `notes`
+- namespace isolation on top of one SQLite file
+- scoped API tokens for agents and apps
+- realtime record events over WebSocket
+- local file storage plus a built-in admin console
+
+Docs: [docs/database.md](docs/database.md)
+
 ## Install
 
 Use the SDK:
@@ -242,6 +256,7 @@ ClawJS does not pretend unsupported subsystems exist.
 
 - [Getting started](docs/getting-started.md)
 - [CLI reference](docs/cli.md)
+- [Database service](docs/database.md)
 - [API reference](docs/api.md)
 - [Workspace model and productivity layer](docs/workspace.md)
 - [Terminology](docs/terminology.md)
