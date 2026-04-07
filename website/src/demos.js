@@ -4666,6 +4666,408 @@ function mountCalendar(container) {
   runAnim();
 }
 
+// ─── iOS APP SIMULATION ──────────────────────────────────────────────────────
+
+function mountIosApp(container) {
+  const svgNS = "http://www.w3.org/2000/svg";
+  function icon(path, size = 16) {
+    const el = document.createElementNS(svgNS, "svg");
+    el.setAttribute("viewBox", "0 0 24 24");
+    el.setAttribute("width", String(size));
+    el.setAttribute("height", String(size));
+    el.setAttribute("fill", "none");
+    el.setAttribute("stroke", "currentColor");
+    el.setAttribute("stroke-width", "2");
+    el.setAttribute("stroke-linecap", "round");
+    el.setAttribute("stroke-linejoin", "round");
+    el.innerHTML = path;
+    return el;
+  }
+  const ICONS = {
+    search: '<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>',
+    menu: '<line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>',
+    folder: '<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>',
+    edit: '<path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>',
+    chevronLeft: '<polyline points="15 18 9 12 15 6"/>',
+    pencil: '<path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/>',
+    server: '<rect x="2" y="3" width="20" height="6" rx="1"/><rect x="2" y="15" width="20" height="6" rx="1"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/>',
+    chart: '<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>',
+    pie: '<path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/>',
+    map: '<polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/>',
+    book: '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>',
+    brush: '<path d="M9.06 11.9l8.07-8.06a2.85 2.85 0 1 1 4.03 4.03l-8.06 8.08"/><path d="M7.07 14.94c-1.66 0-3 1.35-3 3.02 0 1.33-2.5 1.52-2 2.02 1.08 1.1 2.49 2.02 4 2.02 2.2 0 4-1.8 4-4.04a3.01 3.01 0 0 0-3-3.02z"/>',
+    plus: '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
+    arrowUp: '<line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/>',
+    copy: '<rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
+    speaker: '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>',
+    thumbsUp: '<path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/>',
+    thumbsDown: '<path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zM17 2h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3"/>',
+    share: '<path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/>',
+    more: '<circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>',
+  };
+
+  const AGENTS = [
+    { name: "DevOps",   ic: "server" },
+    { name: "SEO",      ic: "chart"  },
+    { name: "Analyst",  ic: "pie"    },
+    { name: "Planner",  ic: "map"    },
+    { name: "Tutor",    ic: "book"   },
+    { name: "Designer", ic: "brush"  },
+  ];
+  const PROJECTS = [
+    "Acme Dashboard",
+    "Mobile Banking",
+    "Recipe Finder",
+    "Indoor Maps",
+    "Photo Library",
+  ];
+  const CONVERSATIONS = [
+    { title: "Refactor login flow",       unread: true  },
+    { title: "Optimize image cache",      unread: true  },
+    { title: "Add dark mode support",     unread: false },
+    { title: "Migrate to Postgres 16",    unread: false },
+    { title: "Improve onboarding copy",   unread: true  },
+    { title: "Schema for notifications",  unread: true  },
+    { title: "A/B test landing hero",     unread: true  },
+  ];
+
+  // ── iPhone frame ──
+  const phone = h("div", { className: "iphone" });
+  const screen = h("div", { className: "iphone__screen" });
+  phone.append(screen);
+
+  // status bar
+  const statusBar = h("div", { className: "iphone__statusbar" });
+  statusBar.append(
+    h("span", {}, "9:41"),
+    (function () {
+      const wrap = h("div", { className: "iphone__statusbar-icons" });
+      // signal
+      const sig = document.createElementNS(svgNS, "svg");
+      sig.setAttribute("viewBox", "0 0 18 12");
+      sig.setAttribute("width", "16");
+      sig.setAttribute("height", "10");
+      sig.innerHTML = '<rect x="0" y="8" width="3" height="4" rx="0.5"/><rect x="4" y="6" width="3" height="6" rx="0.5"/><rect x="8" y="3" width="3" height="9" rx="0.5"/><rect x="12" y="0" width="3" height="12" rx="0.5"/>';
+      // wifi
+      const wifi = document.createElementNS(svgNS, "svg");
+      wifi.setAttribute("viewBox", "0 0 16 12");
+      wifi.setAttribute("width", "15");
+      wifi.setAttribute("height", "11");
+      wifi.innerHTML = '<path d="M8 11 L9.5 9.5 A2 2 0 0 0 6.5 9.5 Z"/><path d="M3 6 A7 7 0 0 1 13 6 L11.5 7.5 A5 5 0 0 0 4.5 7.5 Z"/><path d="M0.5 3.5 A11 11 0 0 1 15.5 3.5 L14 5 A9 9 0 0 0 2 5 Z"/>';
+      // battery
+      const bat = document.createElementNS(svgNS, "svg");
+      bat.setAttribute("viewBox", "0 0 26 12");
+      bat.setAttribute("width", "24");
+      bat.setAttribute("height", "11");
+      bat.innerHTML = '<rect x="0.5" y="0.5" width="22" height="11" rx="2.5" fill="none" stroke="white" stroke-opacity="0.5"/><rect x="2" y="2" width="19" height="8" rx="1.5"/><rect x="23" y="4" width="2" height="4" rx="0.5"/>';
+      wrap.append(sig, wifi, bat);
+      return wrap;
+    })()
+  );
+  screen.append(statusBar);
+
+  const notch = h("div", { className: "iphone__notch" });
+  screen.append(notch);
+
+  // app container
+  const app = h("div", { className: "iphone__app" });
+  screen.append(app);
+  screen.append(h("div", { className: "iphone__home-indicator" }));
+
+  // ── Screen 1: Home ──
+  const home = h("div", { className: "ios-screen ios-screen--active ios-home" });
+
+  const topbar = h("div", { className: "ios-home__topbar" });
+  topbar.append(
+    h("div", { className: "ios-home__title" }, "ClawJS"),
+    h("div", { className: "ios-home__actions" },
+      h("div", { className: "ios-home__action" }, icon(ICONS.search, 22)),
+      h("div", { className: "ios-home__action" }, icon(ICONS.menu, 22)),
+    )
+  );
+  home.append(topbar);
+
+  const agentsStrip = h("div", { className: "ios-agents" });
+  AGENTS.forEach((a) => {
+    agentsStrip.append(
+      h("div", { className: "ios-agent-chip" },
+        h("div", { className: "ios-agent-chip__avatar" }, icon(ICONS[a.ic] || ICONS.menu, 18)),
+        h("div", { className: "ios-agent-chip__name" }, a.name),
+      )
+    );
+  });
+  agentsStrip.append(
+    h("div", { className: "ios-agent-chip" },
+      h("div", { className: "ios-agent-chip__avatar ios-agent-chip__avatar--add" }, icon(ICONS.plus, 18)),
+      h("div", { className: "ios-agent-chip__name" }, "Create"),
+    )
+  );
+  home.append(agentsStrip);
+
+  home.append(h("div", { className: "ios-section-title" }, "Projects"));
+  PROJECTS.forEach((p) => {
+    home.append(
+      h("div", { className: "ios-project-row" },
+        h("div", { className: "ios-project-row__icon" }, icon(ICONS.folder, 16)),
+        h("div", { className: "ios-project-row__name" }, p),
+      )
+    );
+  });
+  home.append(h("div", { className: "ios-see-all" }, "See all"));
+
+  home.append(h("div", { className: "ios-section-title" }, "Conversations"));
+  CONVERSATIONS.forEach((c) => {
+    const row = h("div", { className: "ios-conv-row" },
+      h("div", { className: "ios-conv-row__title" }, c.title),
+    );
+    if (c.unread) row.append(h("div", { className: "ios-conv-row__dot" }));
+    home.append(row);
+  });
+
+  // FAB
+  const fab = h("div", { className: "ios-fab" }, icon(ICONS.pencil, 14), "Chat");
+  app.append(home, fab);
+
+  // ── Screen 2: Chat ──
+  const chat = h("div", { className: "ios-screen ios-chat" });
+  const navbar = h("div", { className: "ios-chat__navbar" });
+  navbar.append(
+    h("div", { className: "ios-chat__back" }, icon(ICONS.chevronLeft, 16)),
+    h("div", { className: "ios-chat__agent" }, "DevOps"),
+    h("div", { className: "ios-chat__actions" },
+      h("div", { className: "ios-chat__action" }, icon(ICONS.edit, 14)),
+      h("div", { className: "ios-chat__action" }, icon(ICONS.menu, 14)),
+    )
+  );
+  chat.append(navbar);
+
+  const messages = h("div", { className: "ios-chat__messages" });
+
+  function addUserMsg(text) {
+    return h("div", { className: "ios-msg ios-msg--user" },
+      h("div", { className: "ios-msg__bubble" }, text)
+    );
+  }
+  function addAgentMsg(text, withActions = true) {
+    const wrap = h("div", { className: "ios-msg ios-msg--agent" },
+      h("div", { className: "ios-msg__text" }, text),
+    );
+    if (withActions) {
+      const acts = h("div", { className: "ios-msg__actions" });
+      ["copy","speaker","thumbsUp","thumbsDown","share","more"].forEach((k) => {
+        acts.append(icon(ICONS[k], 13));
+      });
+      wrap.append(acts);
+    }
+    return wrap;
+  }
+
+  messages.append(
+    addUserMsg("Can you review the login flow and suggest a cleaner structure?"),
+    addAgentMsg("Sure. Share the relevant files and I'll propose a refactor."),
+    addUserMsg("Here's AuthManager.swift. It mixes OAuth and JWT in one class."),
+  );
+
+  const thinkingMsg = h("div", { className: "ios-msg ios-msg--agent" },
+    h("div", { className: "ios-thinking" }, h("span"), h("span"), h("span"))
+  );
+  messages.append(thinkingMsg);
+
+  chat.append(messages);
+
+  const input = h("div", { className: "ios-chat__input" },
+    "Message DevOps…",
+    h("div", { className: "ios-chat__input-send" }, icon(ICONS.arrowUp, 14)),
+  );
+  chat.append(input);
+
+  app.append(chat);
+  container.append(phone);
+
+  // ── Autoplay: cycle home → chat → home ──
+  let timers = [];
+  function clearTimers() { timers.forEach(clearTimeout); timers = []; }
+
+  function showHome() {
+    chat.classList.remove("ios-screen--active");
+    home.classList.add("ios-screen--active");
+    fab.style.opacity = "1";
+  }
+  function showChat() {
+    home.classList.remove("ios-screen--active");
+    chat.classList.add("ios-screen--active");
+    fab.style.opacity = "0";
+  }
+
+  function loop() {
+    clearTimers();
+    showHome();
+    timers.push(setTimeout(showChat, 3500));
+    timers.push(setTimeout(loop, 9500));
+  }
+
+  loop();
+}
+
+// ─── MAC APP SIMULATION ──────────────────────────────────────────────────────
+
+function mountMacApp(container) {
+  const svgNS = "http://www.w3.org/2000/svg";
+  function icon(path, size = 16) {
+    const el = document.createElementNS(svgNS, "svg");
+    el.setAttribute("viewBox", "0 0 24 24");
+    el.setAttribute("width", String(size));
+    el.setAttribute("height", String(size));
+    el.setAttribute("fill", "none");
+    el.setAttribute("stroke", "currentColor");
+    el.setAttribute("stroke-width", "2");
+    el.setAttribute("stroke-linecap", "round");
+    el.setAttribute("stroke-linejoin", "round");
+    el.innerHTML = path;
+    return el;
+  }
+  const ICONS = {
+    plus: '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
+    edit: '<path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>',
+    server: '<rect x="2" y="3" width="20" height="6" rx="1"/><rect x="2" y="15" width="20" height="6" rx="1"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/>',
+    bubble: '<path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>',
+    search: '<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>',
+    more: '<circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>',
+    arrowUp: '<line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/>',
+    copy: '<rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
+    speaker: '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>',
+    thumbsUp: '<path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/>',
+    thumbsDown: '<path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zM17 2h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3"/>',
+    share: '<path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/>',
+  };
+
+  const CONVERSATIONS = [
+    { title: "Refactor login flow",       unread: false, active: true  },
+    { title: "Optimize image cache",      unread: true,  active: false },
+    { title: "Add dark mode support",     unread: false, active: false },
+    { title: "Migrate to Postgres 16",    unread: false, active: false },
+    { title: "Improve onboarding copy",   unread: true,  active: false },
+  ];
+  const PROJECTS = [
+    "Acme Dashboard",
+    "Mobile Banking",
+    "Recipe Finder",
+    "Indoor Maps",
+  ];
+
+  const win = h("div", { className: "macwin" });
+
+  // Title bar
+  const title = h("div", { className: "macwin__titlebar" });
+  title.append(
+    h("div", { className: "macwin__lights" },
+      h("div", { className: "macwin__light macwin__light--red" }),
+      h("div", { className: "macwin__light macwin__light--yellow" }),
+      h("div", { className: "macwin__light macwin__light--green" }),
+    ),
+    h("div", { className: "macwin__title" }, "ClawJS"),
+  );
+  win.append(title);
+
+  // Body
+  const body = h("div", { className: "macwin__body" });
+
+  // Sidebar
+  const sb = h("div", { className: "macwin__sidebar" });
+  sb.append(
+    h("div", { className: "macwin__brand" },
+      h("img", { className: "macwin__brand-logo", src: "/logo.png", alt: "" }),
+      h("div", { className: "macwin__brand-name" }, "ClawJS"),
+    ),
+    h("div", { className: "macwin__newchat" }, icon(ICONS.edit, 14), "New Chat"),
+  );
+
+  sb.append(h("div", { className: "macwin__sect" }, "Projects"));
+  PROJECTS.forEach((p) => {
+    sb.append(
+      h("div", { className: "macwin__sb-row" },
+        icon('<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>', 14),
+        h("div", { className: "macwin__sb-row__title" }, p),
+      )
+    );
+  });
+
+  sb.append(h("div", { className: "macwin__sect" }, "Conversations"));
+  CONVERSATIONS.forEach((c) => {
+    const cls = "macwin__sb-row" + (c.active ? " macwin__sb-row--active" : "");
+    const row = h("div", { className: cls },
+      icon(ICONS.bubble, 14),
+      h("div", { className: "macwin__sb-row__title" }, c.title),
+    );
+    if (c.unread) row.append(h("div", { className: "macwin__sb-row__dot" }));
+    sb.append(row);
+  });
+
+  body.append(sb);
+
+  // Chat
+  const chat = h("div", { className: "macwin__chat" });
+
+  const chatHdr = h("div", { className: "macwin__chat-header" });
+  chatHdr.append(
+    h("div", { className: "macwin__chat-avatar" }, icon(ICONS.server, 16)),
+    h("div", { className: "macwin__chat-meta" },
+      h("div", { className: "macwin__chat-name" }, "DevOps"),
+      h("div", { className: "macwin__chat-status" }, "Code Assistant"),
+    ),
+    h("div", { className: "macwin__chat-actions" },
+      icon(ICONS.search, 16),
+      icon(ICONS.more, 16),
+    )
+  );
+  chat.append(chatHdr);
+
+  const msgs = h("div", { className: "macwin__msgs" });
+
+  function addUserMsg(text) {
+    return h("div", { className: "mac-msg mac-msg--user" },
+      h("div", { className: "mac-msg__bubble" }, text)
+    );
+  }
+  function addAgentMsg(text) {
+    const wrap = h("div", { className: "mac-msg mac-msg--agent" },
+      h("div", { className: "mac-msg__text" }, text),
+    );
+    const acts = h("div", { className: "mac-msg__actions" });
+    ["copy","speaker","thumbsUp","thumbsDown","share","more"].forEach((k) => {
+      acts.append(icon(ICONS[k], 14));
+    });
+    wrap.append(acts);
+    return wrap;
+  }
+
+  msgs.append(
+    addUserMsg("Can you review the login flow and suggest a cleaner structure?"),
+    addAgentMsg("Of course. The current AuthManager mixes two responsibilities: token storage and request signing. I'd split it into a TokenStore (handles persistence and refresh) and an AuthInterceptor (signs outgoing requests). That way you can swap providers without touching the network layer."),
+    addUserMsg("That makes sense. Where would you put the OAuth callback handling?"),
+  );
+
+  const thinking = h("div", { className: "mac-msg mac-msg--agent" },
+    h("div", { className: "mac-thinking" }, h("span"), h("span"), h("span"))
+  );
+  msgs.append(thinking);
+
+  chat.append(msgs);
+
+  const input = h("div", { className: "macwin__input" },
+    "Message DevOps…",
+    h("div", { className: "macwin__input-send" }, icon(ICONS.arrowUp, 14)),
+  );
+  chat.append(input);
+
+  body.append(chat);
+  win.append(body);
+  container.append(win);
+
+  // Auto-scroll messages to bottom
+  requestAnimationFrame(() => { msgs.scrollTop = msgs.scrollHeight; });
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   const oc = document.getElementById("demo-openclaw");
   const ai = document.getElementById("demo-ai");
@@ -4693,4 +5095,8 @@ document.addEventListener("DOMContentLoaded", () => {
   if (wf) mountWorkflowBuilder(wf);
   const cal = document.getElementById("demo-calendar");
   if (cal) mountCalendar(cal);
+  const ios = document.getElementById("demo-ios");
+  if (ios) mountIosApp(ios);
+  const mac = document.getElementById("demo-mac");
+  if (mac) mountMacApp(mac);
 });
