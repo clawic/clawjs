@@ -715,6 +715,8 @@ export async function createClaw(options: CreateClawOptions): Promise<ClawInstan
   const baseProcessHost = new NodeProcessHost();
   const audit = new WorkspaceAuditLog(filesystem);
   const workspaceDir = options.workspace.rootDir;
+  const logicalAgentId = options.workspace.logicalAgentId ?? options.workspace.agentId;
+  const runtimeAgentId = options.workspace.runtimeAgentId ?? logicalAgentId;
   const conversationStore = new ConversationStore(workspaceDir, { filesystem });
   const dataStore = createWorkspaceDataStore(workspaceDir, filesystem);
   const adapter = getRuntimeAdapter(options.runtime.adapter);
@@ -745,7 +747,7 @@ export async function createClaw(options: CreateClawOptions): Promise<ClawInstan
   const runtimeOptions: RuntimeAdapterOptions = {
     adapter: adapter.id,
     binaryPath: options.runtime.binaryPath,
-    agentId: options.workspace.agentId,
+    agentId: runtimeAgentId,
     agentDir: options.runtime.agentDir,
     homeDir: options.runtime.homeDir,
     configPath: options.runtime.configPath,
@@ -770,7 +772,7 @@ export async function createClaw(options: CreateClawOptions): Promise<ClawInstan
   const conversationAdapter = adapter.createConversationAdapter(resolvedRuntimeOptions);
   const runtimeContext = adapter.id === "openclaw"
     ? resolveOpenClawContext({
-        agentId: options.workspace.agentId,
+        agentId: runtimeAgentId,
         configPath: resolvedRuntimeOptions.gateway?.configPath ?? resolvedRuntimeOptions.configPath,
         stateDir: resolvedRuntimeOptions.homeDir,
         workspaceDir,
@@ -1229,7 +1231,7 @@ export async function createClaw(options: CreateClawOptions): Promise<ClawInstan
 
   async function searchSessionsWithOpenClawMemory(input: ConversationSearchInput): Promise<ConversationSearchResult[]> {
     const hits = await runOpenClawMemorySearch(input.query, processHost, {
-      agentId: options.workspace.agentId,
+      agentId: runtimeAgentId,
       limit: input.limit,
       minScore: input.minScore,
       env: resolvedRuntimeOptions.env,
@@ -1325,6 +1327,12 @@ export async function createClaw(options: CreateClawOptions): Promise<ClawInstan
       manifestPresent: !!validation.manifest,
       missingFiles: validation.missingFiles,
       missingDirectories: validation.missingDirectories,
+      ...(options.workspace.projectId ? { projectId: options.workspace.projectId } : {}),
+      ...(logicalAgentId ? { logicalAgentId } : {}),
+      ...(runtimeAgentId ? { runtimeAgentId } : {}),
+      ...(typeof options.workspace.materializationVersion === "number"
+        ? { materializationVersion: options.workspace.materializationVersion }
+        : {}),
     }, filesystem);
   }
 
@@ -1576,7 +1584,7 @@ export async function createClaw(options: CreateClawOptions): Promise<ClawInstan
 
   function openClawContextDefaults() {
     return {
-      agentId: options.workspace.agentId,
+      agentId: runtimeAgentId,
       configPath: resolvedRuntimeOptions.gateway?.configPath ?? resolvedRuntimeOptions.configPath,
       stateDir: resolvedRuntimeOptions.homeDir,
       workspaceDir,
@@ -2278,16 +2286,16 @@ export async function createClaw(options: CreateClawOptions): Promise<ClawInstan
       },
       setupWorkspace: async (onProgress) => {
         await adapter.setupWorkspace({
-          agentId: options.workspace.agentId,
+          agentId: runtimeAgentId,
           workspaceDir,
         }, processHost, handleRuntimeProgress(onProgress));
         appendAuditEvent("runtime.workspace_setup", "runtime", {
-          agentId: options.workspace.agentId,
+          agentId: runtimeAgentId,
           workspaceDir,
           runtimeAdapter: adapter.id,
         });
         eventBus.emit("runtime.workspace_setup", {
-          agentId: options.workspace.agentId,
+          agentId: runtimeAgentId,
           workspaceDir,
           runtimeAdapter: adapter.id,
         });
@@ -2296,14 +2304,14 @@ export async function createClaw(options: CreateClawOptions): Promise<ClawInstan
       uninstallCommand: (installer = "npm") => adapter.buildUninstallCommand(installer),
       repairCommand: () => adapter.buildRepairCommand(),
       setupWorkspaceCommand: () => adapter.buildWorkspaceSetupCommand({
-        agentId: options.workspace.agentId,
+        agentId: runtimeAgentId,
         workspaceDir,
       }),
       installPlan: (installer = "npm") => adapter.buildProgressPlan("install", undefined, installer),
       uninstallPlan: (installer = "npm") => adapter.buildProgressPlan("uninstall", undefined, installer),
       repairPlan: () => adapter.buildProgressPlan("repair"),
       setupWorkspacePlan: () => adapter.buildProgressPlan("setup", {
-        agentId: options.workspace.agentId,
+        agentId: runtimeAgentId,
         workspaceDir,
       }),
       discoverContext: (discoverOptions = {}) => adapter.id === "openclaw"
@@ -3205,7 +3213,7 @@ export async function createClaw(options: CreateClawOptions): Promise<ClawInstan
     inference: {
       generateText: async (input) => generateRuntimeText({
         ...input,
-        agentId: input.agentId ?? options.workspace.agentId,
+        agentId: input.agentId ?? runtimeAgentId,
       }, {
         fetchImpl: input.transport === "cli" ? undefined : globalThis.fetch,
         runner: input.transport === "gateway" ? undefined : processHost,
@@ -3271,7 +3279,7 @@ export async function createClaw(options: CreateClawOptions): Promise<ClawInstan
         const title = await generateRuntimeConversationTitle({
           messages: session.messages,
           conversationAdapter: input.transport === "cli" ? { ...conversationAdapter, gateway: null } : conversationAdapter,
-          ...(input.transport === "gateway" ? { runner: undefined } : { agentId: options.workspace.agentId, runner: processHost }),
+          ...(input.transport === "gateway" ? { runner: undefined } : { agentId: runtimeAgentId, runner: processHost }),
           ...(input.transport === "cli" ? { fetchImpl: undefined } : { fetchImpl: globalThis.fetch }),
         });
         conversationStore.updateSessionTitle(input.sessionId, title);
@@ -3300,7 +3308,7 @@ export async function createClaw(options: CreateClawOptions): Promise<ClawInstan
 
         for await (const event of streamRuntimeConversationEvents({
           sessionId: input.sessionId,
-          agentId: options.workspace.agentId,
+          agentId: runtimeAgentId,
           systemPrompt: input.systemPrompt,
           contextBlocks: input.contextBlocks,
           messages: session.messages,
@@ -3365,7 +3373,7 @@ export async function createClaw(options: CreateClawOptions): Promise<ClawInstan
 
         for await (const chunk of streamRuntimeConversation({
           sessionId: input.sessionId,
-          agentId: options.workspace.agentId,
+          agentId: runtimeAgentId,
           systemPrompt: input.systemPrompt,
           contextBlocks: input.contextBlocks,
           messages: session.messages,

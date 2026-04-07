@@ -30,9 +30,17 @@ test("createManifest returns a valid manifest", () => {
     workspaceId: "demo-workspace",
     agentId: "demo-agent",
     rootDir: "/tmp/demo",
+    projectId: "demo-project",
+    logicalAgentId: "designer",
+    runtimeAgentId: "designer-demo-project",
+    materializationVersion: 1,
   }, "openclaw");
 
   assert.deepEqual(manifestSchema.parse(manifest), manifest);
+  assert.equal(manifest.projectId, "demo-project");
+  assert.equal(manifest.logicalAgentId, "designer");
+  assert.equal(manifest.runtimeAgentId, "designer-demo-project");
+  assert.equal(manifest.materializationVersion, 1);
 });
 
 test("maskCredential keeps only the tail", () => {

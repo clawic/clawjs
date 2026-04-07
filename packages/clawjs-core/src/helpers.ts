@@ -12,6 +12,10 @@ export function createManifest(config: WorkspaceConfig, runtimeAdapter: string, 
     createdAt: now,
     updatedAt: now,
     ...(templatePackPath ? { templatePackPath } : {}),
+    ...(config.projectId ? { projectId: config.projectId } : {}),
+    ...(config.logicalAgentId ? { logicalAgentId: config.logicalAgentId } : {}),
+    ...(config.runtimeAgentId ? { runtimeAgentId: config.runtimeAgentId } : {}),
+    ...(typeof config.materializationVersion === "number" ? { materializationVersion: config.materializationVersion } : {}),
   };
 }
 

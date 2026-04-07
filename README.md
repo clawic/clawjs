@@ -31,6 +31,20 @@ Repository ownership, issue tracking, and package publishing live under [`@clawi
 - `create-claw-plugin`: distributed plugin package scaffold
 - `eslint-config-claw`: shared ESLint flat config
 
+## Relay
+
+The repository also includes `relay/`, a standalone relay backend for remote clients that need a public HTTPS API in front of remote ClawJS or OpenClaw agents.
+
+Relay v1 adds:
+
+- `/v1` JWT-based client auth
+- reverse WebSocket connector sessions for agents behind NAT
+- explicit routing by `tenantId`, `agentId`, and `workspaceId`
+- first-class `project + agent + assignment` routing on top of materialized workspaces
+- an admin-only surface for runtime setup, config, and connector enrollment
+
+Docs: [docs/relay.md](docs/relay.md)
+
 ## Install
 
 Use the SDK:

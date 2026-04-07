@@ -43,6 +43,10 @@ export const manifestSchema = z.object({
   createdAt: z.string().min(1),
   updatedAt: z.string().min(1),
   templatePackPath: z.string().min(1).optional(),
+  projectId: z.string().min(1).optional(),
+  logicalAgentId: z.string().min(1).optional(),
+  runtimeAgentId: z.string().min(1).optional(),
+  materializationVersion: z.number().int().positive().optional(),
 });
 
 export const compatSnapshotSchema = z.object({
@@ -77,6 +81,10 @@ export const workspaceStateSnapshotSchema = z.object({
   manifestPresent: z.boolean(),
   missingFiles: z.array(z.string()),
   missingDirectories: z.array(z.string()),
+  projectId: z.string().min(1).optional(),
+  logicalAgentId: z.string().min(1).optional(),
+  runtimeAgentId: z.string().min(1).optional(),
+  materializationVersion: z.number().int().positive().optional(),
 });
 
 export const providerStateSnapshotSchema = z.object({

@@ -133,6 +133,50 @@ export interface RuntimeWorkspaceContract {
   files: RuntimeFileDescriptor[];
 }
 
+export interface ProjectResourceRef {
+  id: string;
+  label?: string;
+  uri?: string;
+  mode?: "allow" | "deny";
+  metadata?: Record<string, unknown>;
+}
+
+export interface ProjectSecretRef {
+  id: string;
+  label?: string;
+  secretName?: string;
+  mode?: "allow" | "deny";
+  metadata?: Record<string, unknown>;
+}
+
+export interface EffectiveAccessPolicy {
+  resources: ProjectResourceRef[];
+  secrets: ProjectSecretRef[];
+}
+
+export interface Project {
+  projectId: string;
+  displayName: string;
+  description?: string;
+  instructions?: string;
+  resourceRefs?: ProjectResourceRef[];
+  secretRefs?: ProjectSecretRef[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ProjectAgentAssignment {
+  projectId: string;
+  agentId: string;
+  workspaceId: string;
+  runtimeAgentId: string;
+  displayName?: string;
+  instructions?: string;
+  effectiveAccessPolicy?: EffectiveAccessPolicy;
+  createdAt: string;
+  updatedAt: string;
+}
+
 /**
  * A workspace is the isolated ClawJS context.
  * `agentId` identifies the agent operating inside that workspace and is not
@@ -143,6 +187,10 @@ export interface WorkspaceConfig {
   workspaceId: string;
   agentId: string;
   rootDir: string;
+  projectId?: string;
+  logicalAgentId?: string;
+  runtimeAgentId?: string;
+  materializationVersion?: number;
 }
 
 export interface ClawManifest {
@@ -155,6 +203,10 @@ export interface ClawManifest {
   createdAt: string;
   updatedAt: string;
   templatePackPath?: string;
+  projectId?: string;
+  logicalAgentId?: string;
+  runtimeAgentId?: string;
+  materializationVersion?: number;
 }
 
 export interface CompatSnapshot {
@@ -189,6 +241,10 @@ export interface WorkspaceStateSnapshot {
   manifestPresent: boolean;
   missingFiles: string[];
   missingDirectories: string[];
+  projectId?: string;
+  logicalAgentId?: string;
+  runtimeAgentId?: string;
+  materializationVersion?: number;
 }
 
 export interface ProviderStateSnapshot {
