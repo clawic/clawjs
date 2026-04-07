@@ -1,0 +1,66 @@
+/* General */
+"general.app_name" = "ClawJS";
+"general.chat" = "محادثة";
+"general.search" = "بحث";
+"general.delete" = "حذف";
+"general.cancel" = "إلغاء";
+"general.create" = "إنشاء";
+"general.close" = "إغلاق";
+"general.chats" = "المحادثات";
+"general.documents" = "المستندات";
+
+/* Home */
+"home.projects" = "المشاريع";
+"home.conversations" = "المحادثات";
+"home.see_all" = "عرض الكل";
+"home.all_projects" = "جميع المشاريع";
+"home.new_chat" = "محادثة جديدة";
+"home.select_agent" = "اختر وكيلاً للمحادثة";
+
+/* Chat */
+"chat.thinking" = "يفكر";
+"chat.message_placeholder" = "رسالة";
+"chat.waiting" = "في الانتظار...";
+"chat.send_message_to" = "إرسال رسالة إلى %@...";
+
+/* Agent */
+"agent.new_agent" = "وكيل جديد";
+"agent.create_agent" = "إنشاء وكيل";
+"agent.no_conversations" = "لا توجد محادثات";
+"agent.custom_agent" = "وكيل مخصص";
+"agent.start_conversation_with" = "بدء محادثة مع %@";
+
+/* Agent Form */
+"agent_form.name" = "الاسم";
+"agent_form.name_placeholder" = "مثال: التسويق، القانون، المالية...";
+"agent_form.role" = "الدور";
+"agent_form.role_placeholder" = "مثال: كاتب محتوى، محلل...";
+"agent_form.description" = "الوصف";
+"agent_form.description_placeholder" = "ماذا يفعل هذا الوكيل...";
+
+/* Project */
+"project.no_conversations" = "لا توجد محادثات";
+"project.start_conversation_in" = "بدء محادثة في %@";
+
+/* Settings */
+"settings.title" = "الإعدادات";
+"settings.appearance" = "المظهر";
+"settings.language" = "اللغة";
+"settings.language_system" = "الافتراضي للنظام";
+"settings.notifications" = "الإشعارات";
+"settings.sound" = "الصوت";
+"settings.haptics" = "اللمس";
+"settings.data" = "البيانات";
+"settings.conversations" = "المحادثات";
+"settings.agents" = "الوكلاء";
+"settings.delete_all_conversations" = "حذف جميع المحادثات";
+"settings.delete_all_alert" = "سيؤدي هذا إلى حذف جميع المحادثات نهائياً. لا يمكن التراجع عن هذا الإجراء.";
+"settings.about" = "حول";
+"settings.version" = "الإصدار";
+"settings.build" = "البناء";
+"settings.app_subtitle" = "ClawJS - مساعد محادثة بالذكاء الاصطناعي";
+
+/* Appearance */
+"appearance.system" = "النظام";
+"appearance.light" = "فاتح";
+"appearance.dark" = "داكن";
