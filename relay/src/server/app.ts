@@ -2,6 +2,7 @@ import Fastify, { type FastifyReply, type FastifyRequest } from "fastify";
 import cors from "@fastify/cors";
 import fastifyStatic from "@fastify/static";
 import websocket from "@fastify/websocket";
+import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -2129,19 +2130,40 @@ export async function buildRelayApp(options: RelayAppOptions = {}) {
   });
 
   // --- Static frontend serving ---
+  // The relay UI is a Vite + React app at relay/ui/. Its production build
+  // lands in relay/ui/dist/ and is served here as static assets, with the
+  // catch-all below falling back to index.html for SPA routing.
+  //
+  // If the build is missing (fresh checkout, dev workflow where the UI is
+  // served by `vite dev` on its own port) we skip static registration so
+  // the API still comes up cleanly. A clear 404 is returned for non-API
+  // routes in that case.
   const __dirname = path.dirname(fileURLToPath(import.meta.url));
-  const publicDir = path.resolve(__dirname, "../../public");
-  await app.register(fastifyStatic, {
-    root: publicDir,
-    prefix: "/",
-    wildcard: false,
-  });
+  const publicDir = path.resolve(__dirname, "../../ui/dist");
+  const hasStaticBuild = existsSync(path.join(publicDir, "index.html"));
+
+  if (hasStaticBuild) {
+    await app.register(fastifyStatic, {
+      root: publicDir,
+      prefix: "/",
+      wildcard: false,
+    });
+  } else {
+    logger.warn(
+      `Relay UI build not found at ${publicDir}. API will still serve; run \`npm --prefix relay/ui run build\` (or \`npm --prefix relay/ui run dev\` for HMR on :5180) to serve the frontend.`,
+    );
+  }
 
   app.setNotFoundHandler(async (request, reply) => {
     if (request.url.startsWith("/v1/")) {
       return reply.code(404).send({ error: "Not found" });
     }
-    return reply.sendFile("index.html");
+    if (hasStaticBuild) {
+      return reply.sendFile("index.html");
+    }
+    return reply.code(404).send({
+      error: "UI build not found. Run `npm --prefix relay/ui run build`.",
+    });
   });
 
   return { app, db, auth, registry, logger, config };

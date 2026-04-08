@@ -5,7 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/bin/server.ts",
-    "build": "tsup src/bin/server.ts src/bin/connector.ts --format esm --target node20 --out-dir dist --clean",
+    "dev:ui": "npm --prefix ui run dev",
+    "build:ui": "npm --prefix ui run build",
+    "build:server": "tsup src/bin/server.ts src/bin/connector.ts --format esm --target node20 --out-dir dist --clean",
+    "build": "npm run build:ui && npm run build:server",
     "start": "node dist/server.js",
     "connector": "node dist/connector.js",
     "test": "tsx --test src/**/*.test.ts",

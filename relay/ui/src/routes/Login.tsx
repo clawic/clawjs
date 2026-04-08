@@ -8,9 +8,9 @@ export function LoginPage() {
   const location = useLocation() as { state?: { from?: { pathname?: string } } };
   const from = location.state?.from?.pathname ?? "/sessions";
 
-  const [email, setEmail] = useState("admin@relay.local");
-  const [password, setPassword] = useState("relay-admin");
-  const [tenantId, setTenantId] = useState("demo-tenant");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [tenantId, setTenantId] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -34,89 +34,63 @@ export function LoginPage() {
   };
 
   return (
-    <div className="cb-login-page">
-      <div className="cb-login-wrapper">
-        <div className="cb-login-logo">
-          <svg viewBox="0 0 44 44" width="44" height="44" aria-hidden="true">
-            <rect x="3" y="3" width="22" height="22" rx="2" fill="none" stroke="#1a1a24" strokeWidth="2" />
-            <text
-              x="14"
-              y="20"
-              fontFamily="Source Sans 3, sans-serif"
-              fontWeight="700"
-              fontSize="15"
-              textAnchor="middle"
-              fill="#1a1a24"
-            >
-              C
-            </text>
-            <rect x="19" y="19" width="22" height="22" rx="2" fill="#ffffff" stroke="#1a1a24" strokeWidth="2" />
-            <text
-              x="30"
-              y="36"
-              fontFamily="Source Sans 3, sans-serif"
-              fontWeight="700"
-              fontSize="15"
-              textAnchor="middle"
-              fill="#1a1a24"
-            >
-              R
-            </text>
-          </svg>
-          <span className="cb-login-brand">
-            Claw<strong>Relay</strong>
-          </span>
+    <div className="h-full flex items-center justify-center bg-bg-panel">
+      <form
+        onSubmit={onSubmit}
+        className="w-80 bg-bg border border-border rounded p-5 flex flex-col gap-3"
+      >
+        <div>
+          <div className="text-sm font-semibold">clawjs relay</div>
+          <div className="text-xs text-text-muted">Sign in to continue</div>
         </div>
 
-        <h4 className="cb-login-title">Superuser login</h4>
+        <label className="flex flex-col gap-1">
+          <span className="text-xs text-text-muted">Tenant ID</span>
+          <input
+            value={tenantId}
+            onChange={(e) => setTenantId(e.target.value)}
+            autoComplete="organization"
+            required
+            className="h-8 px-2 rounded-sm border border-border bg-bg-input text-text outline-none focus:border-border-strong"
+          />
+        </label>
 
-        <form onSubmit={onSubmit} className="cb-login-form" data-testid="login-form">
-          <label className="cb-field required">
-            <span>Tenant ID</span>
-            <input
-              value={tenantId}
-              onChange={(e) => setTenantId(e.target.value)}
-              autoComplete="organization"
-              required
-            />
-          </label>
+        <label className="flex flex-col gap-1">
+          <span className="text-xs text-text-muted">Email</span>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            autoComplete="email"
+            required
+            className="h-8 px-2 rounded-sm border border-border bg-bg-input text-text outline-none focus:border-border-strong"
+          />
+        </label>
 
-          <label className="cb-field required">
-            <span>Email</span>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              autoComplete="username"
-              required
-            />
-          </label>
+        <label className="flex flex-col gap-1">
+          <span className="text-xs text-text-muted">Password</span>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            autoComplete="current-password"
+            required
+            className="h-8 px-2 rounded-sm border border-border bg-bg-input text-text outline-none focus:border-border-strong"
+          />
+        </label>
 
-          <label className="cb-field required">
-            <span>Password</span>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="current-password"
-              required
-            />
-          </label>
+        {error ? (
+          <div className="text-xs text-red bg-red-bg rounded-sm px-2 py-1">{error}</div>
+        ) : null}
 
-          <a className="cb-login-forgot" href="#" tabIndex={-1}>
-            Forgotten password?
-          </a>
-
-          {error ? <p className="cb-login-error">{error}</p> : null}
-
-          <button type="submit" data-testid="login-submit" className="cb-btn" disabled={pending}>
-            <span>{pending ? "Signing in." : "Login"}</span>
-            <span className="cb-btn-arrow" aria-hidden="true">
-              →
-            </span>
-          </button>
-        </form>
-      </div>
+        <button
+          type="submit"
+          disabled={pending}
+          className="h-8 rounded-sm bg-text text-bg text-xs font-medium hover:opacity-90 disabled:opacity-50"
+        >
+          {pending ? "Signing in." : "Sign in"}
+        </button>
+      </form>
     </div>
   );
 }
