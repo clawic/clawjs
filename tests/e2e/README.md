@@ -59,6 +59,9 @@ The current Playwright specs are:
 - [demo-settings.spec.ts](./demo-settings.spec.ts)
   Covers destructive reset from settings and verifies the app returns to first-run onboarding.
 
+- [demo-runtime-adapters.spec.ts](./demo-runtime-adapters.spec.ts)
+  Covers the runtime adapter settings UI, ensuring Hermes and Nanobot expose capability-driven metadata while OpenClaw remains stable.
+
 - [demo-system.spec.ts](./demo-system.spec.ts)
   Covers usage budget persistence, deterministic activity filtering, health repair flows, and sidebar/session navigation persistence.
 
@@ -79,6 +82,12 @@ The current Playwright specs are:
 
 - [sdk-openclaw-detection-freshness.spec.ts](./sdk-openclaw-detection-freshness.spec.ts)
   Verifies the demo/runtime detection does not stay stuck on a cached OpenClaw path after the binary disappears, with a final validation screenshot.
+
+- [sdk-openclaw-conversation-transports.spec.ts](./sdk-openclaw-conversation-transports.spec.ts)
+  Verifies the SDK routes OpenClaw product chat through `responses`, keeps `chat/completions` as text fallback, preserves native gateway wrappers, and captures a final validation screenshot.
+
+- [demo-openclaw-bootstrap-localhost.spec.ts](./demo-openclaw-bootstrap-localhost.spec.ts)
+  Verifies the demo bootstrap can enable the real chat UI against an isolated localhost OpenClaw runtime without stalling on disabled Mail or Calendar probes, and captures a final validation screenshot.
 
 - [repository-package-surface.spec.ts](./repository-package-surface.spec.ts)
   Verifies unpublished package names are absent from the public repo surface and captures a final browser screenshot of the cleaned docs state.

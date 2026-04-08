@@ -1,12 +1,15 @@
 import type {
   AuthState,
   CapabilityName,
+  ChannelCatalog,
   ChannelDescriptor,
   ConversationTransport,
   DefaultModelRef,
+  MemoryCatalog,
   MemoryDescriptor,
   ModelCatalog,
   ModelDescriptor,
+  PluginCatalog,
   ProgressEvent,
   ProviderCatalog,
   ProviderAuthSummary,
@@ -20,7 +23,9 @@ import type {
   RuntimeInfo,
   RuntimeLocations,
   RuntimeWorkspaceContract,
+  SchedulerCatalog,
   SchedulerDescriptor,
+  SkillCatalog,
   SkillDescriptor,
 } from "@clawjs/core";
 
@@ -189,7 +194,7 @@ export interface ConversationCliInvocation {
 }
 
 export interface ConversationGatewayDescriptor {
-  kind: "openai-chat-completions";
+  kind: "openai-chat-completions" | "openai-responses" | "openclaw-gateway";
   url: string;
   token?: string;
   port?: number;
@@ -199,7 +204,13 @@ export interface ConversationGatewayDescriptor {
 
 export interface RuntimeConversationAdapter {
   gateway?: ConversationGatewayDescriptor | null;
+  fallbackGateway?: ConversationGatewayDescriptor | null;
   transport: ConversationTransport;
+  primaryTransport?: "cli" | "gateway";
+  fallbackTransport?: "cli" | "gateway" | "none";
+  sessionPersistence?: "ephemeral" | "workspace" | "runtime" | "agent";
+  streamingMode?: "none" | "cli" | "gateway" | "hybrid";
+  sessionPath?: string;
   buildCliInvocation(input: {
     sessionId: string;
     agentId?: string;
@@ -209,6 +220,62 @@ export interface RuntimeConversationAdapter {
   supportsGateway?: boolean;
 }
 
+export interface RuntimeCapabilityHandlers {
+  describe(options: RuntimeAdapterOptions): RuntimeCapabilityMap;
+  probe(runner: CommandRunner, options: RuntimeAdapterOptions): Promise<{
+    capabilityMap: RuntimeCapabilityMap;
+    diagnostics?: Record<string, unknown>;
+  }>;
+}
+
+export interface RuntimeOperationHandlers {
+  buildInstallCommand(installer?: "npm" | "pnpm"): RuntimeCommandSpec;
+  buildUninstallCommand(installer?: "npm" | "pnpm"): RuntimeCommandSpec;
+  buildRepairCommand(): RuntimeCommandSpec;
+  buildWorkspaceSetupCommand(input: RuntimeSetupInput): RuntimeCommandSpec;
+  buildProgressPlan(operation: RuntimeOperation, input?: RuntimeSetupInput, installer?: "npm" | "pnpm"): RuntimeProgressPlan;
+  install(runner: CommandRunner, installer?: "npm" | "pnpm", onProgress?: RuntimeProgressSink): Promise<void>;
+  uninstall(runner: CommandRunner, installer?: "npm" | "pnpm", onProgress?: RuntimeProgressSink): Promise<void>;
+  repair(runner: CommandRunner, onProgress?: RuntimeProgressSink): Promise<void>;
+  setupWorkspace(input: RuntimeSetupInput, runner: CommandRunner, onProgress?: RuntimeProgressSink): Promise<void>;
+}
+
+export interface RuntimeResourceHandlers {
+  getProviderCatalog(runner: CommandRunner, options: RuntimeAdapterOptions): Promise<ProviderCatalog>;
+  listProviders(runner: CommandRunner, options: RuntimeAdapterOptions): Promise<ProviderDescriptor[]>;
+  getModelCatalog(runner: CommandRunner, options: RuntimeAdapterOptions): Promise<ModelCatalog>;
+  listModels(runner: CommandRunner, options: RuntimeAdapterOptions): Promise<ModelDescriptor[]>;
+  getDefaultModel(runner: CommandRunner, options: RuntimeAdapterOptions): Promise<DefaultModelRef | null>;
+  setDefaultModel(model: string, runner: CommandRunner, options: RuntimeAdapterOptions): Promise<string>;
+  getAuthState(runner: CommandRunner, options: RuntimeAdapterOptions): Promise<AuthState>;
+  getProviderAuth(runner: CommandRunner, options: RuntimeAdapterOptions): Promise<Record<string, ProviderAuthSummary>>;
+  listSchedulers(runner: CommandRunner, options: RuntimeAdapterOptions): Promise<SchedulerDescriptor[]>;
+  getSchedulerCatalog?(runner: CommandRunner, options: RuntimeAdapterOptions): Promise<SchedulerCatalog>;
+  runScheduler(id: string, runner: CommandRunner, options: RuntimeAdapterOptions): Promise<void>;
+  setSchedulerEnabled(id: string, enabled: boolean, runner: CommandRunner, options: RuntimeAdapterOptions): Promise<void>;
+  listMemory(runner: CommandRunner, options: RuntimeAdapterOptions): Promise<MemoryDescriptor[]>;
+  getMemoryCatalog?(runner: CommandRunner, options: RuntimeAdapterOptions): Promise<MemoryCatalog>;
+  searchMemory(query: string, runner: CommandRunner, options: RuntimeAdapterOptions): Promise<MemoryDescriptor[]>;
+  listSkills(runner: CommandRunner, options: RuntimeAdapterOptions): Promise<SkillDescriptor[]>;
+  getSkillCatalog?(runner: CommandRunner, options: RuntimeAdapterOptions): Promise<SkillCatalog>;
+  syncSkills(runner: CommandRunner, options: RuntimeAdapterOptions): Promise<SkillDescriptor[]>;
+  listChannels(runner: CommandRunner, options: RuntimeAdapterOptions): Promise<ChannelDescriptor[]>;
+  getChannelCatalog?(runner: CommandRunner, options: RuntimeAdapterOptions): Promise<ChannelCatalog>;
+  getPluginCatalog?(runner: CommandRunner, options: RuntimeAdapterOptions): Promise<PluginCatalog>;
+}
+
+export interface RuntimeConversationHandlers {
+  describe(options: RuntimeAdapterOptions): Omit<RuntimeConversationAdapter, "buildCliInvocation"> & {
+    sessionPath?: string;
+  };
+  create(options: RuntimeAdapterOptions): RuntimeConversationAdapter;
+}
+
+export interface RuntimeWorkspaceHandlers {
+  resolveLocations(options: RuntimeAdapterOptions): RuntimeLocations;
+  getWorkspaceContract(options: RuntimeAdapterOptions): RuntimeWorkspaceContract;
+}
+
 export interface RuntimeAdapter {
   id: RuntimeAdapterId;
   runtimeName: string;
@@ -216,6 +283,11 @@ export interface RuntimeAdapter {
   supportLevel: RuntimeAdapterSupportLevel;
   recommended?: boolean;
   workspaceFiles: RuntimeFileDescriptor[];
+  capabilities?: RuntimeCapabilityHandlers;
+  operations?: RuntimeOperationHandlers;
+  resources?: RuntimeResourceHandlers;
+  conversation?: RuntimeConversationHandlers;
+  workspace?: RuntimeWorkspaceHandlers;
   describeFeatures(options: RuntimeAdapterOptions): RuntimeFeatureDescriptor[];
   resolveLocations(options: RuntimeAdapterOptions): RuntimeLocations;
   getWorkspaceContract(options: RuntimeAdapterOptions): RuntimeWorkspaceContract;

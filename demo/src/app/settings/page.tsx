@@ -2149,22 +2149,32 @@ function SettingsContent() {
                       <>
                         {/* Capability chips */}
                         <div className="flex flex-wrap gap-1.5 px-4 py-3 border-t border-border">
-                          {[
-                            ...(adapter.providers.length > 0 ? [{ ok: true, label: `${adapterMessages.capProviders} (${adapter.providers.length})` }] : []),
-                            ...(adapter.channels.length > 0 ? [{ ok: true, label: `${adapterMessages.capChannels} (${adapter.channels.length})` }] : []),
-                            ...(adapter.hasScheduler ? [{ ok: true, label: adapterMessages.capScheduler }] : []),
-                            ...(adapter.hasMemory ? [{ ok: true, label: adapterMessages.capMemory }] : []),
-                            ...(adapter.hasSandbox ? [{ ok: true, label: adapterMessages.capSandbox }] : []),
-                            ...(adapter.hasGateway ? [{ ok: true, label: adapterMessages.capGateway }] : []),
-                          ].map((item) => (
+                          {adapter.capabilities.map((item) => {
+                            const label = item.key
+                              .replace(/^conversation_/, "")
+                              .replace(/_/g, " ")
+                              .replace(/\b\w/g, (char) => char.toUpperCase());
+                            const classes = item.status === "ready"
+                              ? "bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400"
+                              : item.status === "degraded"
+                                ? "bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-300"
+                                : "bg-card border border-border text-muted-foreground";
+                            const dotClass = item.status === "ready"
+                              ? "bg-emerald-400"
+                              : item.status === "degraded"
+                                ? "bg-amber-400"
+                                : "bg-muted-foreground";
+                            return (
                             <span
-                              key={item.label}
-                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400"
+                              key={item.key}
+                              data-testid={`adapter-${adapter.id}-capability-${item.key}`}
+                              data-state={item.status}
+                              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium ${classes}`}
                             >
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                              {item.label}
+                              <span className={`w-1.5 h-1.5 rounded-full ${dotClass}`} />
+                              {label}
                             </span>
-                          ))}
+                          )})}
                         </div>
 
                         {/* Metadata rows */}
@@ -2191,6 +2201,33 @@ function SettingsContent() {
                             <div className="px-4 py-2 flex items-baseline gap-3">
                               <span className="text-[11px] text-muted-foreground w-[76px] flex-shrink-0">{adapterMessages.workspaceFiles}</span>
                               <span className="text-[11px] text-foreground font-mono">{adapter.workspaceFiles.join(", ")}</span>
+                            </div>
+                          )}
+                          {adapter.conversation && (
+                            <>
+                              <div className="px-4 py-2 flex items-baseline gap-3">
+                                <span className="text-[11px] text-muted-foreground w-[76px] flex-shrink-0">Transport</span>
+                                <span data-testid={`adapter-${adapter.id}-conversation-transport`} className="text-[11px] text-foreground font-mono">
+                                  {adapter.conversation.transport}
+                                  {adapter.conversation.fallbackTransport ? ` -> ${adapter.conversation.fallbackTransport}` : ""}
+                                </span>
+                              </div>
+                              {adapter.conversation.sessionPersistence && (
+                                <div className="px-4 py-2 flex items-baseline gap-3">
+                                  <span className="text-[11px] text-muted-foreground w-[76px] flex-shrink-0">Sessions</span>
+                                  <span className="text-[11px] text-foreground font-mono">{adapter.conversation.sessionPersistence}</span>
+                                </div>
+                              )}
+                            </>
+                          )}
+                          {adapter.limitations.length > 0 && (
+                            <div className="px-4 py-2" data-testid={`adapter-${adapter.id}-limitations`}>
+                              <span className="text-[11px] text-muted-foreground block mb-1.5">Limitations</span>
+                              <div className="space-y-1">
+                                {adapter.limitations.map((limitation) => (
+                                  <p key={limitation} className="text-[11px] text-muted-foreground leading-relaxed">{limitation}</p>
+                                ))}
+                              </div>
                             </div>
                           )}
                           <div className="h-1" />

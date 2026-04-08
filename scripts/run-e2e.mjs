@@ -9,6 +9,7 @@ const defaultSpecFiles = [
   "tests/e2e/demo-chat.spec.ts",
   "tests/e2e/demo-contacts.spec.ts",
   "tests/e2e/demo-onboarding.spec.ts",
+  "tests/e2e/demo-runtime-adapters.spec.ts",
   "tests/e2e/demo-settings-deep.spec.ts",
   "tests/e2e/demo-settings.spec.ts",
   "tests/e2e/demo-system.spec.ts",

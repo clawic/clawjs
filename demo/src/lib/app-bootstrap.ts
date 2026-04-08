@@ -53,14 +53,30 @@ export interface AdapterStatusSummary {
   cliAvailable: boolean;
   version: string | null;
   recommended?: boolean;
-  capabilities: Array<{ key: string; supported: boolean; status: string; strategy: string }>;
+  capabilities: Array<{
+    key: string;
+    supported: boolean;
+    status: string;
+    strategy: string;
+    limitations?: string[];
+    source?: string;
+    probeMethod?: string;
+  }>;
   providers: Array<{ id: string; label: string }>;
   channels: Array<{ id: string; label: string; kind: string }>;
   workspaceFiles: string[];
+  limitations: string[];
   hasScheduler: boolean;
   hasMemory: boolean;
   hasSandbox: boolean;
   hasGateway: boolean;
+  conversation?: {
+    transport: string;
+    fallbackTransport?: string;
+    gatewayKind?: string;
+    sessionPersistence?: string;
+    sessionPath?: string;
+  };
 }
 
 export interface IntegrationStatus {
@@ -233,7 +249,7 @@ export async function loadAppBootstrap(): Promise<AppBootstrapData> {
       fetchJson<UserConfig>("/api/config"),
       fetchJson<ClawJSLocalSettings>("/api/config/local"),
       fetchJson<{ sections?: ProfileSection[] }>("/api/config/profile"),
-      fetchJson<IntegrationStatus>("/api/integrations/status"),
+      fetchJson<IntegrationStatus>("/api/integrations/status?scope=bootstrap"),
       fetchJson<ChatBootstrapPayload>("/api/chat"),
       fetchJson<{ sessions?: SessionSummary[] }>("/api/chat/sessions"),
       fetchJson<AiAuthStatus>("/api/integrations/auth").catch(() => null),

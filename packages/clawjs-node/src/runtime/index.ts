@@ -1,4 +1,5 @@
 export * from "./contracts.ts";
+export * from "./engines.ts";
 export * from "./gateway.ts";
 export * from "./openclaw-memory.ts";
 export * from "./openclaw-context.ts";

@@ -92,11 +92,20 @@ export interface CapabilityState {
   diagnostics?: Record<string, unknown>;
 }
 
+export interface RuntimeCapabilityDiagnostics {
+  source?: "runtime" | "config" | "derived" | "fixture" | "workspace" | "gateway";
+  probeMethod?: "cli" | "gateway" | "config" | "filesystem" | "derived" | "fixture" | "none";
+  transport?: ConversationTransport["kind"] | "none";
+  sessionModel?: "ephemeral" | "workspace" | "runtime" | "agent";
+  inventoryFreshness?: "live" | "cached" | "derived" | "static";
+  [key: string]: unknown;
+}
+
 export interface RuntimeCapabilitySupport {
   supported: boolean;
   status: CapabilityStatus;
   strategy: RuntimeCapabilityStrategy;
-  diagnostics?: Record<string, unknown>;
+  diagnostics?: RuntimeCapabilityDiagnostics;
   limitations?: string[];
 }
 
@@ -758,7 +767,11 @@ export interface AuthState {
 export interface ConversationTransport {
   kind: "cli" | "gateway" | "hybrid";
   streaming: boolean;
-  gatewayKind?: "openai-chat-completions" | "sse" | "ws";
+  gatewayKind?: "openai-chat-completions" | "openai-responses" | "openclaw-gateway" | "sse" | "ws";
+  primaryTransport?: "cli" | "gateway";
+  fallbackTransport?: "cli" | "gateway" | "none";
+  sessionPersistence?: "ephemeral" | "workspace" | "runtime" | "agent";
+  streamingMode?: "none" | "cli" | "gateway" | "hybrid";
 }
 
 export interface SchedulerDescriptor {
@@ -767,6 +780,10 @@ export interface SchedulerDescriptor {
   enabled: boolean;
   status: "idle" | "running" | "paused" | "unknown";
   kind?: "cron" | "routine" | "job" | "daemon" | "workflow";
+}
+
+export interface SchedulerCatalog {
+  schedulers: SchedulerDescriptor[];
 }
 
 export interface MemoryDescriptor {
@@ -778,12 +795,20 @@ export interface MemoryDescriptor {
   updatedAt?: string;
 }
 
+export interface MemoryCatalog {
+  memory: MemoryDescriptor[];
+}
+
 export interface SkillDescriptor {
   id: string;
   label: string;
   enabled: boolean;
   scope?: "workspace" | "runtime" | "global";
   path?: string;
+}
+
+export interface SkillCatalog {
+  skills: SkillDescriptor[];
 }
 
 export interface SkillSourceCapabilities {
@@ -842,6 +867,23 @@ export interface ChannelDescriptor {
   lastSyncAt?: string;
   lastError?: string | null;
   metadata?: Record<string, unknown>;
+}
+
+export interface ChannelCatalog {
+  channels: ChannelDescriptor[];
+}
+
+export interface RuntimePluginDescriptor {
+  id: string;
+  label: string;
+  enabled?: boolean;
+  version?: string | null;
+  status?: "ready" | "degraded" | "unsupported" | "unknown";
+  metadata?: Record<string, unknown>;
+}
+
+export interface PluginCatalog {
+  plugins: RuntimePluginDescriptor[];
 }
 
 export interface TelegramBotProfile {
