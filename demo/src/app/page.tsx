@@ -15,6 +15,35 @@ import { useSearchParams, useRouter, usePathname } from "next/navigation";
 
 type EntityType = "contact" | "notes";
 
+interface ChatPerfPromptBreakdown {
+  prepMs?: number;
+  emailMs?: number;
+  calendarMs?: number;
+  totalMs?: number;
+  promptChars?: number;
+}
+
+interface ChatPerfTrace {
+  traceId: string;
+  phase?: string;
+  totalMs?: number;
+  messageCount?: number;
+  availabilityMs?: number;
+  transcribeMs?: number;
+  systemPromptMs?: number;
+  ensureAgentMs?: number;
+  getClawMs?: number;
+  firstChunkMs?: number;
+  streamMs?: number;
+  transport?: "gateway" | "cli";
+  fallback?: boolean;
+  retries?: number;
+  attempt?: number;
+  maxAttempts?: number;
+  error?: string;
+  prompt?: ChatPerfPromptBreakdown;
+}
+
 /**
  * Smooth character-level streaming text.
  * Only used during active streaming. Mounts when streaming starts,
@@ -440,6 +469,7 @@ function ChatContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
+  const chatDebugEnabled = searchParams.get("chatDebug") === "1";
   const openClawReady = (bootstrapData?.localSettings?.openClawEnabled !== false) && (bootstrapData?.toolStatus?.openClaw?.ready ?? false);
   const ttsEnabled = bootstrapData?.config?.tts?.enabled !== false;
   const ttsAutoRead = ttsEnabled && bootstrapData?.config?.tts?.autoRead === true;
@@ -466,6 +496,7 @@ function ChatContent() {
   const [selectedModel, setSelectedModel] = useState("openclaw");
   const [correctionIdx, setCorrectionIdx] = useState<number | null>(null);
   const [contextOptions, setContextOptions] = useState<Array<{ id: string; label: string }>>([]);
+  const [chatTrace, setChatTrace] = useState<ChatPerfTrace | null>(null);
   const [correctionContext, setCorrectionContext] = useState("general");
   const [correctionText, setCorrectionText] = useState("");
   const [correctionSaving, setCorrectionSaving] = useState(false);
@@ -499,6 +530,22 @@ function ChatContent() {
   const anonMapRef = useRef<Record<string, string>>({});
   const sessionAnonMapsRef = useRef<Record<string, Record<string, string>>>({});
   const [hasSpeechSupport, setHasSpeechSupport] = useState(false);
+
+  const chatTraceSummary = useMemo(() => {
+    if (!chatTrace) return "";
+    const parts: string[] = [];
+    if (chatTrace.transport) {
+      parts.push(chatTrace.fallback ? `${chatTrace.transport} fallback` : chatTrace.transport);
+    }
+    if (typeof chatTrace.firstChunkMs === "number") parts.push(`first chunk ${chatTrace.firstChunkMs}ms`);
+    if (typeof chatTrace.systemPromptMs === "number") parts.push(`prompt ${chatTrace.systemPromptMs}ms`);
+    if (typeof chatTrace.streamMs === "number") parts.push(`stream ${chatTrace.streamMs}ms`);
+    if (typeof chatTrace.totalMs === "number") parts.push(`total ${chatTrace.totalMs}ms`);
+    if (typeof chatTrace.retries === "number" && chatTrace.retries > 0) parts.push(`retries ${chatTrace.retries}`);
+    if (chatTrace.prompt?.promptChars) parts.push(`${chatTrace.prompt.promptChars} chars`);
+    if (chatTrace.error) parts.push(chatTrace.error);
+    return parts.join(" • ");
+  }, [chatTrace]);
 
   // Context chips & popups
   const [contextChips, setContextChips] = useState<ContextChip[]>([]);
@@ -1375,6 +1422,7 @@ function ChatContent() {
     fullResponseRef.current = "";
     if (inputRef.current) inputRef.current.style.height = "auto";
     setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
+    setChatTrace(null);
 
     try {
       const res = await fetch("/api/chat", {
@@ -1387,6 +1435,7 @@ function ChatContent() {
           persistLatestUserMessage,
           initialSessionTitle,
           starterPrompt,
+          debugTrace: chatDebugEnabled,
         }),
       });
       if (!res.ok) {
@@ -1409,6 +1458,11 @@ function ChatContent() {
       if (responseSessionId && responseSessionId !== activeSessionId) {
         setActiveSessionId(responseSessionId);
         sessionId = responseSessionId;
+      }
+
+      const traceId = res.headers.get("X-ClawJS-Chat-Trace-Id");
+      if (chatDebugEnabled && traceId) {
+        setChatTrace((prev) => ({ ...(prev ?? { traceId }), traceId }));
       }
 
       // Read anonymization reverse map for de-anonymizing AI responses
@@ -1445,6 +1499,14 @@ function ChatContent() {
           if (data === "[DONE]") continue;
           try {
             const parsed = JSON.parse(data);
+            if (parsed.debug && chatDebugEnabled) {
+              const nextDebug = parsed.debug as ChatPerfTrace;
+              setChatTrace((prev) => ({
+                ...(prev ?? { traceId: nextDebug.traceId || traceId || "trace" }),
+                ...nextDebug,
+                prompt: nextDebug.prompt ?? prev?.prompt,
+              }));
+            }
 
             if (!parsed.text) continue;
 
@@ -1530,6 +1592,7 @@ function ChatContent() {
   }, [
     activeSessionId,
     cacheSessionMessages,
+    chatDebugEnabled,
     deAnonymize,
     refreshSessions,
     scrollToBottom,
@@ -2191,7 +2254,17 @@ function ChatContent() {
                   )}
                 </div>
               </div>
-              <div className="mt-2 px-8">&nbsp;</div>
+              <div className="mt-2 px-8 min-h-[18px]">
+                {chatDebugEnabled && chatTrace && (
+                  <div
+                    data-testid="chat-perf-trace"
+                    className="inline-flex max-w-full items-center rounded-full border border-border bg-card/90 px-3 py-1 text-[11px] leading-4 text-foreground/75 shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+                  >
+                    <span className="font-mono">trace {chatTrace.traceId}</span>
+                    {chatTraceSummary ? ` • ${chatTraceSummary}` : ""}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>

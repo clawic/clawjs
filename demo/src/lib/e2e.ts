@@ -881,6 +881,26 @@ export function isE2EEnabled(): boolean {
   return process.env.CLAWJS_E2E === "1";
 }
 
+/**
+ * Ensures E2E demo data is seeded exactly once per process lifetime.
+ * Call this from any API route that runs in E2E mode so the demo works
+ * immediately after deployment without a manual /api/e2e/seed call.
+ */
+let _e2eAutoSeeded = false;
+export function ensureE2ESeeded(): void {
+  if (!isE2EEnabled() || _e2eAutoSeeded) return;
+  _e2eAutoSeeded = true;
+  try {
+    // If the local-settings file already exists, data was seeded previously (or
+    // persisted across restarts). Skip re-seeding to avoid overwriting user changes.
+    const settingsPath = getClawJSLocalSettingsPath();
+    if (fs.existsSync(settingsPath)) return;
+    seedE2EState("seeded");
+  } catch (err) {
+    console.error("[e2e] Auto-seed failed:", err);
+  }
+}
+
 export function getE2EFixtureMode(): string {
   return process.env.CLAWJS_E2E_FIXTURE_MODE?.trim() || "hermetic";
 }
@@ -1152,7 +1172,11 @@ export function updateE2EWorkspaceFile(fileName: string, content: string): boole
   return true;
 }
 
-export function createE2EStreamResponse(sessionId: string, text: string): Response {
+export function createE2EStreamResponse(
+  sessionId: string,
+  text: string,
+  debug?: { traceId: string },
+): Response {
   const encoder = new TextEncoder();
   const chunks = text.match(/.{1,28}/g) ?? [text];
   const CHUNK_DELAY_MS = 60;
@@ -1160,10 +1184,72 @@ export function createE2EStreamResponse(sessionId: string, text: string): Respon
 
   const stream = new ReadableStream({
     async start(controller) {
+      if (debug?.traceId) {
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+          debug: {
+            traceId: debug.traceId,
+            phase: "request_ready",
+            totalMs: 35,
+            messageCount: 1,
+            availabilityMs: 2,
+            transcribeMs: 0,
+            systemPromptMs: 0,
+            ensureAgentMs: 4,
+            getClawMs: 3,
+            prompt: {
+              prepMs: 0,
+              emailMs: 0,
+              calendarMs: 0,
+              totalMs: 0,
+              promptChars: 0,
+            },
+          },
+        })}\n\n`));
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+          debug: {
+            traceId: debug.traceId,
+            phase: "transport_selected",
+            totalMs: 42,
+            messageCount: 1,
+            transport: "gateway",
+            fallback: false,
+            retries: 0,
+          },
+        })}\n\n`));
+      }
       await new Promise((r) => setTimeout(r, INITIAL_DELAY_MS));
+      if (debug?.traceId) {
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+          debug: {
+            traceId: debug.traceId,
+            phase: "first_chunk",
+            totalMs: INITIAL_DELAY_MS + 42,
+            messageCount: 1,
+            transport: "gateway",
+            fallback: false,
+            retries: 0,
+            firstChunkMs: INITIAL_DELAY_MS,
+          },
+        })}\n\n`));
+      }
       for (const chunk of chunks) {
         controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text: chunk })}\n\n`));
         await new Promise((r) => setTimeout(r, CHUNK_DELAY_MS));
+      }
+      if (debug?.traceId) {
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+          debug: {
+            traceId: debug.traceId,
+            phase: "stream_complete",
+            totalMs: INITIAL_DELAY_MS + chunks.length * CHUNK_DELAY_MS + 42,
+            messageCount: 1,
+            transport: "gateway",
+            fallback: false,
+            retries: 0,
+            firstChunkMs: INITIAL_DELAY_MS,
+            streamMs: INITIAL_DELAY_MS + chunks.length * CHUNK_DELAY_MS,
+          },
+        })}\n\n`));
       }
       controller.enqueue(encoder.encode("data: [DONE]\n\n"));
       controller.close();
@@ -1176,6 +1262,7 @@ export function createE2EStreamResponse(sessionId: string, text: string): Respon
       "Connection": "keep-alive",
       "Content-Type": "text/event-stream; charset=utf-8",
       "X-ClawJS-Session-Id": sessionId,
+      ...(debug?.traceId ? { "X-ClawJS-Chat-Trace-Id": debug.traceId } : {}),
     },
   });
 }
